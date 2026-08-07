@@ -12,10 +12,10 @@
   "assignee": "fifine",
   "createdAt": "2026-08-07",
   "completedAt": null,
-  "branch": null,
+  "branch": "main",
   "base_branch": "main",
-  "worktree_path": null,
-  "commit": null,
+  "worktree_path": "E:/code_space/agent-space/multi-teammates-agents",
+  "commit": "e6ddfba",
   "pr_url": null,
   "subtasks": [],
   "children": [],
@@ -29,6 +29,6 @@
     "schemas/",
     "tests/"
   ],
-  "notes": "Hybrid lightweight/managed mode approved on 2026-08-07. Completion was rebaselined after audit: durable core exists, but real host runners, autonomous supervisor, protected Auditor, operational gates, and cross-host model-backed E2E remain required.",
+  "notes": "Hybrid lightweight/managed mode approved on 2026-08-07. Milestone e6ddfba adds real CLI runners, autonomous supervision, protected Auditor, strict configuration, qualification, and recovery. Task remains active until model-backed cross-host E2E and the remaining failure matrices pass.",
   "meta": {}
 }

@@ -203,8 +203,8 @@ real-host evidence exists.
 - [x] Run `trellis-check` across runtime, schemas, tests, packages, and docs.
 - [x] Run `trellis-update-spec` for runner, supervisor, Auditor integrity,
   configuration, and proof-level contracts.
-- [ ] Review the complete diff and source-reuse ledger.
-- [ ] Commit on a real Git worktree and record the commit in the task.
+- [x] Review the complete diff and source-reuse ledger.
+- [x] Commit on a real Git worktree and record the commit in the task.
 - [ ] Run `trellis-finish-work` only after every required AC is closed.
 
 ## Implementation workstreams
