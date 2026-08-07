@@ -1,0 +1,26 @@
+{
+  "episode_id": "r1-manager-ec38a937",
+  "host": "codex",
+  "role": "manager",
+  "status": "done",
+  "duration_ms": 17214,
+  "exit_code": 0,
+  "error": null,
+  "stdout": "{\"type\":\"thread.started\",\"thread_id\":\"019fdb9a-5775-7c20-a4cd-755826a2641f\"}\n{\"type\":\"turn.started\"}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_0\",\"type\":\"reasoning\",\"text\":\"**Selecting next action**\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_1\",\"type\":\"agent_message\",\"text\":\"{\\\"schema_version\\\":1,\\\"action\\\":\\\"execute\\\",\\\"work_item_ids\\\":[\\\"inspect-source\\\"],\\\"message\\\":\\\"inspect-source is dependency-ready and required; verify-source must wait for accepted inspect-source evidence.\\\"}\"}}\n{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":21233,\"cached_input_tokens\":1408,\"cache_write_input_tokens\":0,\"output_tokens\":100,\"reasoning_output_tokens\":55}}\n",
+  "stderr": "",
+  "metadata": {
+    "command": [
+      "E:\\SDK-TOOL\\_global\\npm\\codex.CMD",
+      "exec",
+      "--json",
+      "--ephemeral",
+      "--skip-git-repo-check",
+      "-"
+    ],
+    "fresh_process": true,
+    "read_only": false,
+    "permission_posture": "host-controlled",
+    "output_truncated": false,
+    "record_count": 5
+  }
+}

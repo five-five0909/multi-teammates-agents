@@ -77,6 +77,10 @@ class EpisodeRunnerTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("hello", result.visible_output)
         self.assertTrue(result.metadata["fresh_process"])
         self.assertNotIn("dangerously", " ".join(result.metadata["command"]))  # type: ignore[arg-type]
+        self.assertEqual(
+            Path(sys.executable).resolve(),
+            Path(str(result.metadata["command"][0])).resolve(),  # type: ignore[index]
+        )
 
     async def test_malformed_stdout_fails_closed(self) -> None:
         result = await FakeAdapter().run_episode(request("malformed"))
@@ -106,12 +110,37 @@ class EpisodeRunnerTests(unittest.IsolatedAsyncioTestCase):
 
     def test_real_runner_commands_have_no_bypass_and_auditor_is_restricted(self) -> None:
         codex = list(CodexAdapter().build_command(request("success")))
+        codex_auditor = list(CodexAdapter().build_command(request("success", role="auditor")))
         claude = list(ClaudeAdapter().build_command(request("success", role="auditor")))
         self.assertEqual(["codex", "exec", "--json"], codex[:3])
+        self.assertIn("--ephemeral", codex)
+        self.assertNotIn("--sandbox", codex)
+        self.assertEqual("read-only", codex_auditor[codex_auditor.index("--sandbox") + 1])
+        self.assertIn("--no-session-persistence", claude)
+        self.assertEqual("plan", claude[claude.index("--permission-mode") + 1])
         self.assertIn("--disallowedTools", claude)
-        for command in (codex, claude):
+        for command in (codex, codex_auditor, claude):
             self.assertNotIn("--dangerously-bypass-approvals-and-sandbox", command)
             self.assertNotIn("--dangerously-skip-permissions", command)
+
+    def test_structured_visible_output_prefers_last_json_message(self) -> None:
+        records: list[Mapping[str, Any]] = [
+            {"item": {"type": "agent_message", "text": "I will inspect the fixture first."}},
+            {"item": {"type": "agent_message", "text": "{\"schema_version\":1,\"ok\":true}"}},
+        ]
+        self.assertEqual("{\"schema_version\":1,\"ok\":true}", CodexAdapter().extract_visible_output(records))
+
+        claude_records: list[Mapping[str, Any]] = [
+            {
+                "type": "assistant",
+                "message": {"content": [{"type": "text", "text": "prelude"}]},
+            },
+            {
+                "type": "assistant",
+                "message": {"content": [{"type": "text", "text": "{\"schema_version\":1,\"ok\":true}"}]},
+            },
+        ]
+        self.assertEqual("{\"schema_version\":1,\"ok\":true}", ClaudeAdapter().extract_visible_output(claude_records))
 
     def test_auditor_requires_read_only_and_secrets_are_redacted(self) -> None:
         with self.assertRaisesRegex(ValueError, "read-only"):

@@ -75,10 +75,24 @@ def build_executor_prompt(
             for dependency in item.depends_on
         },
     }
+    template = {
+        "schema_version": 1,
+        "work_item_id": item.id,
+        "attempt": expected_attempt,
+        "executor_id": executor_id,
+        "summary": "one sentence summary",
+        "artifacts": ["relative/path/or/observed/artifact"],
+        "evidence": ["actual observation or command/test evidence"],
+        "checks": ["check performed and result"],
+        "risks": [],
+        "failure": None,
+    }
     prompt = (
         "You are an Expert Team Executor in a fresh context. Complete only the bounded work item. "
-        "Do not certify your own work. Return one RoleResult JSON object with schema_version=1, "
-        f"work_item_id={item.id!r}, attempt={expected_attempt}, executor_id={executor_id!r}.\n"
+        "Do not certify your own work. Your final assistant message must be exactly one JSON object, "
+        "with no prose before or after it, matching this RoleResult schema and field names:\n"
+        + json.dumps(template, ensure_ascii=False, separators=(",", ":"))
+        + "\nAuthoritative assignment:\n"
         + json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
     )
     if len(prompt) > max_chars:
@@ -101,11 +115,26 @@ def build_auditor_prompt(
         "executor_result": result.to_dict(),
         "auditor_id": auditor_id,
     }
+    template = {
+        "schema_version": 1,
+        "work_item_id": item.id,
+        "attempt": result.attempt,
+        "auditor_id": auditor_id,
+        "executor_id": result.executor_id,
+        "status": "accepted",
+        "integrity": "clean",
+        "contract_alignment": "aligned",
+        "evidence": ["actual verification evidence"],
+        "findings": [],
+        "required_rework": [],
+    }
     prompt = (
         "You are an independent read-only Expert Team Auditor. Inspect the actual workspace and "
         "evidence. Do not create, edit, move, or delete files. Never repair the Executor's work. "
-        "Return one AuditDecision JSON object with schema_version=1 and auditor_id="
-        f"{auditor_id!r}. Accepted requires clean integrity and aligned contract.\n"
+        "Your final assistant message must be exactly one JSON object, with no prose before or after it. "
+        "Accepted requires clean integrity and aligned contract. Use only these AuditDecision field names:\n"
+        + json.dumps(template, ensure_ascii=False, separators=(",", ":"))
+        + "\nAuthoritative audit input:\n"
         + json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
     )
     if len(prompt) > max_chars:

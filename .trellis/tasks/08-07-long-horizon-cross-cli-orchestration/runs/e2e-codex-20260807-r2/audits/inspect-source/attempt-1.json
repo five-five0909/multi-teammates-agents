@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "work_item_id": "inspect-source",
+  "attempt": 1,
+  "auditor_id": "auditor-inspect-source-1-5a8e58fe",
+  "executor_id": "executor-inspect-source-1-84841f4b",
+  "status": "invalid",
+  "integrity": "clean",
+  "contract_alignment": "misaligned",
+  "evidence": [],
+  "findings": [
+    "AuditDecision output is not one JSON object: Expecting value"
+  ],
+  "required_rework": [
+    "Run a valid independent audit"
+  ]
+}

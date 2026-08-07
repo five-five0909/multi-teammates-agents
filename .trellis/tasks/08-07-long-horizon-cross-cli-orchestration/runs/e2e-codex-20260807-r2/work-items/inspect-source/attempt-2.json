@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "work_item_id": "inspect-source",
+  "attempt": 2,
+  "executor_id": "executor-inspect-source-2-fa520e07",
+  "summary": "Executor episode failed",
+  "artifacts": [],
+  "evidence": [],
+  "checks": [],
+  "risks": [
+    "unverified episode failure"
+  ],
+  "failure": "RoleResult missing fields: artifacts, checks, risks, summary"
+}

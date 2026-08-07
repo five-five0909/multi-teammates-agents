@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "work_item_id": "verify-source",
+  "attempt": 1,
+  "executor_id": "executor-verify-source-1-19b91e32",
+  "summary": "Verified e2e-source.txt in two rounds against accepted dependency evidence with no changes made.",
+  "artifacts": [
+    "e2e-source.txt"
+  ],
+  "evidence": [
+    "Round 1 FastCtx glob found exactly one matching file: E:/code_space/agent-space/multi-teammates-agents/tests/model-e2e-workspace/e2e-source.txt.",
+    "Round 1 FastCtx read completed and showed line 1 as expert-team-e2e-v1 and line 2 blank.",
+    "Round 2 byte/text check observed byte_count=19, hex=65-78-70-65-72-74-2d-74-65-61-6d-2d-65-32-65-2d-76-31-0a, trimmed=expert-team-e2e-v1, trimmed_matches=True.",
+    "Exact LF content comparison returned exact_lf_content_matches=True and no_extra_bytes=True."
+  ],
+  "checks": [
+    "Dependency consistency: inspected relative path matches accepted dependency path e2e-source.txt.",
+    "Content consistency: line 1 matches expert-team-e2e-v1 and trailing newline accounts for FastCtx-rendered blank line 2.",
+    "Exact content comparison: file bytes match expert-team-e2e-v1 followed by a single LF, with no extra bytes.",
+    "No changes performed."
+  ],
+  "risks": [],
+  "failure": null
+}

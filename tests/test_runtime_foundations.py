@@ -156,7 +156,11 @@ class PromptTests(unittest.TestCase):
         original = item()
         active = replace(original, status="running", attempt=1, executor_id="executor-1")
         snapshot = replace(create_snapshot("run-1", contract(), [original]), work_items={"build": active})
-        self.assertIn("fresh context", build_executor_prompt(snapshot, original, executor_id="executor-1", max_chars=4_000))
+        executor_prompt = build_executor_prompt(snapshot, original, executor_id="executor-1", max_chars=4_000)
+        self.assertIn("fresh context", executor_prompt)
+        self.assertIn('"artifacts"', executor_prompt)
+        self.assertIn('"checks"', executor_prompt)
+        self.assertIn('"risks"', executor_prompt)
         result_value = {
             "schema_version": 1,
             "work_item_id": "build",
@@ -170,7 +174,11 @@ class PromptTests(unittest.TestCase):
         }
         result = parse_role_result(json.dumps(result_value), item=active, executor_id="executor-1")
         self.assertIsInstance(result, RoleResult)
-        self.assertIn("read-only", build_auditor_prompt(snapshot, active, result, auditor_id="auditor-1", max_chars=6_000))
+        auditor_prompt = build_auditor_prompt(snapshot, active, result, auditor_id="auditor-1", max_chars=6_000)
+        self.assertIn("read-only", auditor_prompt)
+        self.assertIn('"status"', auditor_prompt)
+        self.assertIn('"contract_alignment"', auditor_prompt)
+        self.assertIn('"required_rework"', auditor_prompt)
         audit_value = {
             "schema_version": 1,
             "work_item_id": "build",

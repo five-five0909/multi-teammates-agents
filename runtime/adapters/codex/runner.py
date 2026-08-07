@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from typing import Any, Literal, Mapping
 
 from ..base import EpisodeRequest
+from ..output import select_structured_visible_output
 from ..process import CommandHostAdapter
 from .events import normalize_codex_event
 from ...core.contracts import BackendEvent
@@ -18,7 +19,9 @@ class CodexAdapter(CommandHostAdapter):
         super().__init__(binary)
 
     def build_command(self, request: EpisodeRequest) -> Sequence[str]:
-        command = [self.binary, "exec", "--json", "--skip-git-repo-check"]
+        command = [self.binary, "exec", "--json", "--ephemeral", "--skip-git-repo-check"]
+        if request.read_only:
+            command.extend(["--sandbox", "read-only"])
         if request.model:
             command.extend(["--model", request.model])
         command.append("-")
@@ -41,4 +44,4 @@ class CodexAdapter(CommandHostAdapter):
             text = item.get("text")
             if isinstance(text, str) and text.strip():
                 texts.append(text.strip())
-        return "\n\n".join(texts)
+        return select_structured_visible_output(texts)

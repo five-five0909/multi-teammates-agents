@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "work_item_id": "inspect-source",
+  "attempt": 1,
+  "executor_id": "executor-inspect-source-1-84841f4b",
+  "summary": "Executor episode failed",
+  "artifacts": [],
+  "evidence": [],
+  "checks": [],
+  "risks": [
+    "unverified episode failure"
+  ],
+  "failure": "RoleResult output is not one JSON object: Expecting value"
+}

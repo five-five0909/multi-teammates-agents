@@ -1,0 +1,26 @@
+{
+  "episode_id": "r1-manager-44e4871b",
+  "host": "codex",
+  "role": "manager",
+  "status": "done",
+  "duration_ms": 11345,
+  "exit_code": 0,
+  "error": null,
+  "stdout": "{\"type\":\"thread.started\",\"thread_id\":\"019fdb96-3d97-76d2-b8b3-4b8a917e67fc\"}\n{\"type\":\"turn.started\"}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_0\",\"type\":\"reasoning\",\"text\":\"**Deciding next action**\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_1\",\"type\":\"agent_message\",\"text\":\"{\\\"schema_version\\\":1,\\\"action\\\":\\\"execute\\\",\\\"work_item_ids\\\":[\\\"inspect-source\\\"],\\\"message\\\":\\\"Dependency-ready unresolved work item; execute initial source inspection.\\\"}\"}}\n{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":19735,\"cached_input_tokens\":0,\"cache_write_input_tokens\":0,\"output_tokens\":77,\"reasoning_output_tokens\":39}}\n",
+  "stderr": "",
+  "metadata": {
+    "command": [
+      "E:\\SDK-TOOL\\_global\\npm\\codex.CMD",
+      "exec",
+      "--json",
+      "--ephemeral",
+      "--skip-git-repo-check",
+      "-"
+    ],
+    "fresh_process": true,
+    "read_only": false,
+    "permission_posture": "host-controlled",
+    "output_truncated": false,
+    "record_count": 5
+  }
+}

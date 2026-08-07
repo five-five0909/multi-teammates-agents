@@ -64,9 +64,10 @@ class ScriptedAdapter:
             else:
                 output = json.dumps({"schema_version": 1, "action": "propose_complete", "work_item_ids": [], "message": "done"})
         elif request.role == "executor":
-            item_id = _quoted(request.prompt, "work_item_id")
-            executor_id = _quoted(request.prompt, "executor_id")
-            attempt = int(re.search(r"attempt=(\d+)", request.prompt).group(1))  # type: ignore[union-attr]
+            assert request.work_item_id is not None
+            item_id = request.work_item_id
+            executor_id = _json_string(request.prompt, "executor_id")
+            attempt = _json_integer(request.prompt, "attempt")
             output = json.dumps(
                 {
                     "schema_version": 1,
@@ -103,10 +104,16 @@ class ScriptedAdapter:
         return EpisodeResult(request.episode_id, "codex", request.role, "done", output, (), 1, 0)
 
 
-def _quoted(prompt: str, name: str) -> str:
-    match = re.search(rf"{name}='([^']+)'", prompt)
+def _json_string(prompt: str, name: str) -> str:
+    match = re.search(rf'"{name}":"([^"]+)"', prompt)
     assert match is not None
     return match.group(1)
+
+
+def _json_integer(prompt: str, name: str) -> int:
+    match = re.search(rf'"{name}":(\d+)', prompt)
+    assert match is not None
+    return int(match.group(1))
 
 
 class SupervisorTests(unittest.IsolatedAsyncioTestCase):

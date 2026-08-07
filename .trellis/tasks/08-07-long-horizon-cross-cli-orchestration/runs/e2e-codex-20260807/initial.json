@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "run_id": "e2e-codex-20260807",
+  "state": "initialized",
+  "version": 0,
+  "last_seq": 0,
+  "contract": {
+    "schema_version": 1,
+    "goal": "Independently inspect and verify the fixed E2E source fixture in two rounds.",
+    "constraints": [
+      "Do not modify the workspace.",
+      "Use only the existing e2e-source.txt fixture.",
+      "Return exactly the requested JSON contract without prose."
+    ],
+    "deliverables": [
+      "Audited evidence for inspection and dependent verification."
+    ],
+    "acceptance_criteria": [
+      "e2e-source.txt exists and its exact trimmed content is expert-team-e2e-v1.",
+      "Both required work items receive independent accepted audits."
+    ]
+  },
+  "work_items": {
+    "inspect-source": {
+      "schema_version": 1,
+      "id": "inspect-source",
+      "objective": "Read e2e-source.txt and report its exact trimmed content as evidence; make no changes.",
+      "role": "software-engineer",
+      "mode": "read",
+      "required": true,
+      "depends_on": [],
+      "ownership": [],
+      "evidence_required": [
+        "Exact observed content and the inspected relative path."
+      ],
+      "executor_id": null,
+      "attempt": 0,
+      "status": "pending"
+    },
+    "verify-source": {
+      "schema_version": 1,
+      "id": "verify-source",
+      "objective": "Independently verify e2e-source.txt against the accepted dependency evidence; make no changes.",
+      "role": "software-qa-engineer",
+      "mode": "verify",
+      "required": true,
+      "depends_on": [
+        "inspect-source"
+      ],
+      "ownership": [],
+      "evidence_required": [
+        "Exact content comparison and dependency consistency."
+      ],
+      "executor_id": null,
+      "attempt": 0,
+      "status": "pending"
+    }
+  },
+  "verified_progress": {},
+  "event_ids": [],
+  "pending_gate": null,
+  "rounds_used": 0,
+  "max_rounds": 4,
+  "retry_limit": 2
+}

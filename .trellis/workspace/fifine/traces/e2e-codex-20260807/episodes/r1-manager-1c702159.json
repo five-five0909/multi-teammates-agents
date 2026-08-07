@@ -1,0 +1,22 @@
+{
+  "episode_id": "r1-manager-1c702159",
+  "host": "codex",
+  "role": "manager",
+  "status": "error",
+  "duration_ms": 3,
+  "exit_code": null,
+  "error": "[WinError 2] 系统找不到指定的文件。",
+  "stdout": "",
+  "stderr": "",
+  "metadata": {
+    "command": [
+      "codex",
+      "exec",
+      "--json",
+      "--ephemeral",
+      "--skip-git-repo-check",
+      "-"
+    ],
+    "fresh_process": true
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "episode_id": "r2-manager-4cc5cf71",
+  "host": "codex",
+  "role": "manager",
+  "status": "done",
+  "duration_ms": 12583,
+  "exit_code": 0,
+  "error": null,
+  "stdout": "{\"type\":\"thread.started\",\"thread_id\":\"019fdb9b-7091-7a91-aedd-b869d828cfb6\"}\n{\"type\":\"turn.started\"}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_0\",\"type\":\"reasoning\",\"text\":\"**Defining next action**\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_1\",\"type\":\"agent_message\",\"text\":\"{\\\"schema_version\\\":1,\\\"action\\\":\\\"execute\\\",\\\"work_item_ids\\\":[\\\"verify-source\\\"],\\\"message\\\":\\\"Dependency inspect-source is accepted, so verify-source is ready for independent verification.\\\"}\"}}\n{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":21272,\"cached_input_tokens\":1408,\"cache_write_input_tokens\":0,\"output_tokens\":87,\"reasoning_output_tokens\":45}}\n",
+  "stderr": "",
+  "metadata": {
+    "command": [
+      "E:\\SDK-TOOL\\_global\\npm\\codex.CMD",
+      "exec",
+      "--json",
+      "--ephemeral",
+      "--skip-git-repo-check",
+      "-"
+    ],
+    "fresh_process": true,
+    "read_only": false,
+    "permission_posture": "host-controlled",
+    "output_truncated": false,
+    "record_count": 5
+  }
+}

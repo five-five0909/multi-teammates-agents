@@ -92,6 +92,9 @@ class CommandHostAdapter:
             raise ContractError(f"episode is already active: {request.episode_id}")
         command = tuple(self.build_command(request))
         self._validate_command(command)
+        resolved_binary = shutil.which(command[0])
+        if resolved_binary is not None:
+            command = (resolved_binary, *command[1:])
         started = time.monotonic()
         try:
             if sys.platform == "win32":

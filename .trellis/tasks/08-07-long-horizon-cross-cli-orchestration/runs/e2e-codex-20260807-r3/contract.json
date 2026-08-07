@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "goal": "Independently inspect and verify the fixed E2E source fixture in two rounds.",
+  "constraints": [
+    "Do not modify the workspace.",
+    "Use only the existing e2e-source.txt fixture.",
+    "Return exactly the requested JSON contract without prose."
+  ],
+  "deliverables": [
+    "Audited evidence for inspection and dependent verification."
+  ],
+  "acceptance_criteria": [
+    "e2e-source.txt exists and its exact trimmed content is expert-team-e2e-v1.",
+    "Both required work items receive independent accepted audits."
+  ]
+}

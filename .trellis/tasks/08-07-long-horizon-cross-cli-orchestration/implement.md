@@ -188,11 +188,14 @@ all pause/resume correctly on both package surfaces.
   tests.
 - [x] Run local Codex and Claude binary probes and runner smoke tests.
 - [ ] With explicit cost-bearing test authorization, run one bounded two-round
-  model-backed scenario on Codex and the same scenario on Claude.
+  model-backed scenario on Codex and the same scenario on Claude. Codex passed
+  as `e2e-codex-20260807-r3`; Claude is blocked by local organization/account
+  model access in `e2e-claude-20260807`.
 - [ ] Run a failed-audit/rework scenario and a crash/resume scenario on both
   hosts, recording run IDs, versions, trace references, and final evidence.
 - [ ] Verify no permission-bypass flags, orphan processes, leaked secrets, or
-  repeated accepted work.
+  repeated accepted work. Codex real traces and runner tests cover bypass flags
+  for the passing scenario; full cross-host and leak/orphan matrix remains open.
 - [x] Update documentation and map AC1-AC19 to proof levels in `check.md`.
 
 Gate: AC2, AC3, AC7, AC8, AC10, and AC12-AC19 remain open until their required

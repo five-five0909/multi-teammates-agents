@@ -1,0 +1,28 @@
+{
+  "episode_id": "r1-auditor-inspect-source-8d851dcf",
+  "host": "codex",
+  "role": "auditor",
+  "status": "done",
+  "duration_ms": 25026,
+  "exit_code": 0,
+  "error": null,
+  "stdout": "{\"type\":\"thread.started\",\"thread_id\":\"019fdb9b-0e6e-77b1-9314-9683156b4418\"}\n{\"type\":\"turn.started\"}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_0\",\"type\":\"reasoning\",\"text\":\"**Preparing read-only audit**\"}}\n{\"type\":\"item.started\",\"item\":{\"id\":\"item_1\",\"type\":\"mcp_tool_call\",\"server\":\"fastctx\",\"tool\":\"glob\",\"arguments\":{\"path\":\"E:\\\\code_space\\\\agent-space\\\\multi-teammates-agents\\\\tests\\\\model-e2e-workspace\",\"pattern\":\"e2e-source.txt\",\"filter_mode\":\"project\",\"limit\":10},\"result\":null,\"error\":null,\"status\":\"in_progress\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_1\",\"type\":\"mcp_tool_call\",\"server\":\"fastctx\",\"tool\":\"glob\",\"arguments\":{\"path\":\"E:\\\\code_space\\\\agent-space\\\\multi-teammates-agents\\\\tests\\\\model-e2e-workspace\",\"pattern\":\"e2e-source.txt\",\"filter_mode\":\"project\",\"limit\":10},\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"E:/code_space/agent-space/multi-teammates-agents/tests/model-e2e-workspace/e2e-source.txt\\n\\n(Complete: all 1 file shown.)\"}],\"structured_content\":null},\"error\":null,\"status\":\"completed\"}}\n{\"type\":\"item.started\",\"item\":{\"id\":\"item_2\",\"type\":\"mcp_tool_call\",\"server\":\"fastctx\",\"tool\":\"read\",\"arguments\":{\"file_path\":\"E:/code_space/agent-space/multi-teammates-agents/tests/model-e2e-workspace/e2e-source.txt\"},\"result\":null,\"error\":null,\"status\":\"in_progress\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_2\",\"type\":\"mcp_tool_call\",\"server\":\"fastctx\",\"tool\":\"read\",\"arguments\":{\"file_path\":\"E:/code_space/agent-space/multi-teammates-agents/tests/model-e2e-workspace/e2e-source.txt\"},\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"1\\texpert-team-e2e-v1\\n2\\t\\n\\n(Complete: reached end of file; lines 1-2 of 2 shown.)\"}],\"structured_content\":null},\"error\":null,\"status\":\"completed\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_3\",\"type\":\"reasoning\",\"text\":\"**Specifying exact AuditDecision fields**\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_4\",\"type\":\"agent_message\",\"text\":\"{\\\"schema_version\\\":1,\\\"work_item_id\\\":\\\"inspect-source\\\",\\\"attempt\\\":1,\\\"auditor_id\\\":\\\"auditor-inspect-source-1-8ca12d85\\\",\\\"executor_id\\\":\\\"executor-inspect-source-1-b9530574\\\",\\\"status\\\":\\\"accepted\\\",\\\"integrity\\\":\\\"clean\\\",\\\"contract_alignment\\\":\\\"aligned\\\",\\\"evidence\\\":[\\\"FastCtx glob found exactly one matching file at inspected relative path e2e-source.txt: E:/code_space/agent-space/multi-teammates-agents/tests/model-e2e-workspace/e2e-source.txt.\\\",\\\"FastCtx read of e2e-source.txt completed successfully and showed line 1 as expert-team-e2e-v1 and line 2 blank.\\\",\\\"Exact observed trimmed content: expert-team-e2e-v1.\\\"],\\\"findings\\\":[],\\\"required_rework\\\":[]}\"}}\n{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":64864,\"cached_input_tokens\":43136,\"cache_write_input_tokens\":0,\"output_tokens\":435,\"reasoning_output_tokens\":158}}\n",
+  "stderr": "",
+  "metadata": {
+    "command": [
+      "E:\\SDK-TOOL\\_global\\npm\\codex.CMD",
+      "exec",
+      "--json",
+      "--ephemeral",
+      "--skip-git-repo-check",
+      "--sandbox",
+      "read-only",
+      "-"
+    ],
+    "fresh_process": true,
+    "read_only": true,
+    "permission_posture": "host-controlled",
+    "output_truncated": false,
+    "record_count": 10
+  }
+}

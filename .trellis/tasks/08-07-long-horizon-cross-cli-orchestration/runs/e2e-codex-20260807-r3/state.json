@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "run_id": "e2e-codex-20260807-r3",
+  "state": "completed",
+  "version": 27,
+  "last_seq": 27,
+  "contract": {
+    "schema_version": 1,
+    "goal": "Independently inspect and verify the fixed E2E source fixture in two rounds.",
+    "constraints": [
+      "Do not modify the workspace.",
+      "Use only the existing e2e-source.txt fixture.",
+      "Return exactly the requested JSON contract without prose."
+    ],
+    "deliverables": [
+      "Audited evidence for inspection and dependent verification."
+    ],
+    "acceptance_criteria": [
+      "e2e-source.txt exists and its exact trimmed content is expert-team-e2e-v1.",
+      "Both required work items receive independent accepted audits."
+    ]
+  },
+  "work_items": {
+    "inspect-source": {
+      "schema_version": 1,
+      "id": "inspect-source",
+      "objective": "Read e2e-source.txt and report its exact trimmed content as evidence; make no changes.",
+      "role": "software-engineer",
+      "mode": "read",
+      "required": true,
+      "depends_on": [],
+      "ownership": [],
+      "evidence_required": [
+        "Exact observed content and the inspected relative path."
+      ],
+      "executor_id": "executor-inspect-source-1-b9530574",
+      "attempt": 1,
+      "status": "accepted"
+    },
+    "verify-source": {
+      "schema_version": 1,
+      "id": "verify-source",
+      "objective": "Independently verify e2e-source.txt against the accepted dependency evidence; make no changes.",
+      "role": "software-qa-engineer",
+      "mode": "verify",
+      "required": true,
+      "depends_on": [
+        "inspect-source"
+      ],
+      "ownership": [],
+      "evidence_required": [
+        "Exact content comparison and dependency consistency."
+      ],
+      "executor_id": "executor-verify-source-1-19b91e32",
+      "attempt": 1,
+      "status": "accepted"
+    }
+  },
+  "verified_progress": {
+    "inspect-source": [
+      "FastCtx glob found exactly one matching file at inspected relative path e2e-source.txt: E:/code_space/agent-space/multi-teammates-agents/tests/model-e2e-workspace/e2e-source.txt.",
+      "FastCtx read of e2e-source.txt completed successfully and showed line 1 as expert-team-e2e-v1 and line 2 blank.",
+      "Exact observed trimmed content: expert-team-e2e-v1."
+    ],
+    "verify-source": [
+      "FastCtx glob in E:/code_space/agent-space/multi-teammates-agents/tests/model-e2e-workspace found exactly one matching file: e2e-source.txt.",
+      "FastCtx read of e2e-source.txt completed and showed line 1 as expert-team-e2e-v1 with only a trailing blank line from the final newline.",
+      "FastCtx hex read showed bytes 65 78 70 65 72 74 2d 74 65 61 6d 2d 65 32 65 2d 76 31 0a, confirming exact LF content expert-team-e2e-v1 followed by a single newline and no extra bytes.",
+      "Dependency consistency is aligned with the authoritative input: the verified artifact is the required relative path e2e-source.txt and its trimmed content is exactly expert-team-e2e-v1."
+    ]
+  },
+  "event_ids": [
+    "41549f35-9799-4d60-9ebb-d35a7acfcb5e",
+    "829fd6b7-2b70-4fc3-a0a3-4ded4e39cbdc",
+    "d6441f04-9458-46e2-a9d1-265162b163c8",
+    "6a3eb693-4f15-4cd4-bfb7-ea89f994a6b2",
+    "264ebd23-c91d-460b-96ef-aac0785bf9a7",
+    "c909dfac-019b-4211-be01-47c15611f76f",
+    "c0a76f7e-af39-47c4-ad29-a25bc01be580",
+    "c5ff89c3-4b54-4590-9795-7b94dd6e54b4",
+    "abf866a3-398b-48ba-b3b3-38cc8b52e938",
+    "c7d46add-fa85-4c29-8a3a-cf25672f9815",
+    "53962f28-970b-467a-8ad4-f50d3ac8dfa8",
+    "6f187b5e-d9aa-4248-b76e-3af79893de8e",
+    "79161278-3551-4d47-a7c8-cace5a606aa2",
+    "972738e7-8a19-40f0-baad-1d9c5423bacb",
+    "c9eb6769-cf53-46a0-adb8-fc4e8737890b",
+    "edd803cb-c826-4eea-adb3-a65046af1bc1",
+    "468b2642-867e-47dc-bd75-8500923c1cae",
+    "92a41014-4e30-4e8a-8541-4e4e65d88a57",
+    "e65d3008-db04-497a-ad4a-2bc22143fbd2",
+    "0441c348-46a6-4080-9018-b525c6926e3a",
+    "904e9e8c-859f-48a0-96b5-dc919e68d97e",
+    "0f6be6b1-806c-4626-8a3b-0efdd5aee245",
+    "1fc7401c-0d02-4e8a-9407-bfaf74fad8df",
+    "9a6801be-8c03-44eb-b95f-03d177c04d5f",
+    "efb4b63e-23a5-42a1-b50e-b87a2d1c65e7",
+    "42d9e6b1-f6c8-4e8c-b095-61c90bac6988",
+    "d76002f7-e0d3-4c35-89ff-945f924b726d"
+  ],
+  "pending_gate": null,
+  "rounds_used": 2,
+  "max_rounds": 4,
+  "retry_limit": 2
+}

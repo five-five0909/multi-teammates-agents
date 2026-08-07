@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "run_id": "e2e-codex-20260807",
+  "state": "needs_input",
+  "version": 6,
+  "last_seq": 6,
+  "contract": {
+    "schema_version": 1,
+    "goal": "Independently inspect and verify the fixed E2E source fixture in two rounds.",
+    "constraints": [
+      "Do not modify the workspace.",
+      "Use only the existing e2e-source.txt fixture.",
+      "Return exactly the requested JSON contract without prose."
+    ],
+    "deliverables": [
+      "Audited evidence for inspection and dependent verification."
+    ],
+    "acceptance_criteria": [
+      "e2e-source.txt exists and its exact trimmed content is expert-team-e2e-v1.",
+      "Both required work items receive independent accepted audits."
+    ]
+  },
+  "work_items": {
+    "inspect-source": {
+      "schema_version": 1,
+      "id": "inspect-source",
+      "objective": "Read e2e-source.txt and report its exact trimmed content as evidence; make no changes.",
+      "role": "software-engineer",
+      "mode": "read",
+      "required": true,
+      "depends_on": [],
+      "ownership": [],
+      "evidence_required": [
+        "Exact observed content and the inspected relative path."
+      ],
+      "executor_id": null,
+      "attempt": 0,
+      "status": "pending"
+    },
+    "verify-source": {
+      "schema_version": 1,
+      "id": "verify-source",
+      "objective": "Independently verify e2e-source.txt against the accepted dependency evidence; make no changes.",
+      "role": "software-qa-engineer",
+      "mode": "verify",
+      "required": true,
+      "depends_on": [
+        "inspect-source"
+      ],
+      "ownership": [],
+      "evidence_required": [
+        "Exact content comparison and dependency consistency."
+      ],
+      "executor_id": null,
+      "attempt": 0,
+      "status": "pending"
+    }
+  },
+  "verified_progress": {},
+  "event_ids": [
+    "5103674d-5279-41e0-b92d-057897c7b931",
+    "df436964-bae3-4758-a23b-caf31685b939",
+    "89c5e54d-373e-46da-8b37-8c5d17d73535",
+    "ded1ed44-0781-477e-9865-d9f91597028b",
+    "e6b15060-2843-4c53-a3d1-6e165c149605",
+    "e95e0f81-f920-482c-83e9-44ec44bcb39f"
+  ],
+  "pending_gate": "repeated_failure",
+  "rounds_used": 0,
+  "max_rounds": 4,
+  "retry_limit": 2
+}

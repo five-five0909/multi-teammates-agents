@@ -114,6 +114,22 @@ optional model, timeout/output limits, permission posture, read-only bit, and
 work-item identity where applicable. It returns an `EpisodeResult` with one of
 `done`, `error`, `permission_required`, `timeout`, or `cancelled`, normalized
 events, visible output, exit status, redacted streams, and bounded metadata.
+Before launch, process adapters resolve `argv[0]` with the platform path lookup
+used by the current process. This is required on Windows because npm shims such
+as `codex.CMD` and `claude.CMD` may be found by `shutil.which()` but not by
+`asyncio.create_subprocess_exec()` when passed as bare names.
+
+Host JSONL/stream adapters may receive multiple assistant-visible messages in a
+single episode. `visible_output` must prefer the final assistant message that is
+itself one JSON object, falling back to the host result field or joined text only
+when no structured final message exists. Parsers still require one strict object;
+adapters own selection, not schema coercion.
+
+Executor and Auditor prompts must include an exact copyable schema template for
+the current contract field names. In particular, Executors return
+`RoleResult.summary`, `artifacts`, `evidence`, `checks`, `risks`, and optional
+`failure`; Auditors return `AuditDecision.status`, `integrity`,
+`contract_alignment`, `evidence`, `findings`, and `required_rework`.
 
 Runtime configuration is loaded in this exact precedence order:
 
@@ -182,6 +198,9 @@ snapshots are atomic, and replay must reproduce the accepted state.
 | Auditor changes the workspace or the before/after snapshot is incomplete | Reject the audit fail closed and preserve diagnostics. |
 | Role episode times out or is cancelled | Terminate descendants, persist the terminal episode event, and leave no accepted evidence. |
 | Host reports `permission_required` | Persist the host event and open a `permission` human gate; never retry by adding a bypass flag. |
+| Host binary exists only through a shell shim | Resolve the binary path before `create_subprocess_exec`; do not launch through a shell. |
+| Host emits prelude/progress assistant messages before final JSON | Select the final standalone JSON object as `visible_output`; do not parse a concatenated transcript. |
+| Model returns a natural-language or wrong-field JSON schema | Fail closed as a structured-output error and consume a bounded retry; do not coerce fields. |
 | Config contains an unknown field, invalid host/limit, or persisted secret | Reject before launching any role process. |
 | Project config and environment disagree | Project value wins; explicit invocation override wins over both. |
 | Supervisor restarts with unmatched `episode.started` | Record `episode.abandoned`, retry only unaccepted work, and keep accepted work unchanged. |
@@ -202,8 +221,14 @@ snapshots are atomic, and replay must reproduce the accepted state.
 - Good executable managed: one start call causes the supervisor to invoke a
   fresh Manager, fresh Executor, and separate read-only Auditor; accepted
   evidence is persisted and the next round starts without manual phase calls.
+- Good structured output: an Auditor may emit progress messages during tool use,
+  but its final assistant message is the only JSON object and uses the exact
+  `AuditDecision` field names.
 - Bad executable managed: a test manually calls `next`, `submit_result`, and
   `submit_audit`, then calls that sequence a real end-to-end host run.
+- Bad structured output: an Executor returns `status`, `changes_made`, or nested
+  evidence objects instead of the versioned `RoleResult` fields; reject and retry
+  rather than translating it.
 - Good configuration: project config binds Auditor to Claude while an explicit
   invocation override shortens only its timeout; no credentials enter TOML.
 - Bad configuration: store a token in `.expert-team/config.toml` or inject a
@@ -226,6 +251,11 @@ snapshots are atomic, and replay must reproduce the accepted state.
 - Runner tests use fake executables to assert argument lists, stdin prompts,
   streaming, malformed output, timeout, cancellation, descendant cleanup,
   permission propagation, redaction, and fresh episode identity.
+- Runner tests assert command metadata contains the resolved executable path when
+  the host is launched, and that Codex/Claude output extraction prefers the last
+  standalone JSON assistant message over prelude messages.
+- Prompt tests assert Executor and Auditor prompts contain the exact versioned
+  schema field names required by the strict decoders.
 - Auditor integrity tests cover add/edit/delete/type-change, unreadable paths,
   incomplete snapshots, mutation restoration failure, and unavailable Auditor;
   every uncertain case must leave `verified_progress` unchanged.
@@ -299,6 +329,34 @@ permission_required -> silently rerun with a bypass option
 permission_required -> durable episode failure -> permission gate -> attributable answer
 ```
 
+### Wrong structured output handling
+
+```text
+agent_message("I'll inspect first")
+agent_message({"decision":"accepted","accepted":true})
+parser accepts by translating fields
+```
+
+### Correct structured output handling
+
+```text
+adapter selects the final standalone JSON object
+parser accepts only exact RoleResult/AuditDecision fields or fails closed
+```
+
+### Wrong Windows host launch
+
+```text
+create_subprocess_exec("codex", ...)
+```
+
+### Correct Windows host launch
+
+```text
+resolved = shutil.which("codex")
+create_subprocess_exec(resolved or "codex", ...)
+```
+
 ## Design Decisions
 
 - Keep the six default roles separate from domain lenses. Roles define
@@ -312,3 +370,7 @@ permission_required -> durable episode failure -> permission gate -> attributabl
   copied from an externally isolated harness.
 - Adapt only portable behavior from Qoder and ExpertTeam-Codex; never depend on
   Qoder binaries/private RPCs or obsolete direct-install agent formats.
+- Treat host visible output selection as adapter work. The strict parser remains
+  the schema authority and never translates model-invented field names.
+- Resolve command shims before shell-free process launch so Windows npm CLI
+  installs remain compatible without introducing shell execution.

@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from typing import Any, Literal, Mapping
 
 from ..base import EpisodeRequest
+from ..output import select_structured_visible_output
 from ..process import CommandHostAdapter
 from .events import normalize_claude_event
 from ...core.contracts import BackendEvent
@@ -27,8 +28,10 @@ class ClaudeAdapter(CommandHostAdapter):
             "--output-format",
             "stream-json",
             "--verbose",
+            "--no-session-persistence",
         ]
         if request.read_only:
+            command.extend(["--permission-mode", "plan"])
             command.append("--disallowedTools")
             command.extend(_AUDITOR_WRITE_TOOLS)
         if request.model:
@@ -62,4 +65,4 @@ class ClaudeAdapter(CommandHostAdapter):
                     text = block.get("text")
                     if isinstance(text, str) and text.strip():
                         texts.append(text.strip())
-        return result_text or "\n\n".join(texts)
+        return select_structured_visible_output(texts, preferred=result_text)
