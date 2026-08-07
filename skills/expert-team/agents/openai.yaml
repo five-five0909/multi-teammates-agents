@@ -1,0 +1,7 @@
+interface:
+  display_name: "Expert Team"
+  short_description: "Run audited specialist agent teams"
+  default_prompt: "Use $expert-team to coordinate this complex task with durable independent verification when needed."
+
+policy:
+  allow_implicit_invocation: true

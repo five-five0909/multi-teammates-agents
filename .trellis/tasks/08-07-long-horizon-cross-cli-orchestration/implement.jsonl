@@ -1,0 +1,3 @@
+{"file":".trellis/spec/plugin/expert-team-contract.md","reason":"Current Expert Team runtime, role, scheduling, persistence, and validation contract; must be revised before introducing managed mode."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Defines the single-owner event schema, replay reducer, and cross-platform consistency requirements needed by the shared runtime."}
+{"file":".trellis/tasks/08-07-long-horizon-cross-cli-orchestration/research/architecture-baseline.md","reason":"Pinned upstream and official platform findings that constrain the design."}

@@ -1,0 +1,3 @@
+{"file":".trellis/spec/plugin/expert-team-contract.md","reason":"Verify the implementation preserves role separation, scheduling safety, compatibility behavior, and approved managed-mode boundaries."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Audit event normalization, replay/state projections, and Codex/Claude parity at every boundary."}
+{"file":".trellis/tasks/08-07-long-horizon-cross-cli-orchestration/research/architecture-baseline.md","reason":"Check that platform packaging and upstream adaptations remain evidence-backed and permission-safe."}

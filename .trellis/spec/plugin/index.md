@@ -1,0 +1,12 @@
+# Codex Plugin Guidelines
+
+> Executable contracts for the plugin manifest, skills, and orchestration data.
+
+## Guidelines Index
+
+| Guide | Description | Status |
+|---|---|---|
+| [Expert Team Contract](./expert-team-contract.md) | Invocation, task graph, concurrency, and validation | Active |
+
+All documentation in this directory is written in English.
+

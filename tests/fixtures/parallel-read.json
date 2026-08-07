@@ -1,0 +1,32 @@
+{
+  "expected_valid": true,
+  "execution_mode": "parallel",
+  "outcome": "success",
+  "tasks": [
+    {
+      "id": "research-code",
+      "objective": "Map the relevant code paths.",
+      "role": "researcher",
+      "mode": "read",
+      "required": true,
+      "depends_on": [],
+      "ownership": [],
+      "wave": 0,
+      "status": "completed",
+      "status_history": ["pending", "running", "completed"]
+    },
+    {
+      "id": "research-docs",
+      "objective": "Verify the external API contract.",
+      "role": "researcher",
+      "mode": "read",
+      "required": true,
+      "depends_on": [],
+      "ownership": [],
+      "wave": 0,
+      "status": "completed",
+      "status_history": ["pending", "running", "completed"]
+    }
+  ]
+}
+

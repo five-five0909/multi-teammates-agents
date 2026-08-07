@@ -1,0 +1,1 @@
+{"type":"assistant","session_id":"session-1","message":{"id":"message-1","content":[{"type":"tool_use","id":"tool-1","name":"Bash","input":{"command":"python -m unittest"}}]}}

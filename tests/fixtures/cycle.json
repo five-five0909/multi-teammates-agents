@@ -1,0 +1,32 @@
+{
+  "expected_valid": false,
+  "execution_mode": "parallel",
+  "outcome": "blocked",
+  "tasks": [
+    {
+      "id": "a",
+      "objective": "Wait for task B.",
+      "role": "researcher",
+      "mode": "read",
+      "required": true,
+      "depends_on": ["b"],
+      "ownership": [],
+      "wave": 1,
+      "status": "blocked",
+      "status_history": ["pending", "blocked"]
+    },
+    {
+      "id": "b",
+      "objective": "Wait for task A.",
+      "role": "researcher",
+      "mode": "read",
+      "required": true,
+      "depends_on": ["a"],
+      "ownership": [],
+      "wave": 2,
+      "status": "blocked",
+      "status_history": ["pending", "blocked"]
+    }
+  ]
+}
+

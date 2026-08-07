@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "source": {
+    "repository": "https://github.com/ReJeCtAll/ExpertTeam-Codex",
+    "commit": "59c573b523af6d7755861e7637c2fa5f7ce1ddae"
+  },
+  "agents": [
+    {"id":"software-team-lead","domain":"software","kind":"coordinator","default_mode":"read","preferred_agent_type":"default","profile":"agents/software/software-team-lead.md"},
+    {"id":"software-product-manager","domain":"software","kind":"specialist","default_mode":"read","preferred_agent_type":"default","profile":"agents/software/software-product-manager.md"},
+    {"id":"software-architect","domain":"software","kind":"specialist","default_mode":"read","preferred_agent_type":"default","profile":"agents/software/software-architect.md"},
+    {"id":"software-engineer","domain":"software","kind":"specialist","default_mode":"write","preferred_agent_type":"worker","profile":"agents/software/software-engineer.md"},
+    {"id":"software-qa-engineer","domain":"software","kind":"specialist","default_mode":"verify","preferred_agent_type":"default","profile":"agents/software/software-qa-engineer.md"},
+    {"id":"product-director","domain":"product","kind":"coordinator","default_mode":"read","preferred_agent_type":"default","profile":"agents/product/product-director.md"},
+    {"id":"requirement-analyst","domain":"product","kind":"specialist","default_mode":"read","preferred_agent_type":"default","profile":"agents/product/requirement-analyst.md"},
+    {"id":"user-researcher","domain":"product","kind":"specialist","default_mode":"read","preferred_agent_type":"explorer","profile":"agents/product/user-researcher.md"},
+    {"id":"competitive-analyst","domain":"product","kind":"specialist","default_mode":"read","preferred_agent_type":"explorer","profile":"agents/product/competitive-analyst.md"},
+    {"id":"data-analyst","domain":"product","kind":"specialist","default_mode":"read","preferred_agent_type":"default","profile":"agents/product/data-analyst.md"},
+    {"id":"roadmap-planner","domain":"product","kind":"specialist","default_mode":"read","preferred_agent_type":"default","profile":"agents/product/roadmap-planner.md"},
+    {"id":"design-engine-team-lead","domain":"design","kind":"coordinator","default_mode":"read","preferred_agent_type":"default","profile":"agents/design/design-engine-team-lead.md"},
+    {"id":"discovery-analyst","domain":"design","kind":"specialist","default_mode":"read","preferred_agent_type":"default","profile":"agents/design/discovery-analyst.md"},
+    {"id":"design-system-expert","domain":"design","kind":"specialist","default_mode":"read","preferred_agent_type":"default","profile":"agents/design/design-system-expert.md"},
+    {"id":"prototype-builder","domain":"design","kind":"specialist","default_mode":"write","preferred_agent_type":"worker","profile":"agents/design/prototype-builder.md"},
+    {"id":"critique-reviewer","domain":"design","kind":"specialist","default_mode":"verify","preferred_agent_type":"default","profile":"agents/design/critique-reviewer.md"},
+    {"id":"export-specialist","domain":"design","kind":"specialist","default_mode":"write","preferred_agent_type":"worker","profile":"agents/design/export-specialist.md"},
+    {"id":"infrastructure-operations-expert","domain":"platform","kind":"specialist","default_mode":"read","preferred_agent_type":"default","profile":"agents/platform/infrastructure-operations-expert.md"},
+    {"id":"security-expert","domain":"platform","kind":"specialist","default_mode":"read","preferred_agent_type":"default","profile":"agents/platform/security-expert.md"},
+    {"id":"database-optimization-expert","domain":"platform","kind":"specialist","default_mode":"read","preferred_agent_type":"default","profile":"agents/platform/database-optimization-expert.md"}
+  ]
+}

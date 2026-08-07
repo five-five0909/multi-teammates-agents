@@ -1,0 +1,44 @@
+{
+  "expected_valid": true,
+  "execution_mode": "parallel",
+  "outcome": "success",
+  "tasks": [
+    {
+      "id": "backend",
+      "objective": "Implement the backend endpoint.",
+      "role": "full-stack-engineer",
+      "mode": "write",
+      "required": true,
+      "depends_on": [],
+      "ownership": ["src/backend"],
+      "wave": 0,
+      "status": "completed",
+      "status_history": ["pending", "running", "completed"]
+    },
+    {
+      "id": "frontend",
+      "objective": "Implement the frontend view.",
+      "role": "full-stack-engineer",
+      "mode": "write",
+      "required": true,
+      "depends_on": [],
+      "ownership": ["src/frontend"],
+      "wave": 0,
+      "status": "completed",
+      "status_history": ["pending", "running", "completed"]
+    },
+    {
+      "id": "qa",
+      "objective": "Verify the integrated behavior.",
+      "role": "qa",
+      "mode": "verify",
+      "required": true,
+      "depends_on": ["backend", "frontend"],
+      "ownership": [],
+      "wave": 1,
+      "status": "completed",
+      "status_history": ["pending", "running", "completed"]
+    }
+  ]
+}
+

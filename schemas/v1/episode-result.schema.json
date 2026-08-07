@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "episode-result.schema.json",
+  "title": "EpisodeResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "episode_id", "host", "role", "status", "visible_output", "events", "duration_ms", "exit_code", "error", "metadata"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "episode_id": {"type": "string", "minLength": 1},
+    "host": {"enum": ["codex", "claude"]},
+    "role": {"enum": ["manager", "executor", "auditor"]},
+    "status": {"enum": ["done", "error", "timeout", "cancelled", "permission_required"]},
+    "visible_output": {"type": "string"},
+    "events": {"type": "array", "items": {"type": "object"}},
+    "duration_ms": {"type": "integer", "minimum": 0},
+    "exit_code": {"type": ["integer", "null"]},
+    "error": {"type": ["string", "null"]},
+    "metadata": {"type": "object"}
+  }
+}

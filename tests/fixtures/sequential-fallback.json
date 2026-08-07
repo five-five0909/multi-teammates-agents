@@ -1,0 +1,44 @@
+{
+  "expected_valid": true,
+  "execution_mode": "sequential",
+  "outcome": "partial",
+  "tasks": [
+    {
+      "id": "research",
+      "objective": "Map the change.",
+      "role": "researcher",
+      "mode": "read",
+      "required": true,
+      "depends_on": [],
+      "ownership": [],
+      "wave": 0,
+      "status": "completed",
+      "status_history": ["pending", "running", "completed"]
+    },
+    {
+      "id": "implementation",
+      "objective": "Implement the change.",
+      "role": "full-stack-engineer",
+      "mode": "write",
+      "required": true,
+      "depends_on": ["research"],
+      "ownership": ["src"],
+      "wave": 1,
+      "status": "failed",
+      "status_history": ["pending", "running", "failed"]
+    },
+    {
+      "id": "qa",
+      "objective": "Verify the result.",
+      "role": "qa",
+      "mode": "verify",
+      "required": true,
+      "depends_on": ["implementation"],
+      "ownership": [],
+      "wave": 2,
+      "status": "blocked",
+      "status_history": ["pending", "blocked"]
+    }
+  ]
+}
+

@@ -1,0 +1,31 @@
+{
+  "expected_valid": true,
+  "execution_mode": "parallel",
+  "outcome": "blocked",
+  "tasks": [
+    {
+      "id": "research",
+      "objective": "Find the owning module.",
+      "role": "researcher",
+      "mode": "read",
+      "required": true,
+      "depends_on": [],
+      "ownership": [],
+      "wave": 0,
+      "status": "failed",
+      "status_history": ["pending", "running", "failed"]
+    },
+    {
+      "id": "implementation",
+      "objective": "Implement the discovered change.",
+      "role": "full-stack-engineer",
+      "mode": "write",
+      "required": true,
+      "depends_on": ["research"],
+      "ownership": ["src"],
+      "wave": 1,
+      "status": "blocked",
+      "status_history": ["pending", "blocked"]
+    }
+  ]
+}

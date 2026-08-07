@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "expert-team": {
+      "command": "python",
+      "args": [
+        "-c",
+        "import os,runpy; root=os.environ.get('PLUGIN_ROOT') or os.environ.get('CLAUDE_PLUGIN_ROOT'); root or (_ for _ in ()).throw(RuntimeError('plugin root is unavailable')); runpy.run_path(os.path.join(root,'scripts','expert_team_mcp.py'),run_name='__main__')"
+      ]
+    }
+  }
+}

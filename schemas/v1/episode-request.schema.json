@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "episode-request.schema.json",
+  "title": "EpisodeRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "episode_id", "run_id", "round_index", "role", "profile", "prompt", "workspace", "timeout_seconds", "max_output_chars", "permission_posture", "read_only", "work_item_id"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "episode_id": {"type": "string", "minLength": 1},
+    "run_id": {"type": "string", "minLength": 1},
+    "round_index": {"type": "integer", "minimum": 1},
+    "role": {"enum": ["manager", "executor", "auditor"]},
+    "profile": {"type": "string", "minLength": 1},
+    "prompt": {"type": "string", "minLength": 1},
+    "workspace": {"type": "string", "minLength": 1},
+    "model": {"type": ["string", "null"]},
+    "timeout_seconds": {"type": "integer", "minimum": 1},
+    "max_output_chars": {"type": "integer", "minimum": 1},
+    "permission_posture": {"type": "string", "minLength": 1},
+    "read_only": {"type": "boolean"},
+    "work_item_id": {"type": ["string", "null"]}
+  }
+}

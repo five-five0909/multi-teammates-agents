@@ -1,0 +1,32 @@
+{
+  "expected_valid": false,
+  "execution_mode": "parallel",
+  "outcome": "success",
+  "tasks": [
+    {
+      "id": "api",
+      "objective": "Change the API package.",
+      "role": "full-stack-engineer",
+      "mode": "write",
+      "required": true,
+      "depends_on": [],
+      "ownership": ["src/api"],
+      "wave": 0,
+      "status": "completed",
+      "status_history": ["pending", "running", "completed"]
+    },
+    {
+      "id": "api-route",
+      "objective": "Change one route in the API package.",
+      "role": "full-stack-engineer",
+      "mode": "write",
+      "required": true,
+      "depends_on": [],
+      "ownership": ["src/api/routes/users.py"],
+      "wave": 0,
+      "status": "completed",
+      "status_history": ["pending", "running", "completed"]
+    }
+  ]
+}
+
