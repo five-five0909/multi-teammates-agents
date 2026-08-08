@@ -144,3 +144,36 @@ Codex/Claude 配置。
 ### Next Steps
 
 - None - task complete
+
+
+## Session 4: 补充长任务执行顺序、状态跟随与子代理协作文档
+
+**Date**: 2026-08-08
+**Task**: 补充长任务执行顺序、状态跟随与子代理协作文档
+**Branch**: `main`
+
+### Summary
+
+在 README.md 和 README_zh.md 加入 Mermaid 长任务执行顺序图、事件重放与 state.json 状态跟随说明、verified_progress/abandoned episode 语义，以及 Lead/Researcher/Executor/Auditor/Human gate 的协作边界。通过 93 项单测、mypy、compileall、契约 fixture、Claude agent 渲染、插件校验和 diff 检查；未修改已有运行时代码或 spec。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f768798` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

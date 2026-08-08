@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 3
+- **Total Sessions**: 4
 - **Last Active**: 2026-08-08
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~146 | Active |
+| `journal-1.md` | ~179 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 4 | 2026-08-08 | 补充长任务执行顺序、状态跟随与子代理协作文档 | `f768798` | `main` |
 | 3 | 2026-08-08 | 强制融合 Expert Team 入口握手 | `22f7c66` | `main` |
 | 2 | 2026-08-08 | 移植 Expert Team 子代理委派纪律 | `35203a7` | `main` |
 | 1 | 2026-08-08 | Implement Expert Team CLI narrative console | `880fb1b`, `09a99c9` | `main` |
