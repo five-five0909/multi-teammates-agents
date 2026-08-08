@@ -20,6 +20,12 @@ validator = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(validator)
 
 
+def _base_package_version(value: str) -> str:
+    """Return the release version without a host-specific cachebuster."""
+
+    return value.split("+", 1)[0]
+
+
 class PluginContractTests(unittest.TestCase):
     def test_manifest_matches_plugin_root(self) -> None:
         manifest = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
@@ -39,7 +45,8 @@ class PluginContractTests(unittest.TestCase):
         codex = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
         claude = json.loads((ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
         self.assertEqual(codex["name"], claude["name"])
-        self.assertEqual(codex["version"], claude["version"])
+        self.assertRegex(codex["version"], r"^\d+\.\d+\.\d+\+codex\.[a-z0-9-]+$")
+        self.assertEqual(_base_package_version(codex["version"]), claude["version"])
         self.assertEqual("./skills/", claude["skills"])
         self.assertNotIn("agents", claude)
         self.assertNotIn("mcpServers", claude)
@@ -113,6 +120,8 @@ class PluginContractTests(unittest.TestCase):
 
     def test_shared_mcp_launcher_starts_from_both_host_environments(self) -> None:
         config = json.loads((ROOT / ".mcp.json").read_text(encoding="utf-8"))["mcpServers"]["expert-team"]
+        codex_manifest = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
+        expected_server_version = _base_package_version(codex_manifest["version"])
         request = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}) + "\n"
         for variable in ("PLUGIN_ROOT", "CLAUDE_PLUGIN_ROOT"):
             with self.subTest(variable=variable):
@@ -123,7 +132,7 @@ class PluginContractTests(unittest.TestCase):
                 completed = subprocess.run([config["command"], *config["args"]], input=request, capture_output=True, text=True, env=environment, timeout=10, check=True)
                 response = json.loads(completed.stdout.strip())
                 self.assertEqual("expert-team", response["result"]["serverInfo"]["name"])
-                self.assertEqual("0.3.3", response["result"]["serverInfo"]["version"])
+                self.assertEqual(expected_server_version, response["result"]["serverInfo"]["version"])
         environment = os.environ.copy()
         environment.pop("PLUGIN_ROOT", None)
         environment.pop("CLAUDE_PLUGIN_ROOT", None)
