@@ -11,7 +11,13 @@
   unconditional import therefore failed even when `python3` was invoked.
 - With the new Node bridge, the same `initialize` request returns server
   `expert-team`, version `0.3.1`, on both Windows and Ubuntu. The full 78-test
-  suite passes on both interpreters.
+  baseline suite passes on both interpreters; the portability regression adds
+  one test, for 79 current tests total.
+- A manual CC Switch entry that embeds one developer's absolute
+  `PLUGIN_ROOT` is not portable. The repository generator now resolves the
+  current checkout and emits a direct launcher-path entry or a `ccswitch://`
+  import link; its default target is Claude so Codex config is not changed by
+  accident.
 
 ## Host packaging facts
 
@@ -37,6 +43,9 @@
    library. License and source attribution are in `THIRD_PARTY_NOTICES.md`.
 3. Bump both plugin manifests and the MCP server version to `0.3.1` so plugin
    caches cannot silently keep the old launcher.
+4. Keep CC Switch setup install-time generated: `scripts/expert_team_ccswitch_config.js`
+   never writes user config and never commits a drive letter, home directory,
+   plugin cache path, or shell-specific command quoting.
 
 ## Deliberately not done
 

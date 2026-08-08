@@ -313,65 +313,54 @@ separate project server, not the installed plugin server.
 When developing from a checkout, run `claude plugin marketplace add ./` from the
 repository root and use `--scope local` or `--scope project` as appropriate.
 
-### CC Switch manual MCP entry (Windows and Ubuntu)
+### CC Switch manual MCP entry (portable Windows / Ubuntu setup)
 
-If the plugin host did not register the bundled server, add a custom **stdio**
-server in CC Switch → **MCP** → **+**. Use `expert-team` as the server ID,
-`node` as the command, and paste this one argument exactly:
+Do not copy a hard-coded drive letter, username, or Claude plugin cache path
+from another machine. The repository includes a dependency-free generator that
+locates its own checkout and emits a CC Switch entry with the correct local
+launcher path. It works from a Git clone or an extracted ZIP.
 
-```text
--e
-var path=require('path'); var root=process.env.PLUGIN_ROOT; if (!root) throw new Error('PLUGIN_ROOT is required'); require(path.join(root,'scripts','expert_team_mcp_launcher.js'));
+Windows PowerShell:
+
+```powershell
+git clone https://github.com/five-five0909/multi-teammates-agents.git "$env:USERPROFILE\src\multi-teammates-agents"
+Set-Location "$env:USERPROFILE\src\multi-teammates-agents"
+node scripts/expert_team_ccswitch_config.js --json
+node scripts/expert_team_ccswitch_config.js --server-json
+node scripts/expert_team_ccswitch_config.js --deeplink --apps claude
 ```
 
-The only platform-specific value is `PLUGIN_ROOT`. It must be an absolute path
-to a checkout or installed plugin directory that contains
-`scripts/expert_team_mcp_launcher.js`:
+Ubuntu (including a native Ubuntu install):
 
-Windows (JSON escaping requires doubled backslashes):
-
-```json
-{
-  "mcpServers": {
-    "expert-team": {
-      "command": "node",
-      "args": [
-        "-e",
-        "var path=require('path'); var root=process.env.PLUGIN_ROOT; if (!root) throw new Error('PLUGIN_ROOT is required'); require(path.join(root,'scripts','expert_team_mcp_launcher.js'));"
-      ],
-      "env": {
-        "PLUGIN_ROOT": "C:\\Users\\<用户名>\\src\\multi-teammates-agents"
-      }
-    }
-  }
-}
+```bash
+git clone https://github.com/five-five0909/multi-teammates-agents.git "$HOME/src/multi-teammates-agents"
+cd "$HOME/src/multi-teammates-agents"
+node scripts/expert_team_ccswitch_config.js --json
+node scripts/expert_team_ccswitch_config.js --server-json
+node scripts/expert_team_ccswitch_config.js --deeplink --apps claude
 ```
 
-Ubuntu:
+For WSL, run the generator inside WSL and use the Linux path visible to WSL;
+do not paste a Windows `C:\...` path into a Linux CC Switch/CLI process. The
+`--server-json` output can be copied into the custom stdio form (server ID
+`expert-team`, using the generated `command` and `args` values). `--json` keeps
+the full `mcpServers` wrapper for a config file, while
+`--deeplink` prints a one-click `ccswitch://` import link. The generator records
+the Node executable used on the current machine so GUI-launched CC Switch does
+not depend on an incomplete shell `PATH`. The default `--apps claude` avoids
+changing Codex; add `--apps claude,codex` only when Codex synchronization is
+explicitly wanted.
 
-```json
-{
-  "mcpServers": {
-    "expert-team": {
-      "command": "node",
-      "args": [
-        "-e",
-        "var path=require('path'); var root=process.env.PLUGIN_ROOT; if (!root) throw new Error('PLUGIN_ROOT is required'); require(path.join(root,'scripts','expert_team_mcp_launcher.js'));"
-      ],
-      "env": {
-        "PLUGIN_ROOT": "/home/<用户名>/src/multi-teammates-agents"
-      }
-    }
-  }
-}
-```
-
-For a stable manual entry, clone the repository to the path used above instead
-of guessing a Claude plugin cache path. The launcher then selects the available
-Python command on each OS. Restart the target CLI after CC Switch synchronizes
-the entry and verify with `claude mcp list` or `codex mcp list`. Do not enable a
-second manually-added `expert-team` entry while the installed plugin's own
-`expert-team` server is already active.
+The generated server launches
+`scripts/expert_team_mcp_launcher.js` directly, so no `PLUGIN_ROOT` value or
+shell-specific quoting is needed. The launcher selects `python`/`py -3` on
+Windows and `python3`/`python` on Ubuntu. Restart the target CLI after CC Switch
+synchronizes the entry and verify with `claude mcp list` or `codex mcp list`.
+The generated JSON/link is intentionally local to the machine where it was
+created; after moving the checkout to another machine, rerun the generator
+there instead of reusing the old absolute path.
+Do not enable a second manually-added `expert-team` entry while the installed
+plugin's own `expert-team` server is already active.
 
 ### Verify and remove
 

@@ -283,64 +283,47 @@ claude mcp list
 从本地 checkout 开发时，在仓库根目录执行 `claude plugin marketplace add ./`，再按需
 使用 `--scope local` 或 `--scope project`。
 
-### CC Switch 手动添加 MCP（Windows 和 Ubuntu）
+### CC Switch 手动添加 MCP（可移植的 Windows / Ubuntu 方案）
 
-如果宿主插件没有自动注册内置服务器，在 CC Switch → **MCP** → **+** 中选择自定义
-服务器，传输类型选择 **stdio**。服务器 ID 填 `expert-team`，命令填 `node`，参数
-按下面这样填写为两个参数（第二个参数整体是一行）：
+不要把某台机器的盘符、用户名或 Claude 插件缓存路径复制给别人。仓库自带一个无第三方
+依赖的生成器：它会从当前下载目录自动定位插件根目录，并生成当前机器可用的 CC Switch
+配置。Git clone 和解压 ZIP 都可以使用。
 
-```text
--e
-var path=require('path'); var root=process.env.PLUGIN_ROOT; if (!root) throw new Error('PLUGIN_ROOT is required'); require(path.join(root,'scripts','expert_team_mcp_launcher.js'));
+Windows PowerShell：
+
+```powershell
+git clone https://github.com/five-five0909/multi-teammates-agents.git "$env:USERPROFILE\src\multi-teammates-agents"
+Set-Location "$env:USERPROFILE\src\multi-teammates-agents"
+node scripts/expert_team_ccswitch_config.js --json
+node scripts/expert_team_ccswitch_config.js --server-json
+node scripts/expert_team_ccswitch_config.js --deeplink --apps claude
 ```
 
-两套系统唯一不同的是 `PLUGIN_ROOT`。它必须是一个**绝对路径**，并且目录中确实存在
-`scripts/expert_team_mcp_launcher.js`。不要直接猜 `~/.claude/plugins/expert-team`；插件
-缓存目录会因安装方式和版本变化。
+Ubuntu（包括原生 Ubuntu）：
 
-Windows（JSON 中的反斜杠必须写成两个）：
-
-```json
-{
-  "mcpServers": {
-    "expert-team": {
-      "command": "node",
-      "args": [
-        "-e",
-        "var path=require('path'); var root=process.env.PLUGIN_ROOT; if (!root) throw new Error('PLUGIN_ROOT is required'); require(path.join(root,'scripts','expert_team_mcp_launcher.js'));"
-      ],
-      "env": {
-        "PLUGIN_ROOT": "C:\\Users\\<用户名>\\src\\multi-teammates-agents"
-      }
-    }
-  }
-}
+```bash
+git clone https://github.com/five-five0909/multi-teammates-agents.git "$HOME/src/multi-teammates-agents"
+cd "$HOME/src/multi-teammates-agents"
+node scripts/expert_team_ccswitch_config.js --json
+node scripts/expert_team_ccswitch_config.js --server-json
+node scripts/expert_team_ccswitch_config.js --deeplink --apps claude
 ```
 
-Ubuntu：
+如果使用 WSL，必须在 WSL 内运行生成器，并使用 WSL 能看到的 Linux 路径；不要把 Windows
+的 `C:\...` 路径粘到 Linux 的 CC Switch/CLI 进程里。`--json` 输出可以粘贴到 CC Switch
+的自定义 stdio 表单（服务器 ID 填 `expert-team`，使用生成的 `command` 和 `args`）。
+`--json` 保留完整的 `mcpServers` 外层结构；`--deeplink` 会输出一个可以直接交给
+CC Switch 导入的 `ccswitch://` 链接。JSON 中的
+`command` 是生成器当前机器上的真实 Node 可执行文件，因此 GUI 启动 CC Switch 时不依赖
+不完整的 shell `PATH`。默认的 `--apps claude` 不会同步 Codex；只有明确需要时才使用
+`--apps claude,codex`。
 
-```json
-{
-  "mcpServers": {
-    "expert-team": {
-      "command": "node",
-      "args": [
-        "-e",
-        "var path=require('path'); var root=process.env.PLUGIN_ROOT; if (!root) throw new Error('PLUGIN_ROOT is required'); require(path.join(root,'scripts','expert_team_mcp_launcher.js'));"
-      ],
-      "env": {
-        "PLUGIN_ROOT": "/home/<用户名>/src/multi-teammates-agents"
-      }
-    }
-  }
-}
-```
-
-建议先把仓库克隆到上面这样的固定目录，再把实际用户名和路径替换进去。启动桥会在
-Windows 依次尝试 `python`、`py -3`、`python3`，在 Ubuntu 依次尝试 `python3`、`python`，
-因此 Ubuntu 不需要额外创建 `python` 别名。CC Switch 同步后重启 Claude/Codex，再用
-`claude mcp list` 或 `codex mcp list` 检查。若已启用插件自动提供的同名 `expert-team`，
-不要再开启第二条同名手动服务器。
+生成的服务器会直接启动 `scripts/expert_team_mcp_launcher.js`，不再需要填写
+`PLUGIN_ROOT`，也不依赖 shell 的引号规则。启动桥会在 Windows 依次尝试
+`python`、`py -3`、`python3`，在 Ubuntu 依次尝试 `python3`、`python`。CC Switch 同步后
+重启 Claude/Codex，再用 `claude mcp list` 或 `codex mcp list` 检查。若已启用插件自动提供
+的同名 `expert-team`，不要再开启第二条同名手动服务器。生成的 JSON/链接故意只针对生成
+它的这台机器；把仓库移到另一台机器后，应在新机器重新运行生成器，不要继续复用旧的绝对路径。
 
 ### 验证与移除
 

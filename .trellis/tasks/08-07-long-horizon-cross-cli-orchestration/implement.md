@@ -89,6 +89,8 @@ skills-only operation.
 - [x] Document the implemented explicit lightweight/managed entry, automatic qualification,
   status, resume, answer, cancel, and failure semantics on both hosts.
 - [x] Document Trellis storage, retention, recovery, privacy, and cleanup.
+- [x] Add a portable CC Switch configuration generator and document Windows,
+  Ubuntu, and WSL setup without user-specific absolute paths.
 - [x] Document the LongHorizon-Harness adaptation and attribution.
 - [x] Preserve current `$expert-team` scenarios as compatibility tests.
 - [x] Keep marketplace mutation out of this task because no personal/team

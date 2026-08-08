@@ -97,6 +97,13 @@ cross-platform bridge in `scripts/expert_team_mcp_launcher.js`: it selects
 `python`/`py -3`
 on Windows and `python3`/`python` on POSIX systems, forwards both plugin-root
 environment variables, and never edits a user's Codex or Claude configuration.
+The repository also ships `scripts/expert_team_ccswitch_config.js` for the
+manual CC Switch fallback. It must resolve the checkout from its own location,
+emit a direct launcher-path JSON entry and an optional `ccswitch://` import
+link, and never commit or assume a user's drive letter, home directory, plugin
+cache path, or shell quoting convention. Its default target is Claude only;
+Codex synchronization must be an explicit `--apps claude,codex` choice so a
+portable setup does not unexpectedly modify `~/.codex/config.toml`.
 The Python runtime must remain importable on Python 3.10, including when a
 project `.expert-team/config.toml` is present; the package carries its small
 MIT-licensed TOML backport instead of installing a user dependency.
@@ -261,6 +268,9 @@ snapshots are atomic, and replay must reproduce the accepted state.
 - Unit tests assert manifest name/component integrity and skill references.
 - MCP package tests launch the bundled stdio server through both plugin-root
   environment names and cover the Windows/POSIX interpreter selection path.
+- CCSwitch generator tests run outside the checkout working directory, verify
+  that the emitted launcher path points at the current checkout, and validate
+  the generated `ccswitch://` link without a user-specific path fixture.
 - Fixtures assert parallel reads, disjoint and overlapping writes, dependency
   failure, cycle rejection, and sequential fallback.
 - Tests assert the six default Qoder-derived roles, workflow shapes, domain

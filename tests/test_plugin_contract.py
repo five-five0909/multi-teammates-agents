@@ -4,7 +4,9 @@ import importlib.util
 import json
 import os
 import subprocess
+import tempfile
 import unittest
+from urllib.parse import parse_qs, urlparse
 from pathlib import Path
 
 
@@ -45,6 +47,59 @@ class PluginContractTests(unittest.TestCase):
         self.assertNotIn("shell", config["mcpServers"]["expert-team"])
         self.assertTrue((ROOT / "scripts" / "expert_team_mcp.py").is_file())
         self.assertTrue((ROOT / "scripts" / "expert_team_mcp_launcher.js").is_file())
+        self.assertTrue((ROOT / "scripts" / "expert_team_ccswitch_config.js").is_file())
+
+    def test_ccswitch_config_is_generated_from_the_current_checkout(self) -> None:
+        generator = ROOT / "scripts" / "expert_team_ccswitch_config.js"
+        with tempfile.TemporaryDirectory() as cwd:
+            completed = subprocess.run(
+                ["node", str(generator), "--json"],
+                cwd=cwd,
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=10,
+            )
+        config = json.loads(completed.stdout)
+        server = config["mcpServers"]["expert-team"]
+        self.assertTrue(Path(server["command"]).is_file(), server["command"])
+        self.assertEqual(str(ROOT / "scripts" / "expert_team_mcp_launcher.js"), server["args"][0])
+        self.assertNotIn("PLUGIN_ROOT", json.dumps(server))
+        request = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}) + "\n"
+        handshake = subprocess.run(
+            [server["command"], *server["args"]],
+            input=request,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=10,
+        )
+        self.assertEqual("expert-team", json.loads(handshake.stdout)["result"]["serverInfo"]["name"])
+
+        server_only = subprocess.run(
+            ["node", str(generator), "--server-json"],
+            cwd=ROOT.parent,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=10,
+        )
+        self.assertEqual(server, json.loads(server_only.stdout))
+
+        deep_link = subprocess.run(
+            ["node", str(generator), "--deeplink", "--apps", "claude,codex"],
+            cwd=ROOT.parent,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=10,
+        ).stdout.strip()
+        parsed = urlparse(deep_link)
+        self.assertEqual("ccswitch:", parsed.scheme + ":")
+        query = parse_qs(parsed.query)
+        self.assertEqual(["mcp"], query["resource"])
+        self.assertEqual(["claude,codex"], query["apps"])
+        self.assertEqual(server["command"], json.loads(query["config"][0])["command"])
 
     def test_shared_mcp_launcher_starts_from_both_host_environments(self) -> None:
         config = json.loads((ROOT / ".mcp.json").read_text(encoding="utf-8"))["mcpServers"]["expert-team"]
