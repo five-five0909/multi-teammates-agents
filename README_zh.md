@@ -283,6 +283,65 @@ claude mcp list
 从本地 checkout 开发时，在仓库根目录执行 `claude plugin marketplace add ./`，再按需
 使用 `--scope local` 或 `--scope project`。
 
+### CC Switch 手动添加 MCP（Windows 和 Ubuntu）
+
+如果宿主插件没有自动注册内置服务器，在 CC Switch → **MCP** → **+** 中选择自定义
+服务器，传输类型选择 **stdio**。服务器 ID 填 `expert-team`，命令填 `node`，参数
+按下面这样填写为两个参数（第二个参数整体是一行）：
+
+```text
+-e
+var path=require('path'); var root=process.env.PLUGIN_ROOT; if (!root) throw new Error('PLUGIN_ROOT is required'); require(path.join(root,'scripts','expert_team_mcp_launcher.js'));
+```
+
+两套系统唯一不同的是 `PLUGIN_ROOT`。它必须是一个**绝对路径**，并且目录中确实存在
+`scripts/expert_team_mcp_launcher.js`。不要直接猜 `~/.claude/plugins/expert-team`；插件
+缓存目录会因安装方式和版本变化。
+
+Windows（JSON 中的反斜杠必须写成两个）：
+
+```json
+{
+  "mcpServers": {
+    "expert-team": {
+      "command": "node",
+      "args": [
+        "-e",
+        "var path=require('path'); var root=process.env.PLUGIN_ROOT; if (!root) throw new Error('PLUGIN_ROOT is required'); require(path.join(root,'scripts','expert_team_mcp_launcher.js'));"
+      ],
+      "env": {
+        "PLUGIN_ROOT": "C:\\Users\\<用户名>\\src\\multi-teammates-agents"
+      }
+    }
+  }
+}
+```
+
+Ubuntu：
+
+```json
+{
+  "mcpServers": {
+    "expert-team": {
+      "command": "node",
+      "args": [
+        "-e",
+        "var path=require('path'); var root=process.env.PLUGIN_ROOT; if (!root) throw new Error('PLUGIN_ROOT is required'); require(path.join(root,'scripts','expert_team_mcp_launcher.js'));"
+      ],
+      "env": {
+        "PLUGIN_ROOT": "/home/<用户名>/src/multi-teammates-agents"
+      }
+    }
+  }
+}
+```
+
+建议先把仓库克隆到上面这样的固定目录，再把实际用户名和路径替换进去。启动桥会在
+Windows 依次尝试 `python`、`py -3`、`python3`，在 Ubuntu 依次尝试 `python3`、`python`，
+因此 Ubuntu 不需要额外创建 `python` 别名。CC Switch 同步后重启 Claude/Codex，再用
+`claude mcp list` 或 `codex mcp list` 检查。若已启用插件自动提供的同名 `expert-team`，
+不要再开启第二条同名手动服务器。
+
 ### 验证与移除
 
 安装后，执行宿主探针和插件校验：

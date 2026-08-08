@@ -313,6 +313,66 @@ separate project server, not the installed plugin server.
 When developing from a checkout, run `claude plugin marketplace add ./` from the
 repository root and use `--scope local` or `--scope project` as appropriate.
 
+### CC Switch manual MCP entry (Windows and Ubuntu)
+
+If the plugin host did not register the bundled server, add a custom **stdio**
+server in CC Switch → **MCP** → **+**. Use `expert-team` as the server ID,
+`node` as the command, and paste this one argument exactly:
+
+```text
+-e
+var path=require('path'); var root=process.env.PLUGIN_ROOT; if (!root) throw new Error('PLUGIN_ROOT is required'); require(path.join(root,'scripts','expert_team_mcp_launcher.js'));
+```
+
+The only platform-specific value is `PLUGIN_ROOT`. It must be an absolute path
+to a checkout or installed plugin directory that contains
+`scripts/expert_team_mcp_launcher.js`:
+
+Windows (JSON escaping requires doubled backslashes):
+
+```json
+{
+  "mcpServers": {
+    "expert-team": {
+      "command": "node",
+      "args": [
+        "-e",
+        "var path=require('path'); var root=process.env.PLUGIN_ROOT; if (!root) throw new Error('PLUGIN_ROOT is required'); require(path.join(root,'scripts','expert_team_mcp_launcher.js'));"
+      ],
+      "env": {
+        "PLUGIN_ROOT": "C:\\Users\\<用户名>\\src\\multi-teammates-agents"
+      }
+    }
+  }
+}
+```
+
+Ubuntu:
+
+```json
+{
+  "mcpServers": {
+    "expert-team": {
+      "command": "node",
+      "args": [
+        "-e",
+        "var path=require('path'); var root=process.env.PLUGIN_ROOT; if (!root) throw new Error('PLUGIN_ROOT is required'); require(path.join(root,'scripts','expert_team_mcp_launcher.js'));"
+      ],
+      "env": {
+        "PLUGIN_ROOT": "/home/<用户名>/src/multi-teammates-agents"
+      }
+    }
+  }
+}
+```
+
+For a stable manual entry, clone the repository to the path used above instead
+of guessing a Claude plugin cache path. The launcher then selects the available
+Python command on each OS. Restart the target CLI after CC Switch synchronizes
+the entry and verify with `claude mcp list` or `codex mcp list`. Do not enable a
+second manually-added `expert-team` entry while the installed plugin's own
+`expert-team` server is already active.
+
 ### Verify and remove
 
 After installation, verify both host probes and the plugin contract:
