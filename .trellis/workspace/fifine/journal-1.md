@@ -71,6 +71,10 @@ Codex/Claude 配置。
   `expert-team` / `0.3.1`。
 - [OK] Trellis research、plugin contract、README 中英文和第三方许可记录已同步。
 
+### Git Commit
+
+- `6557318` — `fix: make bundled MCP launcher cross-platform` (pushed to `origin/main`)
+
 ### Status
 
 [OK] **修复完成；父任务仍保持 in_progress，跨宿主模型 E2E 余项未关闭**
