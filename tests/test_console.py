@@ -130,8 +130,9 @@ class ConsoleTests(unittest.TestCase):
                 "schema_version": 1,
                 "gate_type": "completion",
                 "decision": "approve",
-                "actor": "test",
+                "actor": "host",
                 "timestamp": "2026-08-08T00:00:00Z",
+                "provenance": {"schema_version": 1, "gate_type": "completion", "actor": "host", "source": "host_single_select", "verification": "host_reported", "timestamp": "2026-08-08T00:00:00Z", "source_event_id": "evt-console"},
             },
         )
 

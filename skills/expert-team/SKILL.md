@@ -21,26 +21,32 @@ expert-team-compliant run.
    `expert_team_prepare` before editing code or changing Trellis state. Follow
    its returned `next_action`; in Codex inline mode this normally records
    `main-session-sequential`.
-2. Call `expert_team_qualify` for every invocation, including lightweight
-   requests. Qualification is side-effect-free unless an explicit managed
-   `auto_start=true` call supplies an active task, strict contract, and work
-   item graph.
-3. Restate the requested outcome, constraints, and completion criteria.
-4. Read [workflow-routing.md](references/workflow-routing.md). Select a domain
+2. If the assessment returns `selection_required`, render exactly one
+   attributable single-select with `expert_team_select_mode`. Never choose
+   lightweight from an AI-supplied `explicit` hint or from a missing user
+   response. A policy-locked managed assessment may proceed without a user
+   downgrade, but still needs an active Trellis task for implementation.
+3. Call `expert_team_qualify` for every invocation, including lightweight
+   requests. It must receive the invocation ID and strict `TaskContract` /
+   `WorkItem[]` graph. Qualification is side-effect-free unless an explicit
+   managed `auto_start=true` call supplies an active task and uses the returned
+   workspace-bound receipt.
+4. Restate the requested outcome, constraints, and completion criteria.
+5. Read [workflow-routing.md](references/workflow-routing.md). Select a domain
    lens and the lightest valid workflow shape. Do not form a fake team when one
    specialist is sufficient.
-5. Read [agent-registry.md](references/agent-registry.md) and its
+6. Read [agent-registry.md](references/agent-registry.md) and its
    `agent-registry.json`, select the smallest
    applicable set, then read each selected profile under `references/agents/`.
    Coordinator profiles are lead playbooks: apply them in the current lead and
    never dispatch a nested orchestrator.
-6. Detect `.trellis/`. If present, read
+7. Detect `.trellis/`. If present, read
    [trellis-integration.md](references/trellis-integration.md) before changing
    task state or project files.
-7. Load project role overrides from `.expert-team/roles/` when that directory
+8. Load project role overrides from `.expert-team/roles/` when that directory
    exists. Then read [expert-catalog.md](references/expert-catalog.md) and merge
    matching overrides by role name.
-8. Select an execution tier and keep it consistent with the qualification
+9. Select an execution tier and keep it consistent with the qualification
    response:
    - Use `lightweight` for bounded work that fits one session and does not need
      durable audit or human gates.
@@ -49,6 +55,13 @@ expert-team-compliant run.
      [managed-mode.md](references/managed-mode.md) before invoking MCP tools.
    - Read [run-ledger-template.md](references/run-ledger-template.md) only for
      legacy lightweight persistence when managed mode is unavailable.
+
+The server rejects `expert_team_start` without the qualification receipt or
+with a receipt bound to another workspace/task/contract. If the MCP process
+comes from an installed cache without `EXPERT_TEAM_WORKSPACE` (or the host's
+equivalent), stop with `workspace_unbound` and open a fresh session. Hook
+coverage is reported as `enforced`, `partial`, or `advisory`; never claim a
+host path was blocked when it bypasses hooks.
 
 ## 2. Build the task graph
 

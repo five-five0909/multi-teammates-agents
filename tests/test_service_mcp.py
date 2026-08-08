@@ -48,7 +48,7 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual([], resume["unresolved_work"])
         self.assertNotIn("event_ids", resume)
         self.service.next("example", "run-1", "request_gate", {"gate_type": "completion"})
-        decision = {"schema_version": 1, "gate_type": "completion", "decision": "approve", "actor": "user", "timestamp": "2026-08-07T00:00:00Z"}
+        decision = {"schema_version": 1, "gate_type": "completion", "decision": "approve", "actor": "user", "timestamp": "2026-08-07T00:00:00Z", "provenance": {"schema_version": 1, "gate_type": "completion", "actor": "user", "source": "host_single_select", "verification": "verified", "timestamp": "2026-08-07T00:00:00Z", "source_event_id": "evt-complete"}}
         final = self.service.answer("example", "run-1", decision)
         self.assertEqual("completed", final["state"])
         run_dir = self.task / "runs" / "run-1"
@@ -154,6 +154,7 @@ class ServiceTests(unittest.TestCase):
                 "decision": "approve",
                 "actor": "user",
                 "timestamp": "2026-08-08T00:00:00Z",
+                "provenance": {"schema_version": 1, "gate_type": "completion", "actor": "user", "source": "host_single_select", "verification": "verified", "timestamp": "2026-08-08T00:00:00Z", "source_event_id": "evt-complete"},
             },
         )
         contents = "\n".join(
@@ -241,7 +242,7 @@ class MCPProtocolTests(unittest.TestCase):
             content = response["result"]["structuredContent"]
             self.assertEqual("managed", content["execution_tier"])
             self.assertEqual("managed-supervised", content["execution_mode"])
-            self.assertEqual("qualify_auto_start", content["next_action"])
+            self.assertEqual("build_graph", content["next_action"])
             self.assertFalse(content["requires_task_consent"])
             self.assertTrue(content["managed_runtime_eligible"])
             self.assertEqual("in_progress", content["trellis"]["task_status"])
@@ -256,14 +257,39 @@ class MCPProtocolTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             server = MCPServer(ExpertTeamService(root))
-            response = server.dispatch(
+            prepared = server.dispatch(
                 {
                     "jsonrpc": "2.0",
                     "id": 4,
                     "method": "tools/call",
                     "params": {
+                        "name": "expert_team_prepare",
+                        "arguments": {"request": "Explain one function", "host_mode": "inline", "intent": "analysis", "source_event_id": "evt-qualify"},
+                    },
+                }
+            )
+            assert prepared is not None
+            invocation_id = prepared["result"]["structuredContent"]["invocation_id"]
+            selected = server.dispatch(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 5,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "expert_team_select_mode",
+                        "arguments": {"invocation_id": invocation_id, "selected_tier": "lightweight", "source": "host_single_select", "actor": "user", "verification": "verified", "source_event_id": "evt-qualify"},
+                    },
+                }
+            )
+            assert selected is not None
+            response = server.dispatch(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 6,
+                    "method": "tools/call",
+                    "params": {
                         "name": "expert_team_qualify",
-                        "arguments": {"request": "Explain one function"},
+                        "arguments": {"request": "Explain one function", "invocation_id": invocation_id, "contract": _auto_contract(), "work_items": _auto_items()},
                     },
                 }
             )
@@ -282,15 +308,29 @@ class MCPProtocolTests(unittest.TestCase):
                 encoding="utf-8",
             )
             server = MCPServer(ExpertTeamService(root, developer="tester"))
-            response = server.dispatch(
+            prepared = server.dispatch(
                 {
                     "jsonrpc": "2.0",
                     "id": 5,
                     "method": "tools/call",
                     "params": {
+                        "name": "expert_team_prepare",
+                        "arguments": {"request": "跨会话持续执行这个项目", "task_id": "example", "host_mode": "inline", "intent": "implementation"},
+                    },
+                }
+            )
+            assert prepared is not None
+            invocation_id = prepared["result"]["structuredContent"]["invocation_id"]
+            response = server.dispatch(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 6,
+                    "method": "tools/call",
+                    "params": {
                         "name": "expert_team_qualify",
                         "arguments": {
                             "request": "跨会话持续执行这个项目",
+                            "invocation_id": invocation_id,
                             "auto_start": True,
                             "task_id": "example",
                             "run_id": "run-auto",

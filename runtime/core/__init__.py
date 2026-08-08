@@ -4,6 +4,7 @@ from .contracts import (
     AuditDecision,
     BackendEvent,
     ContractError,
+    DecisionProvenance,
     HumanDecision,
     RoleResult,
     RunEvent,
@@ -17,6 +18,7 @@ __all__ = [
     "AuditDecision",
     "BackendEvent",
     "ContractError",
+    "DecisionProvenance",
     "HumanDecision",
     "RoleResult",
     "RunEvent",
@@ -27,4 +29,3 @@ __all__ = [
     "create_snapshot",
     "replay",
 ]
-

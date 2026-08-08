@@ -11,7 +11,14 @@ observable before any project mutation or managed-run mutation occurs.
    `host_mode=subagent`.
 2. Call `expert_team_prepare` with the original request, intent, task ID (when
    one is active), evidence flags, and host mode. This call is read-only.
-3. Follow the returned `next_action`:
+3. If `decision_state=selection_required`, render the two `mode_options`
+   returned by `prepare` as one host-native single-select. Call
+   `expert_team_select_mode` only after a real host/user event whose
+   `source_event_id` is the one bound by `prepare`; a caller-provided
+   `actor=user` without that event is not attribution. If the policy is locked,
+   do not present a fake downgrade. A host without a selection control must
+   stop at `needs_input`.
+4. Follow the returned `next_action`:
    - `request_task_consent`: ask for Trellis task-creation consent and stop
      before implementation;
    - `activate_trellis_task`: finish and review planning artifacts, then start
@@ -22,14 +29,16 @@ observable before any project mutation or managed-run mutation occurs.
      main session and explicitly report the sequential fallback;
    - `build_graph_then_dispatch`: dispatch only dependency-ready tasks with
      exact ownership and the result contract.
-4. Call `expert_team_qualify` even when the selected tier is lightweight. A
-   lightweight qualification is side-effect-free and proves which tier was
-   selected; it must not be silently skipped.
-5. Before implementation, record a task graph with stable IDs, dependencies,
+5. Call `expert_team_qualify` even when the selected tier is lightweight. Pass
+   the invocation ID plus strict `TaskContract` and `WorkItem[]`; the server
+   re-evaluates graph waves and issues a workspace-bound qualification receipt.
+   A lightweight qualification remains side-effect-free and must not be
+   silently skipped.
+6. Before implementation, record a task graph with stable IDs, dependencies,
    mode, required flag, ownership, evidence, and completion checks. In inline
    mode this graph lives in the lead's session summary; in managed mode it is
    persisted by the runtime.
-6. End with an Expert Result Contract synthesis. Include the prepare result,
+7. End with an Expert Result Contract synthesis. Include the prepare result,
    qualification result, execution mode, completed/failed/blocked/omitted
    tasks, checks, and unresolved risks.
 
@@ -37,6 +46,12 @@ observable before any project mutation or managed-run mutation occurs.
 
 - Do not edit code, create a managed run, or claim an expert-team run before
   the prepare result is available.
+- Do not call `expert_team_qualify` without an invocation ID, strict graph, and
+  (when required) a selected mode; the server must return `needs_input` or a
+  contract error instead of guessing.
+- Do not call `expert_team_start` without the qualification receipt. Receipts
+  are bound to the canonical workspace, task metadata, contract, and graph;
+  changing any of those facts requires a new qualification.
 - Do not claim delegation when `host_mode=inline` returned
   `main-session-sequential`.
 - Do not call lower-level managed lifecycle methods as a substitute for

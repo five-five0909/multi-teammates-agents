@@ -50,6 +50,37 @@ Added terminal-first public narrative rendering for managed Expert Team runs. In
 - None - task complete
 
 
+## Session 6: 强制 Expert Team 模式入口与收据门禁
+
+**Date**: 2026-08-08
+**Task**: `.trellis/tasks/08-08-expert-team-mode-selection-enforcement`
+**Branch**: `main`
+
+### Summary
+
+用户批准 PRD/design/implement 后启动 Trellis 子任务。实现统一 mode policy、
+session/invocation EntryGateRecord、可归因单选、strict graph qualification、
+workspace-bound receipt、幂等 start、DecisionProvenance、MCP compliance projection、
+CLI no-action 和 Codex hook guard。Codex/Claude base version 同步到 0.4.0，Codex
+cachebuster 通过 plugin-creator helper 刷新。当前会话的工具快照仍缺
+`expert_team_prepare`，因此将其记录为 stale/sequential fallback，没有声称入口已运行。
+
+### Testing
+
+- [OK] `python -m unittest discover -s tests -q`（101 tests）
+- [OK] `mypy runtime scripts tests`
+- [OK] `python -m compileall -q hooks runtime scripts tests`
+- [OK] `python scripts/validate_contract.py tests/fixtures`
+- [OK] `python scripts/render_claude_agents.py --check`
+- [OK] skill/plugin validator 与 `git diff --check`
+
+### Status
+
+[IN PROGRESS] checkout 临时可信工作区已完成 prepare → qualify → start → compliance
+smoke；安装缓存 smoke 仍需要重装插件并开启新宿主会话后完成；最后一轮 Trellis
+check/spec review、按所有权 commit 尚未执行。
+
+
 ## Session 3: 跨平台插件 MCP 自动注册修复
 
 **Date**: 2026-08-08

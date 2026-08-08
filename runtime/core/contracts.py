@@ -231,6 +231,91 @@ class AuditDecision:
 
 
 @dataclass(frozen=True)
+class DecisionProvenance:
+    """Attribution for a human or policy decision at a mutable gate.
+
+    The actor string is intentionally not sufficient evidence.  Verified user
+    decisions must point to a host/MCP event that the entry-gate service has
+    observed; legacy payloads are retained only as unverified diagnostics.
+    """
+
+    schema_version: int
+    gate_type: Literal[
+        "mode_selection",
+        "task_consent",
+        "planning_review",
+        "completion",
+        "permission",
+        "cancellation",
+        "ask",
+        "blocked",
+        "repeated_failure",
+        "budget",
+    ]
+    actor: Literal["user", "policy", "host", "legacy"]
+    source: Literal[
+        "policy",
+        "mcp_elicitation",
+        "host_single_select",
+        "user_prompt",
+        "legacy_unverified",
+    ]
+    verification: Literal["verified", "host_reported", "unverified"]
+    timestamp: str
+    source_event_id: str | None = None
+    invocation_id: str | None = None
+
+    @classmethod
+    def from_dict(cls, value: Any) -> "DecisionProvenance":
+        data = _object(value, "DecisionProvenance")
+        required = {"schema_version", "gate_type", "actor", "source", "verification", "timestamp"}
+        optional = {"source_event_id", "invocation_id"}
+        _strict(data, required, optional, "DecisionProvenance")
+        _version(data, "DecisionProvenance")
+        source_event_id = data.get("source_event_id")
+        if source_event_id is not None:
+            source_event_id = _string(source_event_id, "DecisionProvenance.source_event_id")
+        invocation_id = data.get("invocation_id")
+        if invocation_id is not None:
+            invocation_id = _string(invocation_id, "DecisionProvenance.invocation_id")
+        source = _enum(
+            data["source"],
+            {"policy", "mcp_elicitation", "host_single_select", "user_prompt", "legacy_unverified"},
+            "DecisionProvenance.source",
+        )
+        verification = _enum(
+            data["verification"],
+            {"verified", "host_reported", "unverified"},
+            "DecisionProvenance.verification",
+        )
+        actor = _enum(data["actor"], {"user", "policy", "host", "legacy"}, "DecisionProvenance.actor")
+        if verification == "verified" and actor == "user" and not source_event_id:
+            raise ContractError("verified user decisions require source_event_id")
+        if source == "legacy_unverified" and verification == "verified":
+            raise ContractError("legacy decisions cannot be verified")
+        return cls(
+            SCHEMA_VERSION,
+            _enum(
+                data["gate_type"],
+                {
+                    "mode_selection", "task_consent", "planning_review", "completion",
+                    "permission", "cancellation", "ask", "blocked", "repeated_failure", "budget",
+                },
+                "DecisionProvenance.gate_type",
+            ),  # type: ignore[arg-type]
+            actor,  # type: ignore[arg-type]
+            source,  # type: ignore[arg-type]
+            verification,  # type: ignore[arg-type]
+            _string(data["timestamp"], "DecisionProvenance.timestamp"),
+            source_event_id,
+            invocation_id,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return _json_value(asdict(self))
+
+
+@dataclass(frozen=True)
 class HumanDecision:
     schema_version: int
     gate_type: Literal["ask", "blocked", "repeated_failure", "budget", "completion", "permission", "cancellation"]
@@ -238,11 +323,12 @@ class HumanDecision:
     actor: str
     timestamp: str
     instruction: str | None = None
+    provenance: DecisionProvenance | None = None
 
     @classmethod
     def from_dict(cls, value: Any) -> "HumanDecision":
         data = _object(value, "HumanDecision")
-        _strict(data, {"schema_version", "gate_type", "decision", "actor", "timestamp"}, {"instruction"}, "HumanDecision")
+        _strict(data, {"schema_version", "gate_type", "decision", "actor", "timestamp"}, {"instruction", "provenance"}, "HumanDecision")
         _version(data, "HumanDecision")
         instruction = data.get("instruction")
         if instruction is not None:
@@ -250,7 +336,9 @@ class HumanDecision:
         decision = _enum(data["decision"], {"approve", "reject", "continue", "cancel", "instruct"}, "HumanDecision.decision")
         if decision == "instruct" and not instruction:
             raise ContractError("instruct decision requires instruction")
-        return cls(SCHEMA_VERSION, _enum(data["gate_type"], {"ask", "blocked", "repeated_failure", "budget", "completion", "permission", "cancellation"}, "HumanDecision.gate_type"), decision, _string(data["actor"], "HumanDecision.actor"), _string(data["timestamp"], "HumanDecision.timestamp"), instruction)  # type: ignore[arg-type]
+        raw_provenance = data.get("provenance")
+        provenance = DecisionProvenance.from_dict(raw_provenance) if raw_provenance is not None else None
+        return cls(SCHEMA_VERSION, _enum(data["gate_type"], {"ask", "blocked", "repeated_failure", "budget", "completion", "permission", "cancellation"}, "HumanDecision.gate_type"), decision, _string(data["actor"], "HumanDecision.actor"), _string(data["timestamp"], "HumanDecision.timestamp"), instruction, provenance)  # type: ignore[arg-type]
 
     def to_dict(self) -> dict[str, Any]:
         return _json_value(asdict(self))

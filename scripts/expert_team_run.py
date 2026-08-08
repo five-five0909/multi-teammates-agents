@@ -65,12 +65,29 @@ async def _main(arguments: argparse.Namespace) -> int:
         return 0 if any(capability.available for capability in capabilities) else 1
     if not arguments.task_id or not arguments.run_id:
         raise SystemExit("--task-id and --run-id are required unless --probe is used")
-    service = ExpertTeamService(arguments.repo_root.resolve())
+    service = ExpertTeamService(arguments.repo_root.resolve(), workspace_trusted=True)
     if arguments.start:
         if not arguments.contract_file or not arguments.work_items_file:
             raise SystemExit("--start requires --contract-file and --work-items-file")
         contract = _read_json(arguments.contract_file, expected="TaskContract")
         work_items = _read_json(arguments.work_items_file, expected="WorkItem list")
+        if not isinstance(contract, dict) or not isinstance(work_items, list):
+            raise ContractError("--start requires a strict TaskContract object and WorkItem array")
+        prepared = service.prepare(
+            f"CLI managed run: {contract.get('goal', 'managed execution')}",
+            explicit="managed",
+            task_id=arguments.task_id,
+            host_mode="subagent",
+            intent="implementation",
+            invocation_id=arguments.invocation_id,
+        )
+        qualified = service.qualify(
+            f"CLI managed run: {contract.get('goal', 'managed execution')}",
+            invocation_id=prepared["invocation_id"],
+            task_id=arguments.task_id,
+            contract=contract,
+            work_items=work_items,
+        )
         snapshot = service.start(
             arguments.task_id,
             arguments.run_id,
@@ -78,6 +95,8 @@ async def _main(arguments: argparse.Namespace) -> int:
             work_items,
             max_rounds=arguments.max_rounds,
             retry_limit=arguments.retry_limit,
+            receipt=qualified["receipt"],
+            require_receipt=True,
         )
         _emit_summary(service, arguments, snapshot)
         return 0
@@ -101,8 +120,10 @@ async def _main(arguments: argparse.Namespace) -> int:
         _emit_summary(service, arguments, snapshot)
         return 0
 
-    # The historical no-action behavior remains foreground execution.  --run
-    # and --foreground make that intent explicit for scripts and documentation.
+    if not arguments.foreground:
+        raise ContractError("no-action: choose --foreground, --status, --resume, --answer, --cancel, or --start")
+    # Foreground execution is explicit and consumes an already qualified run.
+    service.require_qualified_run(arguments.task_id, arguments.run_id)
     config = load_runtime_config(arguments.repo_root.resolve())
     outcome = await ManagedRunSupervisor(service, config).run(arguments.task_id, arguments.run_id)
     _emit_summary(service, arguments, outcome.snapshot.to_dict(), episode_ids=list(outcome.episodes))
@@ -114,6 +135,7 @@ def main() -> int:
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
     parser.add_argument("--task-id")
     parser.add_argument("--run-id")
+    parser.add_argument("--invocation-id", help="reuse an existing entry-gate invocation for --start")
     parser.add_argument("--probe", action="store_true")
     lifecycle = parser.add_mutually_exclusive_group()
     lifecycle.add_argument("--start", action="store_true", help="create a durable run without launching model episodes")

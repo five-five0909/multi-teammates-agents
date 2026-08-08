@@ -96,12 +96,34 @@ Agent，不创建 managed run 目录。
 Trellis task、是否需要立项同意、执行层级和下一步动作；没有这两份证据，不能
 开始改代码或创建 managed run。
 
+现在模式不是 AI 可以随手填写的参数：只要存在活动 Trellis 任务、多波次依赖、
+持久化审计、人工门禁、恢复/重复运行或高风险操作，策略下限就锁为 `managed`，
+`explicit=lightweight` 不能降级。两种模式都合法时，宿主必须通过
+`expert_team_select_mode` 呈现一次可归因的单选；没有用户选择就停在
+`needs_input`，不会偷偷选 lightweight。只填写 `actor=user`、却没有宿主事件的
+决定会被拒绝。
+
+`prepare` 返回 `mode_options`：`Managed Expert Team（推荐）` 和
+`Lightweight Expert Team`，同时给出 `selection_required`、`needs_input` 和
+`selected_tier`。策略锁定时 lightweight 选项会明确标为不可用；单选控件不可用时
+必须停在 `needs_input`，不能由模型代选。
+
+`qualify` 会签发绑定工作区的收据，包含任务契约、任务图、Trellis 元数据和工作区
+指纹。`expert_team_start` 缺收据、收据过期、跨工作区或内容不一致都会失败；同一
+个 task/run 的重复启动是幂等的。Codex inline 仍可保留 managed 的持久状态，但必须
+报告为 `main-session-sequential`，不能伪装成独立 Auditor。
+
 Codex inline 模式会明确报告 `main-session-sequential`，表示实现和检查由主会话
 顺序完成，不能把它伪装成已经派发了原生 Agent。宿主不支持 MCP 时也必须保留同一
 任务图和结果契约，并明确标记 `sequential-fallback`。
 
 如果宿主已经安装了旧版本插件，必须重新安装/刷新插件并开启新会话，宿主才会重新
 加载新增的 MCP 工具；当前会话不会热加载工具清单。
+
+如果 MCP 从安装缓存启动却没有可信的用户工作区，会以 `workspace_unbound` 失败关闭；
+需要由宿主提供 `EXPERT_TEAM_WORKSPACE`、`CODEX_PROJECT_DIR` 或
+`CLAUDE_PROJECT_DIR`，然后重新开会话。钩子覆盖会明确标成 `enforced`、`partial` 或
+`advisory`，没有覆盖的宿主工具不会被虚报为“已强制拦截”。
 
 对于跨会话、多轮次、证据密集型或需要人工门禁的任务，可以显式选择 `managed`：
 

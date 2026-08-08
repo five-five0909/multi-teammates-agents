@@ -102,6 +102,7 @@ class LocalRunnerLifecycleTests(unittest.TestCase):
                     "decision": "instruct",
                     "actor": "user",
                     "timestamp": "2026-08-08T00:00:00Z",
+                    "provenance": {"schema_version": 1, "gate_type": "ask", "actor": "user", "source": "host_single_select", "verification": "verified", "timestamp": "2026-08-08T00:00:00Z", "source_event_id": "evt-cli"},
                     "instruction": "continue carefully",
                 }
             ),

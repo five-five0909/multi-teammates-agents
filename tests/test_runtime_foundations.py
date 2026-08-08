@@ -105,7 +105,7 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual("lightweight", qualify_execution_tier("Explain this function"))
         self.assertEqual("managed", qualify_execution_tier("跨会话持续执行这个项目"))
         self.assertEqual("managed", qualify_execution_tier("Build", dependency_waves=2))
-        self.assertEqual("lightweight", qualify_execution_tier("Build", explicit="lightweight", durable_audit=True))
+        self.assertEqual("managed", qualify_execution_tier("Build", explicit="lightweight", durable_audit=True))
 
 
 class WorkspaceGuardTests(unittest.TestCase):

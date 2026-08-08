@@ -459,3 +459,97 @@ create_subprocess_exec(resolved or "codex", ...)
   root `.mcp.json` wrapper, while Codex owns an inline server map. This avoids
   relying on cross-host JSON aliases and lets normal plugin installation perform
   registration without mutating user configuration.
+
+## 8. Entry-gate mode enforcement (v2)
+
+### 1. Scope / Trigger
+
+This contract applies to every explicit Expert Team invocation and to all
+MCP/CLI calls that can create or mutate a managed run. The mode policy is owned
+by `runtime/routing.py`; skills and hooks only render or enforce its result.
+
+### 2. Signatures
+
+```text
+ExpertTeamService.prepare(request, invocation_id?, task_id?, host_mode?, ...)
+ExpertTeamService.select_mode(invocation_id, selected_tier, source, actor, verification, source_event_id?)
+ExpertTeamService.qualify(request, invocation_id, contract, work_items, task_id?, run_id?, auto_start?)
+ExpertTeamService.start(task_id, run_id, contract, work_items, qualification_receipt, ...)
+```
+
+`expert_team_start` must provide `qualification_receipt`. The local runner uses
+the same prepare/qualify path; no-action without an explicit lifecycle flag is
+an error.
+
+### 3. Contracts
+
+- `ModeAssessment.schema_version=2` contains `policy_floor`, `allowed_tiers`,
+  `recommended_tier`, `decision_state`, `reasons`, host execution/assurance
+  capabilities, Trellis task status, and `next_action`.
+- `explicit=lightweight` is an unverified preference. It can never lower a
+  managed hard floor (active Trellis task, multiple graph waves, durable audit,
+  human gate, recovery/high-risk language, or audit intent).
+- When both tiers are allowed, `expert_team_select_mode` is required. A
+  verified user choice must use a host/MCP `source_event_id`; an AI-provided
+  `actor=user` is not evidence.
+- `prepare` returns exactly two mode options plus `selection_required`,
+  `needs_input`, and `selected_tier`. The lightweight option is disabled when
+  the policy floor is managed; unsupported hosts stay at `needs_input`.
+- A verified selection event must match the `source_event_id` bound by the
+  prepare record. Reusing an invocation with a different source event is a
+  stale/conflicting invocation, not a new approval.
+- A qualification receipt binds `invocation_id`, workspace fingerprint, task
+  metadata fingerprint, contract fingerprint, graph fingerprint, selected
+  tier, execution mode, package version, and (when known) `run_id`. The start
+  boundary rechecks all fields and treats an existing identical task/run as
+  idempotent; supervisor/foreground entry also requires a `run_started` gate.
+- Entry records store prompt fingerprints and structured reasons only; raw
+  prompts, host trajectories, and secrets are not copied into gate state.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required behavior |
+|---|---|
+| `explicit=lightweight` with a hard trigger | Return `policy_floor=managed`; do not downgrade. |
+| Both tiers legal and no decision | Return `selection_required` / `mode_selection_required`; do not default. |
+| Verified user selection without host event | Reject with `source_event_id` error. |
+| Qualification before prepare or with string work items | Reject; no task/run mutation. |
+| Start without receipt, stale task metadata, or another workspace | Reject fail closed. |
+| Same task/run and identical receipt repeated | Return the existing snapshot without a second run. |
+| MCP package root has no trusted workspace context | Return `workspace_unbound`; never inspect plugin-root tasks. |
+| Inline host lacks independent Auditor capability | Keep managed tier if required, report `main-session-sequential` and `capability_blocked`; never claim independent audit. |
+| Hook disabled or unsupported tool path | Report `advisory`/`partial`; do not claim full enforcement. |
+| No lifecycle action in local runner | Return `no-action`; do not enter foreground execution. |
+
+### 5. Good / Base / Bad Cases
+
+- Good: `prepare` policy-locks an active `in_progress` task, `qualify` validates
+  a strict graph, `start` consumes the matching receipt, and a repeated start
+  returns the same snapshot.
+- Base: a bounded analysis receives a two-option selection; the lead waits for
+  a host event and then qualifies the selected tier.
+- Bad: the lead sends `explicit=lightweight`, skips selection/qualification,
+  or submits `actor=user`; the server refuses the mutation.
+
+### 6. Tests Required
+
+- Unit: policy floors, hard-trigger matrix, assessment fingerprints, graph
+  waves, provenance validation, and workspace fingerprint changes.
+- MCP: prepare/select/qualify ordering, strict graph rejection, missing/stale
+  receipt, idempotent start, no-action, and package-root workspace failure.
+- Cross-host smoke: initialize version/tool list, installed-cache workspace
+  binding, and hook `enforced`/`advisory` projection.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```text
+prepare -> response says request_task_consent -> AI claims consent -> start()
+```
+
+#### Correct
+
+```text
+prepare -> attributable select/lock -> strict qualify -> receipt -> start(receipt)
+```

@@ -108,6 +108,26 @@ record the current Trellis task, consent requirement, execution tier, host
 dispatch mode, and next legal action. Without these records the run must not
 edit code or create managed state.
 
+The server treats the mode as a policy decision, not an AI hint. An active
+Trellis task, multiple dependency waves, durable audit, human gates, recovery,
+or high-risk work locks the floor to `managed`; `explicit=lightweight` cannot
+lower it. When both tiers are legal, the host must present one attributable
+single-select choice through `expert_team_select_mode`; no response means
+`needs_input`, never an implicit lightweight default. A claimed `actor=user`
+without a host event is rejected.
+
+`prepare` also returns `mode_options`, `selection_required`, `needs_input`, and
+`selected_tier`. The two options are `Managed Expert Team (recommended)` and
+`Lightweight Expert Team`; a policy-locked assessment disables the latter. If
+the host cannot render a single-select control, the gate stays at
+`needs_input` instead of letting the model choose.
+
+`qualify` issues a workspace-bound receipt containing contract, graph, task
+metadata, and workspace fingerprints. `expert_team_start` rejects missing,
+stale, cross-workspace, or mismatched receipts; repeating the same task/run is
+idempotent. Inline Codex may still use durable managed governance, but it is
+reported as `main-session-sequential`, never as independent Auditor work.
+
 Codex inline mode reports `main-session-sequential`; it must not be presented
 as native delegation. If MCP or native subagents are unavailable, retain the
 same task graph and result contract and label the run `sequential-fallback`.
@@ -115,6 +135,12 @@ same task graph and result contract and label the run `sequential-fallback`.
 After changing the plugin package, reinstall or refresh the installed plugin and
 start a new host thread; an existing host session does not hot-load a new MCP
 tool list.
+
+If the MCP process starts from an installed cache without a trusted host
+workspace, it fails closed with `workspace_unbound`; provide
+`EXPERT_TEAM_WORKSPACE`, `CODEX_PROJECT_DIR`, or `CLAUDE_PROJECT_DIR` and open
+a new session. Hook coverage is reported as `enforced`, `partial`, or
+`advisory`; unsupported hosted tools are never described as fully blocked.
 
 `managed` is selected explicitly or for cross-session, multi-wave,
 evidence-heavy, or human-gated work. It requires an existing approved Trellis
