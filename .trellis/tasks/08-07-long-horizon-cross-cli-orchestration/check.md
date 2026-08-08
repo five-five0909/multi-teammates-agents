@@ -42,7 +42,7 @@ temporary Trellis task and completes start -> status -> resume -> answer ->
 cancel without manually submitting role results or audits.
 
 Evidence: `tests/test_cli_lifecycle.py`, `python -m unittest tests.test_cli_lifecycle`
-(`1 test`, PASS), and the full suite (`88 tests`, PASS). This closes the local
+(`1 test`, PASS), and the full suite (`89 tests`, PASS). This closes the local
 CLI half of R25; the native Codex/Claude model-backed gate matrix remains open.
 
 ## 2026-08-08 failure and secret-safety recheck
@@ -56,8 +56,9 @@ Manager, Executor, and Auditor starts and preserve the abandoned marker.
 
 The shared redaction boundary covers process streams, command metadata, service
 events, role/audit files, compact snapshots, final reports, and diagnostic
-traces. `tests/test_service_mcp.py` scans the actual temporary Trellis files;
-unreadable files and snapshot failures remain fail-closed integrity evidence.
+traces. `tests/test_service_mcp.py` scans the actual temporary Trellis files
+and verifies managed `auto_start` creation; unreadable files and snapshot
+failures remain fail-closed integrity evidence.
 
 ## Evidence classification
 
@@ -80,7 +81,7 @@ unreadable files and snapshot failures remain fail-closed integrity evidence.
 | AC6 | Partial | Dependency/ownership scheduling and shared adapter contracts pass; Codex real run sequenced dependent work correctly, but cross-host model-backed scheduling is unproved. |
 | AC7 | Partial | Ask/blocked/repeated-failure/budget/completion and Manager/Executor/Auditor permission gates are durable; MCP and the repository CLI expose equivalent answer/resume/cancel semantics, but the full real-host gate matrix and both native model UX surfaces remain open. |
 | AC8 | Partial | Runner argument tests reject bypass options, Codex real traces show no bypass flags and read-only Auditor sandbox, Claude real trace shows no bypass flag before account-policy failure; actual permission prompts have not been observed on both hosts. |
-| AC9 | Partial | Qualification is deterministic and side-effect-free, and explicit managed start persists a run; auto-qualified creation is not one atomic operation. |
+| AC9 | Pass (deterministic) | Default qualification remains side-effect-free for lightweight and managed previews; explicit `auto_start=true` with a strict contract/task graph creates and returns a valid Trellis run in one MCP call. |
 | AC10 | Pass (simulated integration) | The actual supervisor uses bounded compact Manager prompts; tests exclude trajectories and validate dependency-ready parsing. |
 | AC11 | Pass | Twenty profiles and coordinator boundaries are validated. |
 | AC12 | Partial | Unit, typing, fixture validator, fake runners, probes, and Claude plugin validation pass; Codex model-backed E2E passes; Claude model-backed E2E/resume remains externally blocked. |
@@ -112,7 +113,7 @@ unreadable files and snapshot failures remain fail-closed integrity evidence.
 
 ```text
 python -m unittest discover tests
-Ran 88 tests — OK
+Ran 89 tests — OK
 
 python -m mypy runtime scripts tests
 Success: no issues found in 49 source files

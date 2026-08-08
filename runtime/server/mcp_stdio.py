@@ -26,7 +26,7 @@ TOOL_SCHEMAS: dict[str, dict[str, Any]] = {
     "expert_team_resume": {"type": "object", "additionalProperties": False, "required": ["task_id", "run_id"], "properties": {"task_id": {"type": "string"}, "run_id": {"type": "string"}}},
     "expert_team_cancel": {"type": "object", "additionalProperties": False, "required": ["task_id", "run_id"], "properties": {"task_id": {"type": "string"}, "run_id": {"type": "string"}}},
     "expert_team_record_host_event": {"type": "object", "additionalProperties": False, "required": ["task_id", "run_id", "host", "role", "event"], "properties": {"task_id": {"type": "string"}, "run_id": {"type": "string"}, "host": {"enum": ["codex", "claude"]}, "role": {"enum": ["manager", "executor", "auditor"]}, "event": {"type": "object"}}},
-    "expert_team_qualify": {"type": "object", "additionalProperties": False, "required": ["request"], "properties": {"request": {"type": "string"}, "explicit": {"enum": ["lightweight", "managed"]}, "dependency_waves": {"type": "integer", "minimum": 1}, "durable_audit": {"type": "boolean"}, "human_gates": {"type": "boolean"}, "evidence_heavy": {"type": "boolean"}}},
+    "expert_team_qualify": {"type": "object", "additionalProperties": False, "required": ["request"], "properties": {"request": {"type": "string"}, "explicit": {"enum": ["lightweight", "managed"]}, "dependency_waves": {"type": "integer", "minimum": 1}, "durable_audit": {"type": "boolean"}, "human_gates": {"type": "boolean"}, "evidence_heavy": {"type": "boolean"}, "auto_start": {"type": "boolean"}, "task_id": {"type": "string"}, "run_id": {"type": "string"}, "contract": {"type": "object"}, "work_items": {"type": "array"}, "max_rounds": {"type": "integer", "minimum": 1}, "retry_limit": {"type": "integer", "minimum": 1}}},
     "expert_team_run": {"type": "object", "additionalProperties": False, "required": ["task_id", "run_id"], "properties": {"task_id": {"type": "string"}, "run_id": {"type": "string"}, "config": {"type": "object"}}},
 }
 
@@ -41,7 +41,7 @@ DESCRIPTIONS = {
     "expert_team_resume": "Return compact verified resume context without raw trajectories.",
     "expert_team_cancel": "Safely cancel a managed run without deleting evidence.",
     "expert_team_record_host_event": "Normalize a Codex or Claude host event and append it to the separate diagnostic trace.",
-    "expert_team_qualify": "Select lightweight or managed mode without creating run files.",
+    "expert_team_qualify": "Select lightweight or managed mode; optionally create a managed run atomically when auto_start is explicit.",
     "expert_team_run": "Run the automatic Manager/Executor/Auditor supervisor until a terminal state or human gate.",
 }
 
@@ -63,14 +63,21 @@ class MCPServer:
             "expert_team_run": self._run,
         }
 
-    @staticmethod
     def _qualify(
+        self,
         request: str,
         explicit: str | None = None,
         dependency_waves: int = 1,
         durable_audit: bool = False,
         human_gates: bool = False,
         evidence_heavy: bool = False,
+        auto_start: bool = False,
+        task_id: str | None = None,
+        run_id: str | None = None,
+        contract: Any = None,
+        work_items: Any = None,
+        max_rounds: int = 20,
+        retry_limit: int = 2,
     ) -> dict[str, Any]:
         if explicit not in {None, "lightweight", "managed"}:
             raise ContractError("explicit mode must be lightweight or managed")
@@ -82,7 +89,32 @@ class MCPServer:
             human_gates=human_gates,
             evidence_heavy=evidence_heavy,
         )
-        return {"execution_tier": tier, "creates_managed_run": tier == "managed"}
+        if not auto_start:
+            return {"execution_tier": tier, "creates_managed_run": False}
+        if tier != "managed":
+            raise ContractError("auto_start requires managed execution")
+        if not isinstance(task_id, str) or not task_id.strip() or not isinstance(run_id, str) or not run_id.strip():
+            raise ContractError("auto_start requires task_id and run_id")
+        if not isinstance(contract, dict) or not isinstance(work_items, list):
+            raise ContractError("auto_start requires contract and work_items")
+        snapshot = self.service.start(
+            task_id,
+            run_id,
+            contract,
+            work_items,
+            max_rounds=max_rounds,
+            retry_limit=retry_limit,
+        )
+        return {
+            "execution_tier": tier,
+            "creates_managed_run": True,
+            "run": {
+                "task_id": task_id,
+                "run_id": run_id,
+                "state": snapshot["state"],
+                "version": snapshot["version"],
+            },
+        }
 
     def _run(self, task_id: str, run_id: str, config: Any = None) -> dict[str, Any]:
         if config is not None and not isinstance(config, dict):

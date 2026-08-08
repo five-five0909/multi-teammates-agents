@@ -28,7 +28,7 @@ $expert-team [software|product|design|ops|security|database] <request>
 Managed MCP entry points:
 
 ```text
-expert_team_qualify(request, explicit?, dependency_waves?, durable_audit?, human_gate?, cross_session?)
+expert_team_qualify(request, explicit?, dependency_waves?, durable_audit?, human_gate?, cross_session?, auto_start?, task_id?, run_id?, contract?, work_items?, max_rounds?, retry_limit?)
 expert_team_start(task_id, run_id, contract, work_items, max_rounds?, retry_limit?)
 expert_team_run(task_id, run_id, config_overrides?)
 expert_team_status(task_id, run_id)
@@ -65,6 +65,13 @@ validated run events, role results, audits, and persisted Trellis references.
 (also `--run`) drives the supervisor, and the remaining lifecycle actions map
 one-to-one to the service/MCP operations. `--resume` is intentionally compact
 and omits event IDs and raw traces.
+
+Qualification is side-effect-free by default. A caller that explicitly supplies
+`auto_start=true`, an active `task_id`, a `run_id`, a strict `contract`, and a
+`work_items` array may combine managed qualification and durable start in one
+MCP call; lightweight qualification rejects `auto_start` and never creates
+`.trellis` state. The response reports `creates_managed_run` and a compact run
+identity/state when the combined operation succeeds.
 
 The MCP `expert_team_run` response keeps the existing `snapshot` and
 `episode_ids` fields and adds `console` (the structured public projection) and
@@ -235,7 +242,7 @@ snapshots are atomic, and replay must reproduce the accepted state.
 | Adapter requests an approval/sandbox bypass | Reject the invocation. |
 | Managed mutation uses a stale state version | Reject with a version conflict. |
 | Event or snapshot cannot be validated/replayed | Stop advancement and report recovery diagnostics. |
-| Managed start targets a non-active Trellis task | Reject until task status is `in_progress`. |
+| Managed start or qualification `auto_start` targets a non-active Trellis task | Reject until task status is `in_progress`. |
 | WorkItem selects a coordinator profile as Executor | Reject the run contract. |
 | Manager route is empty, malformed, or unknown | Persist bounded repair feedback; never default to execution/completion. |
 | Auditor episode is missing, unavailable, or shares the Executor session | Reject acceptance. |
@@ -297,6 +304,8 @@ snapshots are atomic, and replay must reproduce the accepted state.
   the generated `ccswitch://` link without a user-specific path fixture.
 - Fixtures assert parallel reads, disjoint and overlapping writes, dependency
   failure, cycle rejection, and sequential fallback.
+- Qualification tests assert lightweight/default previews create no run files
+  and an explicit managed `auto_start` call creates one valid Trellis run.
 - Tests assert the six default Qoder-derived roles, workflow shapes, domain
   lenses, repair limit, and absence of Qoder runtime endpoints.
 - Tests assert the exact 20-profile public-source registry, unique paths,

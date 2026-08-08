@@ -184,7 +184,8 @@ independent Auditor episode and integrity guard both pass.
 - [x] Add MCP and repository-CLI start/foreground/status/resume/answer/cancel
   entry points backed by the same service contracts.
 - [x] Implement and test deterministic lightweight/managed qualification so a
-  bounded request creates no managed run and an eligible request does.
+  bounded preview creates no managed run and an explicit managed `auto_start`
+  request creates one in the same MCP operation.
 - [x] Update Codex and Claude skill instructions to drive the same paused human
   gate contract through their native conversation UX.
 - [x] Add in-flight reconciliation and abandoned-attempt recovery on resume.

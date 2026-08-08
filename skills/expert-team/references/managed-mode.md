@@ -15,10 +15,14 @@ only when doing so will not lose an explicit durability or audit requirement.
 
 ## Lifecycle
 
-1. Call `expert_team_qualify` before creating state. A `lightweight` result must
-   not create a managed-run directory.
-2. For `managed`, call `expert_team_start` once with a strict TaskContract and
-   WorkItem graph. Use the task's stable ID, not its dated folder name.
+1. Call `expert_team_qualify` before creating state. A default `lightweight`
+   or `managed` result is side-effect-free and does not create a run. Clients
+   that need a one-call managed handoff may instead set `auto_start=true` and
+   supply the active task ID, run ID, strict TaskContract, and WorkItem graph;
+   the response then returns the newly persisted run identity/state.
+2. For the normal two-step `managed` flow, call `expert_team_start` once with
+   a strict TaskContract and WorkItem graph. Use the task's stable ID, not its
+   dated folder name.
 3. Call `expert_team_run`. The bundled supervisor invokes a fresh Manager,
    schedules dependency-ready Executor episodes, records their output as
    unverified, launches separate read-only Auditor episodes, applies the

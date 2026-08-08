@@ -12,6 +12,14 @@ from runtime.core.contracts import RunSnapshot
 from runtime.prompts import build_manager_prompt
 
 
+def _auto_contract() -> dict[str, object]:
+    return {"schema_version": 1, "goal": "auto start", "constraints": [], "deliverables": ["report"], "acceptance_criteria": ["accepted"]}
+
+
+def _auto_items() -> list[dict[str, object]]:
+    return [{"schema_version": 1, "id": "research", "objective": "Research", "role": "researcher", "mode": "read", "required": True, "depends_on": [], "ownership": [], "evidence_required": ["source"]}]
+
+
 class ServiceTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
@@ -196,7 +204,42 @@ class MCPProtocolTests(unittest.TestCase):
             )
             assert response is not None
             self.assertEqual("lightweight", response["result"]["structuredContent"]["execution_tier"])
+            self.assertFalse(response["result"]["structuredContent"]["creates_managed_run"])
             self.assertFalse((root / ".trellis").exists())
+
+    def test_managed_auto_start_creates_trellis_run_in_one_call(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            task = root / ".trellis" / "tasks" / "08-07-example"
+            task.mkdir(parents=True)
+            (task / "task.json").write_text(
+                json.dumps({"id": "example", "name": "example", "status": "in_progress"}),
+                encoding="utf-8",
+            )
+            server = MCPServer(ExpertTeamService(root, developer="tester"))
+            response = server.dispatch(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 5,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "expert_team_qualify",
+                        "arguments": {
+                            "request": "跨会话持续执行这个项目",
+                            "auto_start": True,
+                            "task_id": "example",
+                            "run_id": "run-auto",
+                            "contract": _auto_contract(),
+                            "work_items": _auto_items(),
+                        },
+                    },
+                }
+            )
+            assert response is not None
+            content = response["result"]["structuredContent"]
+            self.assertTrue(content["creates_managed_run"])
+            self.assertEqual("managing", content["run"]["state"])
+            self.assertTrue((task / "runs" / "run-auto" / "state.json").is_file())
 
 
 if __name__ == "__main__":

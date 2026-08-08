@@ -103,6 +103,10 @@ Claude CLI 进程，收集规范化事件，执行超时/取消控制，并在�
 Executor 的结果在独立 Auditor 接受真实证据前都不会被视为已验证。任务完成还要求
 所有必需工作项通过审计，并且人工完成门禁获得批准。
 
+MCP 的资格判定默认不写入状态；如果调用方已经准备好活动 Trellis task、run ID、
+TaskContract 和 WorkItem 图，可以显式传 `auto_start=true`，在同一次 managed 资格
+调用中创建持久化运行。轻量级请求永远不会因为资格判定创建运行目录。
+
 ## 命令行叙事控制台
 
 管理模式优先采用命令行输出。Codex/Claude 的 MCP 工具会返回一份公开叙事，包含每轮

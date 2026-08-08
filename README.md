@@ -121,6 +121,11 @@ by default; use `--quiet` for the legacy snapshot JSON or `--json` for a compact
 machine-readable projection. Raw host stdout, private reasoning, secrets, and
 unredacted command metadata are never part of the narrative.
 
+Qualification is side-effect-free by default. A caller that already has an
+active Trellis task, run ID, TaskContract, and WorkItem graph may explicitly set
+`auto_start=true` on the managed qualification call to create the durable run in
+that same MCP operation; lightweight qualification never creates a run.
+
 ### Run the console locally
 
 The local entry point can render an existing run without starting another model
