@@ -1,0 +1,15 @@
+{
+  "name": "multi-teammates-agents",
+  "owner": {
+    "name": "fifine"
+  },
+  "description": "Codex CLI and Claude Code specialist-agent orchestration.",
+  "plugins": [
+    {
+      "name": "multi-teammates-agents",
+      "source": "./",
+      "description": "Run lightweight or Trellis-backed audited expert teams.",
+      "category": "Productivity"
+    }
+  ]
+}

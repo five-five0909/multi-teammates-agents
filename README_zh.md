@@ -40,6 +40,9 @@
 仓库还包含 Codex 的仓库级 marketplace：`.agents/plugins/marketplace.json`。它指向
 公开仓库的 `main` 分支，因此不需要把文件复制到 `~/.codex` 就能安装。
 
+对于 Claude Code，`.claude-plugin/marketplace.json` 也提供了同一个仓库级 marketplace，
+并使用仓库根目录作为插件源。
+
 不需要外部账户、托管服务或图形化画布即可运行。
 
 ## 使用方式
@@ -233,8 +236,16 @@ claude --plugin-url https://github.com/five-five0909/multi-teammates-agents/arch
 ```
 
 `--plugin-dir` 和 `--plugin-url` 都只对当前会话生效。要持久安装到 Claude Code，
-请先把插件加入 Claude marketplace，再使用
-`claude plugin install <plugin>@<marketplace>`。
+可以添加公开 marketplace 并安装插件：
+
+```powershell
+claude plugin marketplace add https://github.com/five-five0909/multi-teammates-agents.git#main
+claude plugin install multi-teammates-agents@multi-teammates-agents --scope user
+claude plugin list
+```
+
+从本地 checkout 开发时，在仓库根目录执行 `claude plugin marketplace add ./`，再按需
+使用 `--scope local` 或 `--scope project`。
 
 ### 验证与移除
 

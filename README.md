@@ -45,6 +45,9 @@ The repository also includes a Codex repo marketplace at
 `.agents/plugins/marketplace.json`. It points back to the public `main` branch,
 so the repository can be installed without copying files into `~/.codex`.
 
+For Claude Code, `.claude-plugin/marketplace.json` exposes the same repository
+as a Claude marketplace with a relative root plugin source.
+
 No external account, hosted service, or graphical canvas is required.
 
 ## Use
@@ -255,8 +258,16 @@ claude --plugin-url https://github.com/five-five0909/multi-teammates-agents/arch
 ```
 
 `--plugin-dir` and `--plugin-url` are session-scoped. For a persistent Claude
-Code installation, add this plugin to a Claude marketplace and install it with
-`claude plugin install <plugin>@<marketplace>`.
+Code installation, add this public marketplace and install the plugin:
+
+```powershell
+claude plugin marketplace add https://github.com/five-five0909/multi-teammates-agents.git#main
+claude plugin install multi-teammates-agents@multi-teammates-agents --scope user
+claude plugin list
+```
+
+When developing from a checkout, run `claude plugin marketplace add ./` from the
+repository root and use `--scope local` or `--scope project` as appropriate.
 
 ### Verify and remove
 
