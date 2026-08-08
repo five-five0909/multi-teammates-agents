@@ -49,7 +49,17 @@ the smallest task graph that covers the outcome. Every task must have:
 Do not delegate the same question to several agents unless independent
 perspectives are the point. Do not create a subagent just to relay context.
 
-## 3. Dispatch dependency-aware waves
+## 3. Apply delegation guardrails
+
+Read [delegation-guardrails.md](references/delegation-guardrails.md) before
+dispatching. Re-evaluate whether delegation still buys context reduction,
+parallelism, or independent verification at every major wave. Use the
+guardrails to distinguish direct work from bounded probe work, and keep the
+lead responsible for decisions, integration, and final verification. The
+guardrails add discipline to the existing role registry; they do not collapse
+`explorer`, `worker`, and `default` into one generic role.
+
+## 4. Dispatch dependency-aware waves
 
 Use host-native Codex or Claude Code subagents when available.
 
@@ -71,7 +81,7 @@ Give each agent only its task-local context, upstream findings, exclusions,
 ownership, and result contract. Never leak an expected answer into an
 independent review.
 
-## 4. Synchronize and recover
+## 5. Synchronize and recover
 
 Wait for every required task in the current wave. Use
 [result-contract.md](references/result-contract.md) to normalize results.
@@ -86,7 +96,7 @@ Wait for every required task in the current wave. Use
 - Create a new repair task after failed verification; do not rewrite a
   completed task's history.
 
-## 5. Verify and synthesize
+## 6. Verify and synthesize
 
 Run the planned verification after integration. In lightweight mode the lead
 owns the final claim. In managed mode the lead may propose completion only after

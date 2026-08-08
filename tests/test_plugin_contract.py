@@ -71,6 +71,7 @@ class PluginContractTests(unittest.TestCase):
             "trellis-integration.md",
             "run-ledger-template.md",
             "managed-mode.md",
+            "delegation-guardrails.md",
         ):
             self.assertTrue((SKILL / "references" / name).is_file(), name)
             self.assertIn(name, text)

@@ -80,6 +80,16 @@ Use `/agent` in Codex CLI or Claude Code's agent/context surfaces to inspect
 native work. Subagents retain host permission behavior and consume additional
 tokens. The plugin never injects permission- or sandbox-bypass flags.
 
+### Delegation behavior
+
+The skill applies [delegation guardrails](skills/expert-team/references/delegation-guardrails.md)
+at every major wave. It uses direct handling for small, known work and proactively
+dispatches bounded read-heavy, cross-file, parallel, or independent-review work
+when that reduces lead-context pollution or adds verification value. Probe agents
+return evidence with `file:line` anchors; the lead retains decisions, integration,
+and final acceptance. These are project-level rules only: installing the plugin
+does not edit `~/.codex/config.toml`, `~/.codex/AGENTS.md`, or user agent files.
+
 ## Execution modes
 
 `lightweight` is the default for bounded work that fits one session. It uses

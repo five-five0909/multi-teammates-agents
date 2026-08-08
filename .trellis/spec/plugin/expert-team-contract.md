@@ -375,6 +375,15 @@ create_subprocess_exec(resolved or "codex", ...)
 
 - Keep the six default roles separate from domain lenses. Roles define
   responsibility; lenses modify safety and evidence gates.
+- Apply the portable delegation guardrails in
+  `skills/expert-team/references/delegation-guardrails.md`: delegate only when
+  context reduction, independent parallelism, or verification justifies it;
+  keep small/foundational reads in the lead; make prompts self-contained;
+  default exploration and verification to read-only; prohibit recursive
+  spawning; require compact `file:line` evidence with facts separated from
+  inferences; and keep decisions, integration, and final acceptance with the
+  lead. These rules supplement, rather than replace, the `explorer`, `worker`,
+  and `default` role semantics.
 - Prefer `direct` or `fast` over `standard` for bounded work.
 - Use lightweight mode for bounded work. Select managed mode explicitly or for
   cross-session, multi-wave, evidence-heavy, or human-gated tasks.
