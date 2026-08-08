@@ -151,6 +151,9 @@ class SupervisorTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(7, len(adapter.requests))
         self.assertEqual(7, len({request.episode_id for request in adapter.requests}))
         self.assertTrue(all(request.read_only for request in adapter.requests if request.role == "auditor"))
+        decisions = [event for event in self.service.events("example", "run-1") if event.kind == "wave.execution_started"]
+        self.assertEqual(["first", "second"], [event.payload["manager_message"] for event in decisions])
+        self.assertEqual([1, 2], [event.payload["round"] for event in decisions])
         trace_dir = self.root / ".trellis" / "workspace" / "tester" / "traces" / "run-1" / "episodes"
         self.assertEqual(7, len(list(trace_dir.glob("*.json"))))
 

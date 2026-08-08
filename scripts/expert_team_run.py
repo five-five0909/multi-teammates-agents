@@ -15,6 +15,7 @@ if str(ROOT) not in sys.path:
 
 from runtime.adapters.claude import ClaudeAdapter
 from runtime.adapters.codex import CodexAdapter
+from runtime.console import build_run_summary, render_narrative
 from runtime.config import load_runtime_config
 from runtime.service import ExpertTeamService
 from runtime.supervisor import ManagedRunSupervisor
@@ -30,7 +31,14 @@ async def _main(arguments: argparse.Namespace) -> int:
     service = ExpertTeamService(arguments.repo_root.resolve())
     config = load_runtime_config(arguments.repo_root.resolve())
     outcome = await ManagedRunSupervisor(service, config).run(arguments.task_id, arguments.run_id)
-    print(json.dumps({"snapshot": outcome.snapshot.to_dict(), "episode_ids": list(outcome.episodes)}, ensure_ascii=False, indent=2))
+    if arguments.quiet:
+        print(json.dumps({"snapshot": outcome.snapshot.to_dict(), "episode_ids": list(outcome.episodes)}, ensure_ascii=False, indent=2))
+    else:
+        summary = build_run_summary(service, arguments.task_id, arguments.run_id, outcome.snapshot)
+        if arguments.json:
+            print(json.dumps(summary, ensure_ascii=False, separators=(",", ":")))
+        else:
+            print(render_narrative(summary))
     return 0
 
 
@@ -40,6 +48,9 @@ def main() -> int:
     parser.add_argument("--task-id")
     parser.add_argument("--run-id")
     parser.add_argument("--probe", action="store_true")
+    output = parser.add_mutually_exclusive_group()
+    output.add_argument("--quiet", action="store_true", help="keep the legacy JSON result and suppress narrative output")
+    output.add_argument("--json", action="store_true", help="emit the public narrative projection as compact JSON")
     return asyncio.run(_main(parser.parse_args()))
 
 

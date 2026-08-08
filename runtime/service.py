@@ -129,10 +129,10 @@ class ExpertTeamService:
             "budget": {"rounds_used": snapshot.rounds_used, "max_rounds": snapshot.max_rounds, "retry_limit": snapshot.retry_limit},
         }
 
-    def cancel(self, task_id: str, run_id: str) -> dict[str, Any]:
+    def cancel(self, task_id: str, run_id: str, payload: Mapping[str, Any] | None = None) -> dict[str, Any]:
         store = self._store(task_id)
         current = store.load(run_id)
-        return store.append(self._event(current, "run.cancelled", {}), owner="mcp-cancel").to_dict()
+        return store.append(self._event(current, "run.cancelled", payload or {}), owner="mcp-cancel").to_dict()
 
     def record_host_event(self, task_id: str, run_id: str, host: str, role: str, value: Any) -> dict[str, Any]:
         if role not in {"manager", "executor", "auditor"}:

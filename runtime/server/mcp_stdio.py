@@ -11,6 +11,7 @@ from typing import Any, Callable
 from ..core.contracts import ContractError
 from ..service import ExpertTeamService
 from ..config import load_runtime_config
+from ..console import build_run_summary, render_narrative
 from ..routing import qualify_execution_tier
 from ..supervisor import ManagedRunSupervisor
 
@@ -88,7 +89,13 @@ class MCPServer:
             raise ContractError("config must be an object")
         runtime_config = load_runtime_config(self.service.repo_root, config or {})
         outcome = asyncio.run(ManagedRunSupervisor(self.service, runtime_config).run(task_id, run_id))
-        return {"snapshot": outcome.snapshot.to_dict(), "episode_ids": list(outcome.episodes)}
+        summary = build_run_summary(self.service, task_id, run_id, outcome.snapshot)
+        return {
+            "snapshot": outcome.snapshot.to_dict(),
+            "episode_ids": list(outcome.episodes),
+            "console": summary,
+            "narrative": render_narrative(summary),
+        }
 
     def dispatch(self, request: Any) -> dict[str, Any] | None:
         if not isinstance(request, dict):
@@ -116,7 +123,10 @@ class MCPServer:
                 result = handler(**params.get("arguments", {}))
             except (ContractError, OSError, TypeError, ValueError) as error:
                 return self._result(request_id, {"content": [{"type": "text", "text": str(error)}], "isError": True})
-            return self._result(request_id, {"content": [{"type": "text", "text": json.dumps(result, ensure_ascii=False)}], "structuredContent": result, "isError": False})
+            text = result.get("narrative") if name == "expert_team_run" and isinstance(result, dict) else None
+            if not isinstance(text, str):
+                text = json.dumps(result, ensure_ascii=False)
+            return self._result(request_id, {"content": [{"type": "text", "text": text}], "structuredContent": result, "isError": False})
         return self._error(request_id, -32601, f"Method not found: {method}")
 
     @staticmethod

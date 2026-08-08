@@ -122,11 +122,43 @@ class ManagedRunSupervisor:
         if decision.action == "execute":
             return False
         if decision.action == "ask":
-            self.service.next(task_id, run_id, "request_gate", {"gate_type": "ask", "question": decision.message})
+            self.service.next(
+                task_id,
+                run_id,
+                "request_gate",
+                {
+                    "gate_type": "ask",
+                    "question": decision.message,
+                    "manager_action": decision.action,
+                    "manager_message": decision.message,
+                    "work_item_ids": [],
+                },
+            )
         elif decision.action == "blocked":
-            self.service.next(task_id, run_id, "request_gate", {"gate_type": "blocked", "reason": decision.message})
+            self.service.next(
+                task_id,
+                run_id,
+                "request_gate",
+                {
+                    "gate_type": "blocked",
+                    "reason": decision.message,
+                    "manager_action": decision.action,
+                    "manager_message": decision.message,
+                    "work_item_ids": [],
+                },
+            )
         elif decision.action == "propose_complete":
-            self.service.next(task_id, run_id, "request_gate", {"gate_type": "completion"})
+            self.service.next(
+                task_id,
+                run_id,
+                "request_gate",
+                {
+                    "gate_type": "completion",
+                    "manager_action": decision.action,
+                    "manager_message": decision.message,
+                    "work_item_ids": [],
+                },
+            )
             if not self.config.human_completion_gate:
                 self.service.answer(
                     task_id,
@@ -140,7 +172,15 @@ class ManagedRunSupervisor:
                     },
                 )
         else:
-            self.service.cancel(task_id, run_id)
+            self.service.cancel(
+                task_id,
+                run_id,
+                {
+                    "manager_action": decision.action,
+                    "manager_message": decision.message,
+                    "work_item_ids": [],
+                },
+            )
         return True
 
     async def _execute_and_audit_wave(
@@ -159,7 +199,13 @@ class ManagedRunSupervisor:
             task_id,
             run_id,
             "start_execution",
-            {"work_item_ids": list(decision.work_item_ids), "assignments": assignments},
+            {
+                "work_item_ids": list(decision.work_item_ids),
+                "assignments": assignments,
+                "round": before.rounds_used + 1,
+                "manager_action": decision.action,
+                "manager_message": decision.message,
+            },
         )
         active = self._snapshot(task_id, run_id)
         semaphore = asyncio.Semaphore(self.config.max_concurrency)
