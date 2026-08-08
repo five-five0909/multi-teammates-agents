@@ -1,5 +1,7 @@
 # Multi Teammates Agents
 
+[English](README.md) · [简体中文](README_zh.md)
+
 `multi-teammates-agents` is a Codex CLI and Claude Code plugin for coordinating
 specialist agents. It supports lightweight native delegation and durable,
 Trellis-backed managed runs with independent audit, resume, bounded retries,
