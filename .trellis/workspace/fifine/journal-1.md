@@ -111,3 +111,36 @@ Codex/Claude 配置。
 ### Next Steps
 
 - None - task complete
+
+
+## Session 3: 强制融合 Expert Team 入口握手
+
+**Date**: 2026-08-08
+**Task**: 强制融合 Expert Team 入口握手
+**Branch**: `main`
+
+### Summary
+
+新增只读 expert_team_prepare MCP 入口门禁，强制 prepare→qualify→任务图→执行→验证顺序；明确 Codex inline 的 main-session-sequential fallback；同步中英文文档、skill、Trellis 集成规范和回归测试。93 个单测、mypy、compileall、契约 fixture、插件/skill validator 全部通过。父任务仍因跨宿主模型 E2E 和故障矩阵保持 in_progress。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `22f7c66` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

@@ -42,8 +42,22 @@ temporary Trellis task and completes start -> status -> resume -> answer ->
 cancel without manually submitting role results or audits.
 
 Evidence: `tests/test_cli_lifecycle.py`, `python -m unittest tests.test_cli_lifecycle`
-(`1 test`, PASS), and the full suite (`89 tests`, PASS). This closes the local
+(`1 test`, PASS), and the full suite (`93 tests`, PASS). This closes the local
 CLI half of R25; the native Codex/Claude model-backed gate matrix remains open.
+
+## 2026-08-08 mandatory Expert Team entry handshake
+
+The plugin now exposes a read-only `expert_team_prepare` MCP entry gate. It
+reports the selected tier, Trellis task status, task-creation consent, host
+dispatch mode, blockers, and the next legal action before implementation or a
+managed-run mutation. The skill requires `prepare -> qualify -> task graph`
+evidence for every explicit invocation. Codex inline mode is reported as
+`main-session-sequential`; it cannot be presented as native delegation.
+
+Evidence: `tests/test_service_mcp.py` entry-handshake coverage, local stdio
+smoke of `expert_team_prepare` and `expert_team_qualify`, `python -m mypy
+runtime scripts tests`, plugin/skill validators, and `python -m unittest
+discover tests` (`93 tests`, PASS).
 
 ## 2026-08-08 failure and secret-safety recheck
 
@@ -53,6 +67,9 @@ bounded rework/blocked state, and open a durable permission or repeated-failure
 gate instead of fabricating a result for audit. A round budget opens an explicit
 `budget` gate before a new Manager episode. Restart tests cover unmatched
 Manager, Executor, and Auditor starts and preserve the abandoned marker.
+Concurrent cancellation tests also prove that a running Manager or Auditor
+does not append a terminal result/audit after the run is cancelled; the next
+controller reconciles the unmatched start as abandoned.
 
 The shared redaction boundary covers process streams, command metadata, service
 events, role/audit files, compact snapshots, final reports, and diagnostic
@@ -90,7 +107,7 @@ failures remain fail-closed integrity evidence.
 | AC15 | Partial | Fresh process, normalized streams, timeout, cancellation, cleanup, and real probes pass; Codex model-backed traces prove fresh role episodes; Claude process starts but model access is blocked. |
 | AC16 | Pass (deterministic) | Add/edit/delete/type-change, unreadable-file, snapshot-failure, and mutation/restoration-uncertainty tests all fail closed; uncertain restoration is recorded as not attempted/not verified rather than auto-reverting user files. |
 | AC17 | Pass (deterministic) | Explicit > project > per-role environment/default precedence and secret-field rejection pass; centralized redaction is now asserted across process streams, command metadata, events, role/audit records, snapshots, reports, and diagnostic traces. |
-| AC18 | Partial | Unmatched Manager, Executor, and Auditor starts become durable `episode.abandoned` records; failed/timeout/cancelled role terminals now rework or block without accepting evidence. Real host interruption coverage at every boundary remains open. |
+| AC18 | Partial | Unmatched Manager, Executor, and Auditor starts become durable `episode.abandoned` records; failed/timeout/cancelled role terminals and external cancellation races rework/block or skip submission without accepting evidence. Real host interruption coverage at every boundary remains open. |
 | AC19 | Pass (reporting) | This report distinguishes all four proof levels and does not relabel the Claude account-policy failure as E2E success. |
 
 ## Implemented foundation
@@ -113,7 +130,7 @@ failures remain fail-closed integrity evidence.
 
 ```text
 python -m unittest discover tests
-Ran 89 tests — OK
+Ran 91 tests — OK
 
 python -m mypy runtime scripts tests
 Success: no issues found in 49 source files
