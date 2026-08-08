@@ -97,6 +97,34 @@ by default; use `--quiet` for the legacy snapshot JSON or `--json` for a compact
 machine-readable projection. Raw host stdout, private reasoning, secrets, and
 unredacted command metadata are never part of the narrative.
 
+### Run the console locally
+
+The local entry point can render an existing run without starting another model
+episode. This is useful for reviewing a completed or gated run:
+
+```powershell
+python scripts/expert_team_run.py `
+  --task-id <trellis-task-id> `
+  --run-id <run-id>
+```
+
+Use the output mode that matches the caller:
+
+```powershell
+# Human-readable Manager / Executor / Auditor narrative (default)
+python scripts/expert_team_run.py --task-id <task> --run-id <run>
+
+# Backward-compatible snapshot JSON for existing scripts
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --quiet
+
+# Compact public projection for automation
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --json
+```
+
+The narrative is read-only. It projects validated Trellis events, role results,
+audits, gates, and storage references; it never reads raw episode trajectories
+for display.
+
 Executor output is unverified until a different Auditor accepts real evidence.
 Completion additionally requires all required items accepted and the human
 completion gate approved.
