@@ -5,7 +5,8 @@
       "args": [
         "-e",
         "var fs=require('fs'); var path=require('path'); var pluginRoot=process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT; if (!pluginRoot && fs.existsSync(path.join(process.cwd(),'scripts','expert_team_mcp_launcher.js'))) pluginRoot=process.cwd(); if (!pluginRoot) throw new Error('plugin root is unavailable'); require(path.join(pluginRoot,'scripts','expert_team_mcp_launcher.js'));"
-      ]
+      ],
+      "cwd": "."
     }
   }
 }

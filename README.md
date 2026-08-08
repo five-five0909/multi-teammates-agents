@@ -38,12 +38,12 @@ acceptance.
 The repository root is the plugin root. Codex uses
 `.codex-plugin/plugin.json`; Claude Code uses `.claude-plugin/plugin.json`.
 Both load `skills/expert-team/`, the shared Python runtime, and the same
-canonical role registry. Codex embeds the `expert-team` MCP entry in its
-manifest, while Claude auto-discovers the equivalent entry from the root
-`.mcp.json`; this keeps each host's native package format without duplicating
-the runtime. The bundled MCP entry uses a small Node launcher to select
-`python`/`py -3` on Windows and `python3`/`python` on Ubuntu or other POSIX
-hosts. Claude also auto-discovers the
+canonical role registry. Codex's manifest points at the bundled
+`./.mcp.json`, while Claude auto-discovers that same root file; this keeps
+the host package formats portable without duplicating the runtime. The bundled
+MCP entry fixes its working directory to the installed plugin root and uses a
+small Node launcher to select `python`/`py -3` on Windows and
+`python3`/`python` on Ubuntu or other POSIX hosts. Claude also auto-discovers the
 twenty generated definitions under `agents/`.
 
 The repository also includes a Codex repo marketplace at

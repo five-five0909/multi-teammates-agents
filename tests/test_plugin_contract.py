@@ -25,8 +25,8 @@ class PluginContractTests(unittest.TestCase):
         manifest = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
         self.assertEqual(ROOT.name, manifest["name"])
         self.assertEqual("./skills/", manifest["skills"])
-        self.assertIsInstance(manifest["mcpServers"], dict)
-        server = manifest["mcpServers"]["expert-team"]
+        self.assertEqual("./.mcp.json", manifest["mcpServers"])
+        server = json.loads((ROOT / ".mcp.json").read_text(encoding="utf-8"))["mcpServers"]["expert-team"]
         self.assertEqual("node", server["command"])
         self.assertIn("PLUGIN_ROOT", server["args"][1])
         self.assertIn("CLAUDE_PLUGIN_ROOT", server["args"][1])
@@ -56,7 +56,8 @@ class PluginContractTests(unittest.TestCase):
         self.assertTrue((ROOT / "scripts" / "expert_team_ccswitch_config.js").is_file())
 
         codex_manifest = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
-        self.assertEqual(config["mcpServers"]["expert-team"], codex_manifest["mcpServers"]["expert-team"])
+        self.assertEqual("./.mcp.json", codex_manifest["mcpServers"])
+        self.assertEqual(".", config["mcpServers"]["expert-team"]["cwd"])
 
     def test_ccswitch_config_is_generated_from_the_current_checkout(self) -> None:
         generator = ROOT / "scripts" / "expert_team_ccswitch_config.js"
@@ -122,7 +123,7 @@ class PluginContractTests(unittest.TestCase):
                 completed = subprocess.run([config["command"], *config["args"]], input=request, capture_output=True, text=True, env=environment, timeout=10, check=True)
                 response = json.loads(completed.stdout.strip())
                 self.assertEqual("expert-team", response["result"]["serverInfo"]["name"])
-                self.assertEqual("0.3.2", response["result"]["serverInfo"]["version"])
+                self.assertEqual("0.3.3", response["result"]["serverInfo"]["version"])
         environment = os.environ.copy()
         environment.pop("PLUGIN_ROOT", None)
         environment.pop("CLAUDE_PLUGIN_ROOT", None)

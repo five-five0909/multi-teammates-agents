@@ -34,8 +34,8 @@
 - Codex 使用 `.codex-plugin/plugin.json`；
 - Claude Code 使用 `.claude-plugin/plugin.json`；
 - 两者共同加载 `skills/expert-team/`、共享 Python 运行时和统一的专家注册表。Codex
-  在 manifest 中内联 `expert-team` MCP；Claude 从根目录 `.mcp.json` 自动发现同一个
-  服务，避免让两个宿主互相解析对方的配置格式。内置 MCP 使用一个很小的 Node 启动桥：
+  的 manifest 指向根目录 `./.mcp.json`，Claude 也从同一个根目录文件自动发现 MCP；
+  内置 MCP 固定从安装后的插件根目录启动，并使用一个很小的 Node 启动桥：
   Windows 优先选择 `python`/`py -3`，Ubuntu 和其他 POSIX 系统优先选择
   `python3`/`python`，因此不依赖 Ubuntu 的 `python` 别名；
 - Claude Code 还会自动发现 `agents/` 下生成的二十个 Agent 定义。
