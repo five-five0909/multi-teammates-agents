@@ -11,7 +11,7 @@ from uuid import uuid4
 from .adapters import EpisodeRequest, EpisodeResult, HostAdapter
 from .adapters.claude import ClaudeAdapter
 from .adapters.codex import CodexAdapter
-from .audit_guard import WorkspaceDiff, diff_workspace, snapshot_workspace
+from .audit_guard import WorkspaceDiff, WorkspaceSnapshot, diff_workspace, snapshot_workspace
 from .config import RuntimeConfig
 from .core.contracts import AuditDecision, ContractError, RoleResult, RunSnapshot, WorkItem
 from .prompts import (
@@ -62,6 +62,11 @@ class ManagedRunSupervisor:
                 continue
             if snapshot.state != "managing":
                 raise ContractError(f"supervisor cannot advance from {snapshot.state}")
+            if snapshot.rounds_used >= snapshot.max_rounds and any(
+                item.required and item.status != "accepted" for item in snapshot.work_items.values()
+            ):
+                self.service.next(task_id, run_id, "request_gate", {"gate_type": "budget", "rounds_used": snapshot.rounds_used})
+                return SupervisorOutcome(self._snapshot(task_id, run_id), tuple(episodes))
             manager = self.config.role("manager")
             episode_id = self._episode_id(snapshot, "manager")
             episodes.append(episode_id)
@@ -88,6 +93,14 @@ class ManagedRunSupervisor:
                     run_id,
                     "request_gate",
                     {"gate_type": "permission", "role": "manager", "episode_id": episode_id},
+                )
+                return SupervisorOutcome(self._snapshot(task_id, run_id), tuple(episodes))
+            if manager_result.status == "cancelled":
+                self.service.next(
+                    task_id,
+                    run_id,
+                    "request_gate",
+                    {"gate_type": "cancellation", "role": "manager", "episode_id": episode_id},
                 )
                 return SupervisorOutcome(self._snapshot(task_id, run_id), tuple(episodes))
             if manager_result.status != "done":
@@ -209,6 +222,7 @@ class ManagedRunSupervisor:
         )
         active = self._snapshot(task_id, run_id)
         semaphore = asyncio.Semaphore(self.config.max_concurrency)
+        executor_failures: list[EpisodeResult] = []
 
         async def execute(item_id: str) -> RoleResult:
             async with semaphore:
@@ -234,6 +248,8 @@ class ManagedRunSupervisor:
                         work_item_id=item.id,
                     ),
                 )
+                if episode.status != "done":
+                    executor_failures.append(episode)
                 if episode.status == "done":
                     try:
                         return parse_role_result(episode.visible_output, item=item, executor_id=assignments[item_id])
@@ -242,17 +258,46 @@ class ManagedRunSupervisor:
                 return self._failed_result(item, assignments[item_id], episode.error or episode.status)
 
         results = await asyncio.gather(*(execute(item_id) for item_id in decision.work_item_ids))
+        if executor_failures:
+            gate_type = self._episode_failure_gate([item.status for item in executor_failures])
+            self.service.next(
+                task_id,
+                run_id,
+                "request_gate",
+                {
+                    "gate_type": gate_type,
+                    "role": "executor",
+                    "episode_ids": [item.episode_id for item in executor_failures],
+                    "statuses": [item.status for item in executor_failures],
+                },
+            )
+            return
         by_id = {result.work_item_id: result for result in results}
         for result in results:
             self.service.submit_result(task_id, run_id, result.to_dict())
         self.service.next(task_id, run_id, "start_audit", {})
+        auditor_failures: list[str] = []
         for item_id in decision.work_item_ids:
             audit_snapshot = self._snapshot(task_id, run_id)
             item = audit_snapshot.work_items[item_id]
             result = by_id[item_id]
-            decision_value, episode_id = await self._audit_item(task_id, run_id, audit_snapshot, item, result)
+            decision_value, episode_id, episode_status = await self._audit_item(task_id, run_id, audit_snapshot, item, result)
             episodes.append(episode_id)
-            self.service.submit_audit(task_id, run_id, decision_value.to_dict())
+            if decision_value is None:
+                auditor_failures.append(episode_status)
+            else:
+                self.service.submit_audit(task_id, run_id, decision_value.to_dict())
+        if auditor_failures:
+            self.service.next(
+                task_id,
+                run_id,
+                "request_gate",
+                {
+                    "gate_type": self._episode_failure_gate(auditor_failures),
+                    "role": "auditor",
+                    "statuses": auditor_failures,
+                },
+            )
 
     async def _audit_item(
         self,
@@ -261,11 +306,11 @@ class ManagedRunSupervisor:
         snapshot: RunSnapshot,
         item: WorkItem,
         result: RoleResult,
-    ) -> tuple[AuditDecision, str]:
+    ) -> tuple[AuditDecision | None, str, str]:
         binding = self.config.role("auditor")
         episode_id = self._episode_id(snapshot, "auditor", item.id)
         auditor_id = f"auditor-{item.id}-{item.attempt}-{uuid4().hex[:8]}"
-        before = snapshot_workspace(self.config.workspace)
+        before = self._safe_workspace_snapshot()
         episode = await self._run_episode(
             task_id,
             run_id,
@@ -285,7 +330,9 @@ class ManagedRunSupervisor:
                 work_item_id=item.id,
             ),
         )
-        integrity = diff_workspace(before, snapshot_workspace(self.config.workspace))
+        if episode.status != "done":
+            return None, episode_id, episode.status
+        integrity = diff_workspace(before, self._safe_workspace_snapshot())
         if episode.status == "done":
             try:
                 parsed = parse_audit_decision(
@@ -300,7 +347,7 @@ class ManagedRunSupervisor:
             parsed = self._invalid_audit(item, result.executor_id, auditor_id, episode.error or episode.status, integrity)
         if not integrity.clean:
             parsed = self._invalid_audit(item, result.executor_id, auditor_id, "Auditor workspace integrity failed", integrity)
-        return parsed, episode_id
+        return parsed, episode_id, episode.status
 
     async def _run_episode(
         self,
@@ -380,12 +427,28 @@ class ManagedRunSupervisor:
             self.service.next(task_id, run_id, "start_audit", {})
             snapshot = self._snapshot(task_id, run_id)
         pending = [item for item in snapshot.work_items.values() if item.status == "auditing"]
+        auditor_failures: list[str] = []
         for item in pending:
             result = self.service.load_role_result(task_id, run_id, item.id, item.attempt)
             current = self._snapshot(task_id, run_id)
-            decision, episode_id = await self._audit_item(task_id, run_id, current, current.work_items[item.id], result)
+            decision, episode_id, episode_status = await self._audit_item(task_id, run_id, current, current.work_items[item.id], result)
             episodes.append(episode_id)
-            self.service.submit_audit(task_id, run_id, decision.to_dict())
+            if decision is None:
+                auditor_failures.append(episode_status)
+            else:
+                self.service.submit_audit(task_id, run_id, decision.to_dict())
+        if auditor_failures:
+            self.service.next(
+                task_id,
+                run_id,
+                "request_gate",
+                {
+                    "gate_type": self._episode_failure_gate(auditor_failures),
+                    "role": "auditor",
+                    "statuses": auditor_failures,
+                },
+            )
+            return
         after = self._snapshot(task_id, run_id)
         if after.state == "auditing_wave":
             self.service.next(task_id, run_id, "manage", {})
@@ -394,6 +457,23 @@ class ManagedRunSupervisor:
 
     def _snapshot(self, task_id: str, run_id: str) -> RunSnapshot:
         return RunSnapshot.from_dict(self.service.status(task_id, run_id))
+
+    def _safe_workspace_snapshot(self) -> WorkspaceSnapshot:
+        """Turn snapshot failures into incomplete evidence instead of crashing the run."""
+
+        try:
+            return snapshot_workspace(self.config.workspace)
+        except ContractError as error:
+            root = self.config.workspace.resolve()
+            return WorkspaceSnapshot(root, {}, (f"workspace snapshot failed: {error}",))
+
+    @staticmethod
+    def _episode_failure_gate(statuses: list[str]) -> str:
+        if "permission_required" in statuses:
+            return "permission"
+        if statuses and all(status == "cancelled" for status in statuses):
+            return "cancellation"
+        return "repeated_failure"
 
     @staticmethod
     def _episode_id(snapshot: RunSnapshot, role: str, item_id: str | None = None) -> str:
@@ -432,6 +512,10 @@ class ManagedRunSupervisor:
                 f"added={list(integrity.added)}, deleted={list(integrity.deleted)}, "
                 f"changed={list(integrity.changed)}, type_changed={list(integrity.type_changed)}, "
                 f"errors={list(integrity.errors)}"
+            )
+            details.append(
+                "workspace restoration: attempted=false, verified=false; "
+                "do not auto-restore uncertain Auditor mutations"
             )
         return AuditDecision.from_dict(
             {

@@ -7,6 +7,7 @@ import re
 import tempfile
 import unittest
 from typing import Literal
+from unittest.mock import patch
 
 from runtime.adapters.base import (
     CancellationResult,
@@ -15,6 +16,7 @@ from runtime.adapters.base import (
     HostCapabilities,
 )
 from runtime.config import RoleConfig, RuntimeConfig
+from runtime.core.contracts import ContractError
 from runtime.service import ExpertTeamService
 from runtime.supervisor import ManagedRunSupervisor
 
@@ -28,10 +30,16 @@ class ScriptedAdapter:
         invalid_manager: bool = False,
         mutate_during_audit: bool = False,
         manager_permission: bool = False,
+        manager_cancel: bool = False,
+        executor_permission: bool = False,
+        auditor_permission: bool = False,
     ) -> None:
         self.invalid_manager = invalid_manager
         self.mutate_during_audit = mutate_during_audit
         self.manager_permission = manager_permission
+        self.manager_cancel = manager_cancel
+        self.executor_permission = executor_permission
+        self.auditor_permission = auditor_permission
         self.requests: list[EpisodeRequest] = []
 
     async def probe(self) -> HostCapabilities:
@@ -43,6 +51,42 @@ class ScriptedAdapter:
     async def run_episode(self, request: EpisodeRequest, event_sink=None, cancellation=None) -> EpisodeResult:
         self.requests.append(request)
         if request.role == "manager" and self.manager_permission:
+            return EpisodeResult(
+                request.episode_id,
+                "codex",
+                request.role,
+                "permission_required",
+                "",
+                (),
+                1,
+                1,
+                error="approval required",
+            )
+        if request.role == "manager" and self.manager_cancel:
+            return EpisodeResult(
+                request.episode_id,
+                "codex",
+                request.role,
+                "cancelled",
+                "",
+                (),
+                1,
+                1,
+                error="operator cancelled",
+            )
+        if request.role == "executor" and self.executor_permission:
+            return EpisodeResult(
+                request.episode_id,
+                "codex",
+                request.role,
+                "permission_required",
+                "",
+                (),
+                1,
+                1,
+                error="approval required",
+            )
+        if request.role == "auditor" and self.auditor_permission:
             return EpisodeResult(
                 request.episode_id,
                 "codex",
@@ -165,11 +209,49 @@ class SupervisorTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(0, outcome.snapshot.rounds_used)
         self.assertEqual(["manager", "manager"], [request.role for request in adapter.requests])
 
+    async def test_round_budget_opens_explicit_gate_before_next_manager(self) -> None:
+        self.service.start(
+            "example",
+            "run-budget",
+            {"schema_version": 1, "goal": "budget", "constraints": [], "deliverables": ["out"], "acceptance_criteria": ["audited"]},
+            [
+                {"schema_version": 1, "id": "build", "objective": "build", "role": "coder", "mode": "write", "required": True, "depends_on": [], "ownership": ["src"], "evidence_required": ["evidence"]},
+                {"schema_version": 1, "id": "verify", "objective": "verify", "role": "reviewer", "mode": "verify", "required": True, "depends_on": ["build"], "ownership": [], "evidence_required": ["evidence"]},
+            ],
+            max_rounds=1,
+            retry_limit=2,
+        )
+        config = RuntimeConfig(self.root, 1, 2, 2, True, self.config.roles)
+        outcome = await ManagedRunSupervisor(self.service, config, {"codex": ScriptedAdapter()}).run("example", "run-budget")
+        self.assertEqual("needs_input", outcome.snapshot.state)
+        self.assertEqual("budget", outcome.snapshot.pending_gate)
+        self.assertEqual(1, outcome.snapshot.rounds_used)
+
     async def test_manager_permission_request_opens_explicit_gate(self) -> None:
         adapter = ScriptedAdapter(manager_permission=True)
         outcome = await ManagedRunSupervisor(self.service, self.config, {"codex": adapter}).run("example", "run-1")
         self.assertEqual("needs_input", outcome.snapshot.state)
         self.assertEqual("permission", outcome.snapshot.pending_gate)
+
+    async def test_manager_cancellation_opens_explicit_gate(self) -> None:
+        outcome = await ManagedRunSupervisor(self.service, self.config, {"codex": ScriptedAdapter(manager_cancel=True)}).run("example", "run-1")
+        self.assertEqual("needs_input", outcome.snapshot.state)
+        self.assertEqual("cancellation", outcome.snapshot.pending_gate)
+
+    async def test_executor_permission_opens_gate_without_auditing_or_acceptance(self) -> None:
+        adapter = ScriptedAdapter(executor_permission=True)
+        outcome = await ManagedRunSupervisor(self.service, self.config, {"codex": adapter}).run("example", "run-1")
+        self.assertEqual("needs_input", outcome.snapshot.state)
+        self.assertEqual("permission", outcome.snapshot.pending_gate)
+        self.assertEqual({}, outcome.snapshot.verified_progress)
+        self.assertFalse((self.task / "runs" / "run-1" / "audits" / "build").exists())
+
+    async def test_auditor_permission_opens_gate_without_verified_progress(self) -> None:
+        adapter = ScriptedAdapter(auditor_permission=True)
+        outcome = await ManagedRunSupervisor(self.service, self.config, {"codex": adapter}).run("example", "run-1")
+        self.assertEqual("needs_input", outcome.snapshot.state)
+        self.assertEqual("permission", outcome.snapshot.pending_gate)
+        self.assertEqual({}, outcome.snapshot.verified_progress)
 
     async def test_completion_gate_can_be_approved_by_configured_policy(self) -> None:
         adapter = ScriptedAdapter()
@@ -194,6 +276,19 @@ class SupervisorTests(unittest.IsolatedAsyncioTestCase):
         audit = json.loads(audit_path.read_text(encoding="utf-8"))
         self.assertEqual("invalid", audit["status"])
         self.assertEqual("dirty", audit["integrity"])
+        self.assertTrue(any("workspace restoration" in finding for finding in audit["findings"]))
+
+    async def test_snapshot_failure_rejects_acceptance_and_opens_blocked_gate(self) -> None:
+        adapter = ScriptedAdapter()
+        with patch("runtime.supervisor.snapshot_workspace", side_effect=ContractError("snapshot unavailable")):
+            outcome = await ManagedRunSupervisor(self.service, self.config, {"codex": adapter}).run("example", "run-1")
+        self.assertEqual("needs_input", outcome.snapshot.state)
+        self.assertEqual("blocked", outcome.snapshot.pending_gate)
+        self.assertNotIn("build", outcome.snapshot.verified_progress)
+        audit_path = self.task / "runs" / "run-1" / "audits" / "build" / "attempt-1.json"
+        audit = json.loads(audit_path.read_text(encoding="utf-8"))
+        self.assertEqual("invalid", audit["status"])
+        self.assertTrue(any("workspace diff" in finding for finding in audit["findings"]))
 
     async def test_restart_marks_inflight_executor_abandoned_and_retries_without_accepting_it(self) -> None:
         self.service.next(
@@ -220,6 +315,83 @@ class SupervisorTests(unittest.IsolatedAsyncioTestCase):
         abandoned = [event for event in self.service.events("example", "run-1") if event.kind == "episode.abandoned"]
         self.assertEqual(1, len(abandoned))
         self.assertEqual("abandoned-episode", abandoned[0].payload["episode_id"])
+
+    async def test_restart_reconciles_manager_and_auditor_boundaries(self) -> None:
+        self.service.record_episode_event(
+            "example",
+            "run-1",
+            "episode.started",
+            {"episode_id": "abandoned-manager", "role": "manager", "host": "codex"},
+        )
+        manager_adapter = ScriptedAdapter()
+        manager_outcome = await ManagedRunSupervisor(self.service, self.config, {"codex": manager_adapter}).run("example", "run-1")
+        self.assertEqual("proposed_complete", manager_outcome.snapshot.state)
+        manager_abandoned = [
+            event for event in self.service.events("example", "run-1")
+            if event.kind == "episode.abandoned" and event.payload.get("role") == "manager"
+        ]
+        self.assertEqual(1, len(manager_abandoned))
+
+        # Move the run back to an in-flight audit boundary, then simulate a
+        # controller restart before the Auditor's terminal event is persisted.
+        self.service.answer(
+            "example",
+            "run-1",
+            {
+                "schema_version": 1,
+                "gate_type": "completion",
+                "decision": "continue",
+                "actor": "user",
+                "timestamp": "2026-08-08T00:00:00Z",
+            },
+        )
+        # A completed required item cannot be moved back into an audit wave;
+        # use a fresh run for the Auditor boundary to keep the state machine
+        # realistic and avoid manufacturing illegal events.
+        self.service = ExpertTeamService(self.root, developer="tester-auditor")
+        self.service.start("example", "run-audit", {
+            "schema_version": 1,
+            "goal": "audit restart",
+            "constraints": [],
+            "deliverables": ["out"],
+            "acceptance_criteria": ["audited"],
+        }, [{
+            "schema_version": 1,
+            "id": "build",
+            "objective": "build",
+            "role": "coder",
+            "mode": "write",
+            "required": True,
+            "depends_on": [],
+            "ownership": ["src"],
+            "evidence_required": ["evidence"],
+        }])
+        self.service.next("example", "run-audit", "start_execution", {"work_item_ids": ["build"], "executor_id": "executor-1"})
+        self.service.submit_result("example", "run-audit", {
+            "schema_version": 1,
+            "work_item_id": "build",
+            "attempt": 1,
+            "executor_id": "executor-1",
+            "summary": "done",
+            "artifacts": [],
+            "evidence": ["evidence:build"],
+            "checks": ["checked"],
+            "risks": [],
+        })
+        self.service.next("example", "run-audit", "start_audit", {})
+        self.service.record_episode_event(
+            "example",
+            "run-audit",
+            "episode.started",
+            {"episode_id": "abandoned-auditor", "role": "auditor", "host": "codex", "work_item_id": "build"},
+        )
+        auditor_outcome = await ManagedRunSupervisor(self.service, self.config, {"codex": ScriptedAdapter()}).run("example", "run-audit")
+        self.assertEqual("proposed_complete", auditor_outcome.snapshot.state)
+        auditor_abandoned = [
+            event for event in self.service.events("example", "run-audit")
+            if event.kind == "episode.abandoned" and event.payload.get("role") == "auditor"
+        ]
+        self.assertEqual(1, len(auditor_abandoned))
 
 
 if __name__ == "__main__":

@@ -130,6 +130,32 @@ python scripts/expert_team_run.py --task-id <task> --run-id <run> --quiet
 python scripts/expert_team_run.py --task-id <task> --run-id <run> --json
 ```
 
+同一个入口也提供完整生命周期操作；`--start` 只创建持久化运行，不会立刻消耗模型调用：
+
+```powershell
+# 创建运行（两个文件分别是 TaskContract JSON 和 WorkItem 数组 JSON）
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --start `
+  --contract-file contract.json --work-items-file work-items.json
+
+# 前台继续执行（--run 是同义写法；不写动作时也保持这个旧行为）
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --foreground
+
+# 查看完整叙事、跨会话紧凑状态
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --status
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --resume
+
+# 记录人工门禁决定；推荐传 JSON 文件，避免 shell 转义问题
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --answer decision.json
+
+# 取消运行但保留事件、审计和轨迹引用
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --cancel --cancel-reason "用户停止"
+```
+
+这些命令与 Codex/Claude 的 MCP 生命周期语义相同：`start`、`status`、`resume`、
+`answer`、`cancel` 都只操作 Trellis 持久化状态，`foreground` 才会启动新的角色
+Episode。`--json` 和 `--quiet` 仍可与状态输出动作组合；`resume` 固定输出不含事件明细
+的紧凑 JSON，方便下一次会话接续。
+
 叙事渲染是只读的，只投影经过验证的 Trellis 事件、角色结果、审计、门禁和存储引用。
 它不会为了展示而读取原始 Episode 轨迹，也不会输出宿主 stdout、私有思维链、密钥或
 未脱敏的命令元数据。

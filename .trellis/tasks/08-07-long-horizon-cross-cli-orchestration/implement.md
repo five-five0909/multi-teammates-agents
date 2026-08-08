@@ -153,8 +153,9 @@ process after timeout/cancel.
 - [x] Implement `ManagedRunSupervisor` and its continuous bounded loop.
 - [x] Schedule dependency-ready waves, invoke fresh Executor episodes, persist
   unverified results, and invoke separate Auditor episodes automatically.
-- [ ] Make retry, round, timeout, permission, cancellation, and completion paths
-  converge on explicit durable terminal/gate states.
+- [x] Make retry, round, timeout, permission, cancellation, and completion paths
+  converge on explicit durable terminal/gate states; model-backed cross-host
+  interruption remains an acceptance gate.
 
 Gate: a fake-backend two-round scenario runs from one start call with no manual
 `next/result/audit` calls.
@@ -168,7 +169,8 @@ Gate: a fake-backend two-round scenario runs from one start call with no manual
   mismatched work/attempt, self-audit, unavailable Auditor, or uncertain restore.
 - [x] Record evidence provenance and workspace-guard diagnostics without placing
   bulky manifests in compact task state.
-- [ ] Test mutation and restoration failure paths fail closed.
+- [x] Test mutation, unreadable-file, snapshot-failure, and restoration-
+  uncertainty paths fail closed without automatic file restoration.
 
 Gate: an Executor success claim cannot become verified progress unless a real
 independent Auditor episode and integrity guard both pass.
@@ -177,9 +179,10 @@ independent Auditor episode and integrity guard both pass.
 
 - [x] Implement strict versioned project configuration and precedence resolution
   for per-role host/model/timeout/context/output settings.
-- [ ] Prove secrets are sourced at runtime, redacted, and absent from prompts,
+- [x] Prove secrets are sourced at runtime, redacted, and absent from prompts,
   command metadata, events, snapshots, reports, and diagnostics.
-- [x] Add supervisor start/run/status/resume/answer/cancel entry points.
+- [x] Add MCP and repository-CLI start/foreground/status/resume/answer/cancel
+  entry points backed by the same service contracts.
 - [x] Implement and test deterministic lightweight/managed qualification so a
   bounded request creates no managed run and an eligible request does.
 - [x] Update Codex and Claude skill instructions to drive the same paused human

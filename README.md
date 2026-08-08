@@ -145,6 +145,34 @@ python scripts/expert_team_run.py --task-id <task> --run-id <run> --quiet
 python scripts/expert_team_run.py --task-id <task> --run-id <run> --json
 ```
 
+The same entry point exposes the complete lifecycle. `--start` creates durable
+state only; it does not launch a model episode:
+
+```powershell
+# Create a run (the files contain a TaskContract and a WorkItem array)
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --start `
+  --contract-file contract.json --work-items-file work-items.json
+
+# Continue in the foreground (--run is an alias; no action keeps this legacy behavior)
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --foreground
+
+# Inspect the full narrative or compact cross-session state
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --status
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --resume
+
+# Record a human-gate decision; a JSON file avoids shell quoting problems
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --answer decision.json
+
+# Cancel without deleting events, audits, or trace references
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --cancel --cancel-reason "user stopped"
+```
+
+These commands have the same lifecycle semantics as the Codex/Claude MCP
+surface: `start`, `status`, `resume`, `answer`, and `cancel` operate on durable
+Trellis state; only `foreground` launches fresh role episodes. `--json` and
+`--quiet` can be combined with status actions. `resume` always emits compact
+JSON without event details so another session can pick up safely.
+
 The narrative is read-only. It projects validated Trellis events, role results,
 audits, gates, and storage references; it never reads raw episode trajectories
 for display.

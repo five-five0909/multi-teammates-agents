@@ -30,6 +30,35 @@ This proves plugin-managed MCP registration on both package surfaces without
 editing the user's Codex or Claude configuration. CC Switch JSON remains only
 the documented fallback for hosts that cannot consume bundled plugin MCP.
 
+## 2026-08-08 terminal lifecycle recheck
+
+The repository-local `scripts/expert_team_run.py` now exposes the same durable
+lifecycle as the MCP service: `--start` creates a run from strict contract and
+work-item JSON, `--foreground`/`--run` drives the supervisor, `--status` renders
+the public narrative, `--resume` returns compact continuation state,
+`--answer` records a HumanDecision, and `--cancel` preserves evidence while
+terminating the run. The regression invokes the real script in a clean
+temporary Trellis task and completes start -> status -> resume -> answer ->
+cancel without manually submitting role results or audits.
+
+Evidence: `tests/test_cli_lifecycle.py`, `python -m unittest tests.test_cli_lifecycle`
+(`1 test`, PASS), and the full suite (`88 tests`, PASS). This closes the local
+CLI half of R25; the native Codex/Claude model-backed gate matrix remains open.
+
+## 2026-08-08 failure and secret-safety recheck
+
+Executor/Auditor permission-required, timeout, cancellation, and generic
+episode failures now persist terminal episode events, move unaccepted work to
+bounded rework/blocked state, and open a durable permission or repeated-failure
+gate instead of fabricating a result for audit. A round budget opens an explicit
+`budget` gate before a new Manager episode. Restart tests cover unmatched
+Manager, Executor, and Auditor starts and preserve the abandoned marker.
+
+The shared redaction boundary covers process streams, command metadata, service
+events, role/audit files, compact snapshots, final reports, and diagnostic
+traces. `tests/test_service_mcp.py` scans the actual temporary Trellis files;
+unreadable files and snapshot failures remain fail-closed integrity evidence.
+
 ## Evidence classification
 
 | Level | Meaning | Present |
@@ -49,18 +78,18 @@ the documented fallback for hosts that cannot consume bundled plugin MCP.
 | AC4 | Pass (core) | Replay and abandoned Executor retry preserve accepted evidence; not every real-host boundary has been interrupted. |
 | AC5 | Pass | Replay/snapshot equality and corrupt-tail diagnostics are tested. |
 | AC6 | Partial | Dependency/ownership scheduling and shared adapter contracts pass; Codex real run sequenced dependent work correctly, but cross-host model-backed scheduling is unproved. |
-| AC7 | Partial | Ask/blocked/repeated-failure/completion policy and Manager permission gates are durable; the full gate matrix and both native UX surfaces remain open. |
+| AC7 | Partial | Ask/blocked/repeated-failure/budget/completion and Manager/Executor/Auditor permission gates are durable; MCP and the repository CLI expose equivalent answer/resume/cancel semantics, but the full real-host gate matrix and both native model UX surfaces remain open. |
 | AC8 | Partial | Runner argument tests reject bypass options, Codex real traces show no bypass flags and read-only Auditor sandbox, Claude real trace shows no bypass flag before account-policy failure; actual permission prompts have not been observed on both hosts. |
 | AC9 | Partial | Qualification is deterministic and side-effect-free, and explicit managed start persists a run; auto-qualified creation is not one atomic operation. |
 | AC10 | Pass (simulated integration) | The actual supervisor uses bounded compact Manager prompts; tests exclude trajectories and validate dependency-ready parsing. |
 | AC11 | Pass | Twenty profiles and coordinator boundaries are validated. |
 | AC12 | Partial | Unit, typing, fixture validator, fake runners, probes, and Claude plugin validation pass; Codex model-backed E2E passes; Claude model-backed E2E/resume remains externally blocked. |
-| AC13 | Partial | README, managed-mode reference, config example, storage, permission, and rollback guidance exist; final E2E runbook evidence is pending. |
+| AC13 | Partial | README, Chinese README, managed-mode reference, config example, storage, permission, rollback guidance, and CLI lifecycle commands exist; final cross-host E2E runbook evidence is pending. |
 | AC14 | Partial | One supervisor call drives two complete Manager/Executor/Auditor rounds in fake integration and in Codex model-backed E2E; Claude is blocked before Manager completion. |
 | AC15 | Partial | Fresh process, normalized streams, timeout, cancellation, cleanup, and real probes pass; Codex model-backed traces prove fresh role episodes; Claude process starts but model access is blocked. |
-| AC16 | Partial | Add/edit/delete/type-change and incomplete hash snapshots reject acceptance; unreadable/restore-failure cases remain open. |
-| AC17 | Partial | Explicit > project > per-role environment/default precedence and secret-field rejection pass; complete artifact leak scanning remains open. |
-| AC18 | Partial | Unmatched Executor start becomes durable `episode.abandoned` and retries without accepting it; every episode boundary is not yet covered. |
+| AC16 | Pass (deterministic) | Add/edit/delete/type-change, unreadable-file, snapshot-failure, and mutation/restoration-uncertainty tests all fail closed; uncertain restoration is recorded as not attempted/not verified rather than auto-reverting user files. |
+| AC17 | Pass (deterministic) | Explicit > project > per-role environment/default precedence and secret-field rejection pass; centralized redaction is now asserted across process streams, command metadata, events, role/audit records, snapshots, reports, and diagnostic traces. |
+| AC18 | Partial | Unmatched Manager, Executor, and Auditor starts become durable `episode.abandoned` records; failed/timeout/cancelled role terminals now rework or block without accepting evidence. Real host interruption coverage at every boundary remains open. |
 | AC19 | Pass (reporting) | This report distinguishes all four proof levels and does not relabel the Claude account-policy failure as E2E success. |
 
 ## Implemented foundation
@@ -83,10 +112,10 @@ the documented fallback for hosts that cannot consume bundled plugin MCP.
 
 ```text
 python -m unittest discover tests
-Ran 78 tests — OK
+Ran 88 tests — OK
 
 python -m mypy runtime scripts tests
-Success: no issues found in 42 source files
+Success: no issues found in 49 source files
 
 python -m compileall runtime scripts tests
 PASS

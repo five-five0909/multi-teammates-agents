@@ -81,6 +81,8 @@ class EpisodeRunnerTests(unittest.IsolatedAsyncioTestCase):
             Path(sys.executable).resolve(),
             Path(str(result.metadata["command"][0])).resolve(),  # type: ignore[index]
         )
+        self.assertNotIn("not-a-real-secret", result.raw_stdout)
+        self.assertIn("***REDACTED***", result.raw_stdout)
 
     async def test_malformed_stdout_fails_closed(self) -> None:
         result = await FakeAdapter().run_episode(request("malformed"))
@@ -146,6 +148,7 @@ class EpisodeRunnerTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(ValueError, "read-only"):
             EpisodeRequest("e", "r", 1, "auditor", "a", "p", ROOT, work_item_id="build")
         self.assertNotIn("hunter2", redact_secrets("API_KEY=hunter2"))
+        self.assertNotIn("sk-live-secret", redact_secrets("Bearer sk-live-secret"))
 
 
 if __name__ == "__main__":

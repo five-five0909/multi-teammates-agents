@@ -100,12 +100,12 @@ def apply_event(snapshot: RunSnapshot, event: RunEvent) -> RunSnapshot:
         }
         if state not in expected_states[role]:
             raise ContractError(f"cannot record {role} episode {episode_id} from {state}")
-        if event.kind == "episode.abandoned" and role in {"executor", "auditor"}:
+        if event.kind in {"episode.abandoned", "episode.failed", "episode.timeout", "episode.cancelled"} and role in {"executor", "auditor"}:
             item_id = _payload_id(event.payload, "work_item_id")
             item = _item(snapshot, item_id)
             expected_status = "running" if role == "executor" else "auditing"
             if item.status != expected_status:
-                raise ContractError(f"abandoned {role} episode does not match active work item")
+                raise ContractError(f"failed {role} episode does not match active work item")
             next_status = "blocked" if item.attempt >= snapshot.retry_limit else "rework"
             items = _with_item(snapshot, replace(item, status=next_status))  # type: ignore[arg-type]
             still_active = any(
@@ -201,11 +201,27 @@ def apply_event(snapshot: RunSnapshot, event: RunEvent) -> RunSnapshot:
             state = "blocked"
 
     elif event.kind == "human.gate_requested":
-        if state not in {"managing", "auditing_wave", "blocked"}:
+        if state not in {"managing", "executing_wave", "auditing_wave", "blocked"}:
             raise ContractError(f"cannot request human gate from {state}")
         gate = _payload_id(event.payload, "gate_type")
         if gate not in GATE_TYPES:
             raise ContractError(f"unknown human gate type: {gate}")
+        if state == "executing_wave":
+            if gate not in {"permission", "repeated_failure", "budget", "cancellation", "blocked"}:
+                raise ContractError(f"cannot request human gate from {state}")
+            updated = dict(items)
+            for item in items.values():
+                if item.status in {"running", "submitted", "auditing"}:
+                    next_status = "blocked" if item.attempt >= snapshot.retry_limit else "rework"
+                    updated[item.id] = replace(item, status=next_status)  # type: ignore[arg-type]
+            items = updated
+        elif state == "auditing_wave" and gate != "completion":
+            updated = dict(items)
+            for item in items.values():
+                if item.status in {"running", "submitted", "auditing"}:
+                    next_status = "blocked" if item.attempt >= snapshot.retry_limit else "rework"
+                    updated[item.id] = replace(item, status=next_status)  # type: ignore[arg-type]
+            items = updated
         if gate == "completion":
             if not _can_complete(replace(snapshot, work_items=items)):
                 raise ContractError("cannot propose completion with unaccepted required work")

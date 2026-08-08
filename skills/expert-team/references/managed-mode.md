@@ -37,6 +37,15 @@ Use `expert_team_status` for the full validated snapshot and
 `expert_team_resume` for compact cross-session context. Use
 `expert_team_cancel` to stop safely without deleting evidence.
 
+The repository-local `scripts/expert_team_run.py` exposes the same lifecycle
+for a terminal-only workflow: `--start` creates a run from
+`--contract-file`/`--work-items-file`, `--foreground` (or `--run`) drives the
+supervisor, `--status` renders the public summary, `--resume` prints compact
+state, `--answer decision.json` records a human decision, and `--cancel`
+preserves evidence while stopping the run. Omitting an action keeps the legacy
+foreground behavior. The CLI and MCP surfaces call the same service contracts;
+they do not maintain separate state machines.
+
 When native Codex or Claude structured events are available, call
 `expert_team_record_host_event` with the host and role. The runtime normalizes
 them and writes only the diagnostic projection under the separate Trellis
@@ -44,8 +53,10 @@ workspace trace directory; host payload formats never enter the core reducer.
 
 The supervisor launches real CLI episodes with the host's current permission
 policy. Never add approval/sandbox bypass flags. If a host binary, permission, or
-model is unavailable, preserve the failed episode and gate/block the run; never
-substitute acceptance.
+model is unavailable, preserve the failed episode, move the affected work item
+to bounded rework/blocked state, and gate/block the run; never substitute
+acceptance. Executor and Auditor permission failures open a `permission` gate
+through the same answer/resume flow as Manager permission failures.
 
 ## Interaction at each round boundary
 

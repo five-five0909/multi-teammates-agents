@@ -46,6 +46,12 @@ Local lifecycle entry:
 ```text
 python scripts/expert_team_run.py --probe
 python scripts/expert_team_run.py --task-id <task> --run-id <run>
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --start --contract-file contract.json --work-items-file work-items.json
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --foreground
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --status
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --resume
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --answer decision.json
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --cancel
 python scripts/expert_team_run.py --task-id <task> --run-id <run> --quiet
 python scripts/expert_team_run.py --task-id <task> --run-id <run> --json
 ```
@@ -55,6 +61,10 @@ preserves the legacy snapshot JSON output for scripts, while `--json` emits a
 compact structured public projection. Neither mode exposes raw host stdout,
 private reasoning, secrets, or command metadata; the projection reads only
 validated run events, role results, audits, and persisted Trellis references.
+`--start` creates durable state without launching an Episode, `--foreground`
+(also `--run`) drives the supervisor, and the remaining lifecycle actions map
+one-to-one to the service/MCP operations. `--resume` is intentionally compact
+and omits event IDs and raw traces.
 
 The MCP `expert_team_run` response keeps the existing `snapshot` and
 `episode_ids` fields and adds `console` (the structured public projection) and
@@ -230,7 +240,7 @@ snapshots are atomic, and replay must reproduce the accepted state.
 | Manager route is empty, malformed, or unknown | Persist bounded repair feedback; never default to execution/completion. |
 | Auditor episode is missing, unavailable, or shares the Executor session | Reject acceptance. |
 | Auditor changes the workspace or the before/after snapshot is incomplete | Reject the audit fail closed and preserve diagnostics. |
-| Role episode times out or is cancelled | Terminate descendants, persist the terminal episode event, and leave no accepted evidence. |
+| Role episode fails, times out, or is cancelled | Persist the terminal episode event, move the active item to bounded rework/blocked state, open a durable gate when the supervisor cannot continue safely, and leave no accepted evidence. |
 | Host reports `permission_required` | Persist the host event and open a `permission` human gate; never retry by adding a bypass flag. |
 | Host binary exists only through a shell shim | Resolve the binary path before `create_subprocess_exec`; do not launch through a shell. |
 | Host emits prelude/progress assistant messages before final JSON | Select the final standalone JSON object as `visible_output`; do not parse a concatenated transcript. |
@@ -299,6 +309,8 @@ snapshots are atomic, and replay must reproduce the accepted state.
 - Runner tests use fake executables to assert argument lists, stdin prompts,
   streaming, malformed output, timeout, cancellation, descendant cleanup,
   permission propagation, redaction, and fresh episode identity.
+- Local lifecycle tests invoke the real terminal entry point and cover start,
+  status, resume, answer, and cancel without bypassing the service contracts.
 - Runner tests assert command metadata contains the resolved executable path when
   the host is launched, and that Codex/Claude output extraction prefers the last
   standalone JSON assistant message over prelude messages.
@@ -315,6 +327,9 @@ snapshots are atomic, and replay must reproduce the accepted state.
 - Run mypy for the validator and its tests.
 - Configuration tests assert global and per-role environment fallback, project
   precedence, explicit override precedence, strict fields, and secret rejection.
+- Durable-boundary tests assert labelled credentials and common bearer/API-key
+  forms are redacted from process streams, command metadata, events, role/audit
+  records, snapshots, reports, and diagnostic traces before they are persisted.
 - Human-gate tests assert permission visibility and that disabling the completion
   gate records an attributable `configured-policy` decision instead of silently
   skipping the durable gate event.

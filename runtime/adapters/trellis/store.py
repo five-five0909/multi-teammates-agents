@@ -15,6 +15,7 @@ from typing import Iterator
 from ...core.codec import decode_events, encode_event
 from ...core.contracts import ContractError, RunEvent, RunSnapshot, TaskContract, WorkItem
 from ...core.contracts import AuditDecision, BackendEvent, HumanDecision, RoleResult
+from ...security import redact_value
 from ...core.reducer import apply_event, create_snapshot, replay
 
 
@@ -156,7 +157,7 @@ class TrellisRunStore:
         if result.work_item_id not in self.load(run_id).work_items:
             raise ContractError(f"unknown work item: {result.work_item_id}")
         directory = self._record_directory(run_id, "work-items", result.work_item_id)
-        _atomic_json(directory / f"attempt-{result.attempt}.json", result.to_dict())
+        _atomic_json(directory / f"attempt-{result.attempt}.json", redact_value(result.to_dict()))
 
     def load_role_result(self, run_id: str, work_item_id: str, attempt: int) -> RoleResult:
         directory = self._record_directory(run_id, "work-items", work_item_id)
@@ -166,10 +167,10 @@ class TrellisRunStore:
         if decision.work_item_id not in self.load(run_id).work_items:
             raise ContractError(f"unknown work item: {decision.work_item_id}")
         directory = self._record_directory(run_id, "audits", decision.work_item_id)
-        _atomic_json(directory / f"attempt-{decision.attempt}.json", decision.to_dict())
+        _atomic_json(directory / f"attempt-{decision.attempt}.json", redact_value(decision.to_dict()))
 
     def record_human_decision(self, run_id: str, decision: HumanDecision) -> None:
-        self._append_jsonl(self.run_dir(run_id) / "decisions.jsonl", decision.to_dict())
+        self._append_jsonl(self.run_dir(run_id) / "decisions.jsonl", redact_value(decision.to_dict()))
 
     def record_round(self, run_id: str, value: dict[str, object]) -> None:
         self.load(run_id)
@@ -179,7 +180,7 @@ class TrellisRunStore:
         self.load(run_id)
         directory = self.trace_dir(run_id)
         directory.mkdir(parents=True, exist_ok=True)
-        self._append_jsonl(directory / "backend-events.jsonl", event.to_dict())
+        self._append_jsonl(directory / "backend-events.jsonl", redact_value(event.to_dict()))
 
     def record_episode_trace(self, run_id: str, episode_id: str, value: dict[str, object]) -> Path:
         self.load(run_id)
@@ -188,7 +189,7 @@ class TrellisRunStore:
         directory = self.trace_dir(run_id) / "episodes"
         directory.mkdir(parents=True, exist_ok=True)
         path = directory / f"{episode_id}.json"
-        _atomic_json(path, value)
+        _atomic_json(path, redact_value(value))
         return path
 
     def read_events(self, run_id: str) -> tuple[RunEvent, ...]:
@@ -209,7 +210,7 @@ class TrellisRunStore:
         descriptor, temp_name = tempfile.mkstemp(prefix=".final-report.", suffix=".tmp", dir=path.parent)
         try:
             with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as handle:
-                handle.write(report.rstrip() + "\n")
+                handle.write(str(redact_value(report)).rstrip() + "\n")
                 handle.flush()
                 os.fsync(handle.fileno())
             os.replace(temp_name, path)

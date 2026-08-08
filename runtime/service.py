@@ -5,13 +5,14 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import json
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, cast
 from uuid import uuid4
 
 from .adapters.trellis import TrellisRunStore
 from .adapters.claude import normalize_claude_event
 from .adapters.codex import normalize_codex_event
-from .core.contracts import AuditDecision, ContractError, HumanDecision, RoleResult, RunEvent, TaskContract, WorkItem
+from .core.contracts import AuditDecision, BackendEvent, ContractError, HumanDecision, RoleResult, RunEvent, TaskContract, WorkItem
+from .security import redact_value
 
 
 def _now() -> str:
@@ -49,8 +50,8 @@ class ExpertTeamService:
     def start(self, task_id: str, run_id: str, contract: Any, work_items: Any, *, max_rounds: int = 20, retry_limit: int = 2) -> dict[str, Any]:
         if not isinstance(work_items, list):
             raise ContractError("work_items must be an array")
-        parsed_contract = TaskContract.from_dict(contract)
-        parsed_items = [WorkItem.from_dict(value) for value in work_items]
+        parsed_contract = TaskContract.from_dict(redact_value(contract))
+        parsed_items = [WorkItem.from_dict(redact_value(value)) for value in work_items]
         coordinators = self._coordinator_ids()
         dispatched_coordinators = sorted({item.role for item in parsed_items if item.role in coordinators})
         if dispatched_coordinators:
@@ -86,7 +87,7 @@ class ExpertTeamService:
         return updated.to_dict()
 
     def submit_result(self, task_id: str, run_id: str, value: Any) -> dict[str, Any]:
-        result = RoleResult.from_dict(value)
+        result = RoleResult.from_dict(redact_value(value))
         store = self._store(task_id)
         current = store.load(run_id)
         updated = store.append(self._event(current, "executor.result_submitted", result.to_dict()), owner="mcp-result")
@@ -94,7 +95,7 @@ class ExpertTeamService:
         return updated.to_dict()
 
     def submit_audit(self, task_id: str, run_id: str, value: Any) -> dict[str, Any]:
-        decision = AuditDecision.from_dict(value)
+        decision = AuditDecision.from_dict(redact_value(value))
         store = self._store(task_id)
         current = store.load(run_id)
         updated = store.append(self._event(current, "audit.recorded", decision.to_dict()), owner="mcp-audit")
@@ -102,7 +103,7 @@ class ExpertTeamService:
         return updated.to_dict()
 
     def answer(self, task_id: str, run_id: str, value: Any) -> dict[str, Any]:
-        decision = HumanDecision.from_dict(value)
+        decision = HumanDecision.from_dict(redact_value(value))
         store = self._store(task_id)
         current = store.load(run_id)
         payload = {"decision": decision.decision, "gate_type": decision.gate_type, "actor": decision.actor, "instruction": decision.instruction}
@@ -143,8 +144,9 @@ class ExpertTeamService:
             normalized = normalize_claude_event(value, role=role)  # type: ignore[arg-type]
         else:
             raise ContractError(f"unsupported host: {host}")
+        normalized = BackendEvent.from_dict(redact_value(normalized.to_dict()))
         store = self._store(task_id)
-        store.record_backend_event(run_id, normalized)
+        self.record_backend_event(task_id, run_id, normalized)
         return normalized.to_dict()
 
     def record_episode_event(
@@ -171,13 +173,13 @@ class ExpertTeamService:
         episode_id: str,
         value: Mapping[str, object],
     ) -> str:
-        path = self._store(task_id).record_episode_trace(run_id, episode_id, dict(value))
+        safe_value = cast(dict[str, object], redact_value(dict(value)))
+        path = self._store(task_id).record_episode_trace(run_id, episode_id, safe_value)
         return path.relative_to(self.repo_root).as_posix()
 
     def record_backend_event(self, task_id: str, run_id: str, event: Any) -> None:
-        from .core.contracts import BackendEvent
-
-        parsed = event if isinstance(event, BackendEvent) else BackendEvent.from_dict(event)
+        parsed_value = event.to_dict() if isinstance(event, BackendEvent) else event
+        parsed = BackendEvent.from_dict(redact_value(parsed_value))
         self._store(task_id).record_backend_event(run_id, parsed)
 
     def events(self, task_id: str, run_id: str) -> tuple[RunEvent, ...]:
@@ -200,4 +202,5 @@ class ExpertTeamService:
 
     @staticmethod
     def _event(snapshot: Any, kind: str, payload: Mapping[str, Any]) -> RunEvent:
-        return RunEvent.from_dict({"schema_version": 1, "id": str(uuid4()), "run_id": snapshot.run_id, "seq": snapshot.last_seq + 1, "expected_version": snapshot.version, "kind": kind, "timestamp": _now(), "payload": dict(payload)})
+        safe_payload = redact_value(dict(payload))
+        return RunEvent.from_dict({"schema_version": 1, "id": str(uuid4()), "run_id": snapshot.run_id, "seq": snapshot.last_seq + 1, "expected_version": snapshot.version, "kind": kind, "timestamp": _now(), "payload": safe_payload})

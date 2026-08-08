@@ -7,7 +7,9 @@ import unittest
 
 from runtime.server.mcp_stdio import MCPServer, TOOL_SCHEMAS
 from runtime.service import ExpertTeamService
-from runtime.core.contracts import ContractError
+from runtime.core.contracts import BackendEvent, ContractError
+from runtime.core.contracts import RunSnapshot
+from runtime.prompts import build_manager_prompt
 
 
 class ServiceTests(unittest.TestCase):
@@ -74,6 +76,91 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual("permission_required", claude["status"])
         trace = self.root / ".trellis" / "workspace" / "tester" / "traces" / "run-1" / "backend-events.jsonl"
         self.assertEqual(2, len(trace.read_text(encoding="utf-8").splitlines()))
+
+    def test_durable_diagnostics_redact_secrets_at_service_boundary(self) -> None:
+        self.service.start("example", "run-1", {**self.contract, "goal": "Ship secret=super-secret"}, self.items)
+        sanitized_snapshot = RunSnapshot.from_dict(self.service.status("example", "run-1"))
+        self.assertNotIn("super-secret", build_manager_prompt(sanitized_snapshot, max_chars=4_000))
+        self.service.record_episode_trace(
+            "example",
+            "run-1",
+            "episode-1",
+            {"stdout": "API_KEY=super-secret", "metadata": {"token": "sk-live-secret"}},
+        )
+        self.service.record_backend_event(
+            "example",
+            "run-1",
+            BackendEvent.from_dict(
+                {
+                    "schema_version": 1,
+                    "host": "codex",
+                    "role": "manager",
+                    "action": "secret=super-secret",
+                    "status": "progress",
+                    "source_id": "sk-live-secret",
+                    "references": ["password=hunter2"],
+                }
+            ),
+        )
+        self.service.next("example", "run-1", "start_execution", {"work_item_ids": ["research"], "executor_id": "executor-1"})
+        self.service.submit_result(
+            "example",
+            "run-1",
+            {
+                "schema_version": 1,
+                "work_item_id": "research",
+                "attempt": 1,
+                "executor_id": "executor-1",
+                "summary": "done",
+                "artifacts": [],
+                "evidence": ["API_KEY=super-secret"],
+                "checks": [],
+                "risks": [],
+            },
+        )
+        self.service.next("example", "run-1", "start_audit", {})
+        self.service.submit_audit(
+            "example",
+            "run-1",
+            {
+                "schema_version": 1,
+                "work_item_id": "research",
+                "attempt": 1,
+                "auditor_id": "auditor-1",
+                "executor_id": "executor-1",
+                "status": "accepted",
+                "integrity": "clean",
+                "contract_alignment": "aligned",
+                "evidence": ["API_KEY=super-secret"],
+                "findings": [],
+                "required_rework": [],
+            },
+        )
+        self.service.next("example", "run-1", "request_gate", {"gate_type": "completion"})
+        self.service.answer(
+            "example",
+            "run-1",
+            {
+                "schema_version": 1,
+                "gate_type": "completion",
+                "decision": "approve",
+                "actor": "user",
+                "timestamp": "2026-08-08T00:00:00Z",
+            },
+        )
+        contents = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in (self.task / "runs" / "run-1").rglob("*")
+            if path.is_file()
+        )
+        trace_contents = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in (self.root / ".trellis" / "workspace").rglob("*")
+            if path.is_file()
+        )
+        self.assertNotIn("super-secret", contents + trace_contents)
+        self.assertNotIn("sk-live-secret", contents + trace_contents)
+        self.assertNotIn("hunter2", contents + trace_contents)
 
 
 class MCPProtocolTests(unittest.TestCase):

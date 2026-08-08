@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from runtime.audit_guard import diff_workspace, snapshot_workspace
 from runtime.config import load_runtime_config
@@ -137,6 +138,17 @@ class WorkspaceGuardTests(unittest.TestCase):
             snapshot = snapshot_workspace(root, max_hash_bytes=2)
             self.assertFalse(snapshot.complete)
             self.assertIn("hash limit", snapshot.errors[0])
+
+    def test_unreadable_file_makes_snapshot_incomplete_and_diff_dirty(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "private.txt").write_text("cannot inspect", encoding="utf-8")
+            with patch("runtime.audit_guard.Path.read_bytes", side_effect=OSError("permission denied")):
+                before = snapshot_workspace(root)
+            after = snapshot_workspace(root)
+            self.assertFalse(before.complete)
+            self.assertIn("permission denied", before.errors[0])
+            self.assertFalse(diff_workspace(before, after).clean)
 
 
 class PromptTests(unittest.TestCase):

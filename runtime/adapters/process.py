@@ -6,7 +6,6 @@ import asyncio
 from collections.abc import Sequence
 import json
 import os
-import re
 import shutil
 import signal
 import subprocess
@@ -24,15 +23,7 @@ from .base import (
     HostName,
 )
 from ..core.contracts import BackendEvent, ContractError
-
-
-_SECRET_PATTERN = re.compile(
-    r"(?i)(api[_-]?key|auth[_-]?token|access[_-]?token|password|secret)(\s*[=:]\s*)([^\s,;]+)"
-)
-
-
-def redact_secrets(text: str) -> str:
-    return _SECRET_PATTERN.sub(r"\1\2***REDACTED***", text)
+from ..security import redact_secrets, redact_value
 
 
 class CommandHostAdapter:
@@ -126,7 +117,7 @@ class CommandHostAdapter:
                 int((time.monotonic() - started) * 1000),
                 None,
                 error=redact_secrets(str(error)),
-                metadata={"command": list(command), "fresh_process": True},
+                metadata={"command": redact_value(list(command)), "fresh_process": True},
             )
         self._active[request.episode_id] = process
         records: list[Mapping[str, Any]] = []
@@ -249,7 +240,7 @@ class CommandHostAdapter:
             raw_stdout=stdout,
             raw_stderr=stderr,
             metadata={
-                "command": list(command),
+                "command": redact_value(list(command)),
                 "fresh_process": True,
                 "read_only": request.read_only,
                 "permission_posture": request.permission_posture,
