@@ -87,8 +87,8 @@ Completion check: transcript fixtures 无法伪造 consent、跳过 planning rev
 Ownership: tests、scripts validators、installed-cache smoke fixtures。
 
 - [ ] 覆盖 MCP restart、compact/new session、task drift、duplicate run、cancel/late result。
-- [ ] 覆盖 checkout vs installed cache tools/list/version/skill contract。
-- [x] 从安装缓存启动 MCP，证明 task lookup 使用用户 workspace 而非 plugin cache root。
+- [x] 覆盖 checkout vs installed cache tools/list/version/skill contract。
+- [x] 从安装缓存启动 MCP，证明 task lookup 使用用户 workspace 而非 plugin cache root，并完成版本兼容报告与 prepare → qualify → start。
 - [x] 覆盖旧会话 stale、重装后新会话、cachebuster、Claude package base version；当前会话仍需重开才热加载。
 - [ ] 覆盖 hook trusted/untrusted、interactive/noninteractive、native single-select/fallback。
 - [ ] 把历史 simulation 失守链做成 transcript conformance regression。

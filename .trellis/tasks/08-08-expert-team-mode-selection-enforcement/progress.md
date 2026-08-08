@@ -53,6 +53,12 @@
 - The standalone `expert_team_version` MCP diagnostic and read-only
   `scripts/expert_team_upgrade.py --check` are covered by regression tests;
   `--upgrade` refreshes marketplace/install without deleting cache entries.
+- After commit `049eba3`, `git push origin main` and the Codex marketplace
+  refresh installed `0.4.1+codex.20260808161530`. Installed-cache smoke passed
+  initialize (`0.4.1`), `tools/list` (`expert_team_version` present), compatible
+  version report, and prepare → qualify → start. The CLI still printed the
+  known Windows cache-backup access warning, but `codex plugin list` verified
+  the new cache is enabled.
 - Run the final Trellis check/spec review, clean generated local gate files,
   and prepare an ownership-scoped commit; unrelated pre-existing dirty files
   remain uncommitted.

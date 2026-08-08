@@ -66,12 +66,18 @@ Added terminal-first public narrative rendering for managed Expert Team runs. In
 
 ### Testing
 
-- [ ] 版本门禁、MCP 诊断、CLI check 和全量回归待本轮执行。
+- [OK] 105 个单测、mypy（56 文件）、compileall、契约 fixture、Claude agent
+  渲染、skill/plugin validator、Claude strict validate、task validate 和
+  `git diff --check`。
+- [OK] 推送 `049eba3` 后安装缓存为
+  `0.4.1+codex.20260808161530`；initialize/tools-list/version/prepare/qualify/start
+  冒烟通过。Windows 备份旧缓存警告已记录，未删除任何缓存。
 
 ### Status
 
-[IN PROGRESS] 代码已写入工作区；发布号升至 `0.4.1`，安装缓存升级与新会话冒烟
-将在质量检查通过后执行。既有未归属脏文件不纳入本轮提交。
+[IN PROGRESS] 发布号升至 `0.4.1`，代码已推送并完成安装缓存冒烟。当前 Codex
+会话工具快照仍不可热加载，必须新开会话后再验证宿主实际调用；既有未归属脏文件
+不纳入本轮提交。
 
 ## Session 6: 强制 Expert Team 模式入口与收据门禁
 
