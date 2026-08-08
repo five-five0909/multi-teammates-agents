@@ -51,4 +51,7 @@ substitute acceptance.
 
 Report verified progress, unverified/rejected work, the next proposed wave,
 round budget, and pending human decisions. Never present Executor output as
-accepted before its audit event succeeds.
+accepted before its audit event succeeds. The local CLI renders these public
+summaries by default; use `--quiet` for the legacy JSON snapshot or `--json`
+for automation. The narrative never includes raw host stdout, private model
+reasoning, secrets, or unredacted command metadata.

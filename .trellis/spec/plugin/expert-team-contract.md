@@ -46,7 +46,21 @@ Local lifecycle entry:
 ```text
 python scripts/expert_team_run.py --probe
 python scripts/expert_team_run.py --task-id <task> --run-id <run>
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --quiet
+python scripts/expert_team_run.py --task-id <task> --run-id <run> --json
 ```
+
+The local runner prints a public round-by-round narrative by default. `--quiet`
+preserves the legacy snapshot JSON output for scripts, while `--json` emits a
+compact structured public projection. Neither mode exposes raw host stdout,
+private reasoning, secrets, or command metadata; the projection reads only
+validated run events, role results, audits, and persisted Trellis references.
+
+The MCP `expert_team_run` response keeps the existing `snapshot` and
+`episode_ids` fields and adds `console` (the structured public projection) and
+`narrative` (the same projection rendered as terminal text). Its MCP text
+content is `narrative`; callers that need automation should consume
+`structuredContent.console` or use the local runner's `--json` mode.
 
 Executable managed-host boundary (required before managed mode may claim runtime
 completion):

@@ -90,6 +90,13 @@ enforces timeouts/cancellation, and pauses at durable human gates. The lower-lev
 `next`/`submit_result`/`submit_audit` tools are recovery/integration primitives,
 not the normal interaction path.
 
+Managed runs are terminal-first: the Codex/Claude MCP tool returns a readable
+public narrative with each Manager decision, Executor summary, Auditor result,
+and Trellis synchronization point. The local runner prints the same narrative
+by default; use `--quiet` for the legacy snapshot JSON or `--json` for a compact
+machine-readable projection. Raw host stdout, private reasoning, secrets, and
+unredacted command metadata are never part of the narrative.
+
 Executor output is unverified until a different Auditor accepts real evidence.
 Completion additionally requires all required items accepted and the human
 completion gate approved.
