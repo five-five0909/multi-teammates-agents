@@ -177,3 +177,36 @@ Codex/Claude 配置。
 ### Next Steps
 
 - None - task complete
+
+
+## Session 5: 刷新插件缓存并验证 Expert Team 强制入口
+
+**Date**: 2026-08-08
+**Task**: 刷新插件缓存并验证 Expert Team 强制入口
+**Branch**: `main`
+
+### Summary
+
+按 plugin-creator 更新流程为 Codex manifest 加入 0.3.3+codex.20260808134157 cachebuster，放宽测试契约为基础版本一致；推送后从非默认 multi-teammates-agents marketplace 重装。真实缓存目录已加载 entry-gate skill，MCP tools/list 出现 expert_team_prepare，prepare 返回 main-session-sequential/build_graph_then_execute_in_main，qualify 正常；93 单测、mypy、compileall、契约 fixture、Claude agent 渲染、checkout/cache 插件校验均通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e30b296` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
