@@ -34,7 +34,9 @@
 - Codex 使用 `.codex-plugin/plugin.json`；
 - Claude Code 使用 `.claude-plugin/plugin.json`；
 - 两者共同加载 `skills/expert-team/`、根目录 `.mcp.json`、共享 Python 运行时和统一
-  的专家注册表；
+  的专家注册表。内置 MCP 使用一个很小的 Node 启动桥：Windows 优先选择
+  `python`/`py -3`，Ubuntu 和其他 POSIX 系统优先选择 `python3`/`python`，因此不依赖
+  Ubuntu 的 `python` 别名；
 - Claude Code 还会自动发现 `agents/` 下生成的二十个 Agent 定义。
 
 仓库还包含 Codex 的仓库级 marketplace：`.agents/plugins/marketplace.json`。它指向
@@ -199,8 +201,11 @@ claude plugin validate . --strict
 ## 安装
 
 插件以源码形式分发：不需要执行 `pip install`，也没有额外的包仓库。你需要安装
-Git、Python 3.10+，并完成 Codex CLI 或 Claude Code 的登录。轻量模式不依赖 Trellis；
-管理模式还要求存在一个已批准且处于 `in_progress` 的 Trellis 任务。
+Git、Node.js 12+、Python 3.10+，并完成 Codex CLI 或 Claude Code 的登录。MCP 启动桥会
+自动选择当前系统可用的 Python 命令；Ubuntu 不需要额外创建 `python` 别名。插件还内置
+了 Python 3.10 可用的 TOML 解析兼容层，复制 `.expert-team/config.toml` 不会额外要求
+执行 pip 安装。轻量模式不依赖 Trellis；管理模式还要求存在一个已批准且处于
+`in_progress` 的 Trellis 任务。
 
 ### Codex CLI
 
@@ -212,14 +217,28 @@ codex plugin add multi-teammates-agents --marketplace multi-teammates-agents
 codex plugin list --marketplace multi-teammates-agents
 ```
 
-本地开发时，可以克隆仓库并直接注册本地 marketplace：
+内置的 `expert-team` MCP 会由已启用的插件自动注册，不会复制到
+`~/.codex/config.toml`。安装或升级后要重新打开 Codex 会话，然后检查：
+
+```powershell
+codex mcp list
+```
+
+Ubuntu 即使只有 `python3` 也应该能看到插件 MCP。如果看不到，先用当前 Codex CLI
+刷新 marketplace 并重新安装插件，不要立即手动添加第二份同名服务器。
+
+Claude 本地开发时，可以克隆仓库并直接加载当前目录：
 
 ```powershell
 git clone https://github.com/five-five0909/multi-teammates-agents.git
 cd multi-teammates-agents
-codex plugin marketplace add .
-codex plugin add multi-teammates-agents --marketplace multi-teammates-agents
+claude --plugin-dir .
 ```
+
+仓库内置的 Codex marketplace 刻意指向公开 Git 源，因此执行
+`codex plugin marketplace add .` 仍会安装公开源，而不是未提交的本地文件。要在
+Codex 中测试未提交改动，请先在 checkout 中运行 MCP 冒烟检查，再使用 Codex 自己的
+临时本地 marketplace；提交并推送后按上面的公开 marketplace 流程刷新即可。
 
 要安装更新后的版本，先刷新 marketplace：
 
@@ -251,6 +270,15 @@ claude plugin marketplace add https://github.com/five-five0909/multi-teammates-a
 claude plugin install multi-teammates-agents@multi-teammates-agents --scope user
 claude plugin list
 ```
+
+Claude Code 会在插件启用时自动启动插件 MCP。重新加载当前会话（或新开会话）后检查：
+
+```powershell
+claude mcp list
+```
+
+列表中的名称应为 `plugin:multi-teammates-agents:expert-team`。如果项目根目录的
+`.mcp.json` 里还有同名的待批准项目服务器，那是项目级配置，不是已安装插件的 MCP。
 
 从本地 checkout 开发时，在仓库根目录执行 `claude plugin marketplace add ./`，再按需
 使用 `--scope local` 或 `--scope project`。

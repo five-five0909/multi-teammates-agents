@@ -1,6 +1,6 @@
 # Verification Report: Long-Horizon Cross-CLI Expert Team Orchestration
 
-Date: 2026-08-07
+Date: 2026-08-08
 
 ## Outcome
 
@@ -18,9 +18,9 @@ configuration, and several failure matrix cases still require further tests.
 
 | Level | Meaning | Present |
 |---|---|---|
-| Unit | Contracts, reducer, configuration, routing, prompts, integrity diff | Yes |
+| Unit | Contracts, reducer, configuration, routing, prompts, integrity diff, MCP package contract | Yes |
 | Simulated integration | Fake processes and fake-backend autonomous supervisor | Yes |
-| Local CLI smoke | Real binary discovery/version process without a model task | Yes: Codex `0.147.0`, Claude Code `2.1.220` |
+| Local CLI smoke | Real binary discovery/version process without a model task | Yes: Codex `0.147.0`, Claude Code `2.1.220`; MCP initialize on Windows and Ubuntu 22.04 |
 | Model-backed E2E | Real Manager, Executor, Auditor episodes | Codex pass: `e2e-codex-20260807-r3`; Claude blocked by account policy in `e2e-claude-20260807` |
 
 ## Acceptance status
@@ -57,15 +57,20 @@ configuration, and several failure matrix cases still require further tests.
 - Auditor read-only restrictions and before/after workspace integrity snapshots.
 - Strict TOML/environment/override configuration and secret redaction/rejection.
 - Side-effect-free lightweight/managed qualification and shared MCP run entry.
+- Cross-platform MCP launcher: Node selects the available Python command and
+  forwards both plugin-root environment names; no user Codex/Claude config is
+  mutated.
+- Python 3.10 startup and TOML configuration compatibility through the bundled
+  TOML backport, without a user-side pip install.
 
 ## Deterministic checks
 
 ```text
 python -m unittest discover tests
-Ran 75 tests — OK
+Ran 78 tests — OK
 
 python -m mypy runtime scripts tests
-Success: no issues found in 40 source files
+Success: no issues found in 42 source files
 
 python -m compileall runtime scripts tests
 PASS
@@ -84,6 +89,14 @@ PASS; Codex CLI 0.147.0 has plugin add/list/marketplace/remove but no local vali
 
 python scripts/expert_team_run.py --probe
 Codex CLI 0.147.0 and Claude Code 2.1.220 available — PASS
+
+MCP initialize smoke (Windows)
+PASS; `.mcp.json` Node launcher selected the installed Python interpreter and
+returned `expert-team` / `0.3.1`
+
+MCP initialize smoke (Ubuntu 22.04 / WSL)
+PASS; host had `python3` but no `python`, launcher selected `python3` and the
+Python 3.10 runtime initialized with the bundled TOML backport
 
 python scripts/model_e2e.py --host codex --run-id e2e-codex-20260807-r3 --timeout-seconds 300 --approve-completion --yes-cost-bearing
 model_backed_e2e PASS; completed; 7 role episodes; traces under .trellis/workspace/fifine/traces/e2e-codex-20260807-r3/

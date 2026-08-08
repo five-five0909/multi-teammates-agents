@@ -27,3 +27,11 @@ It does not copy the upstream dashboard, computer-use layer, remote environment,
 or permission/sandbox bypass defaults. In particular, this project never adds
 `--dangerously-bypass-approvals-and-sandbox` or
 `--dangerously-skip-permissions` to role invocations.
+
+## Tomli
+
+The Python 3.10 compatibility path vendors the pure-Python parser from
+[Tomli 2.4.1](https://github.com/hukkin/tomli), released under the MIT License
+by Taneli Hukkinen and contributors. The unmodified compatibility modules and
+license are under `runtime/_vendor/tomli/`; Python 3.11+ continues to use the
+standard-library `tomllib` module.

@@ -55,6 +55,10 @@ skills-only operation.
 ## Phase 4 — Codex CLI adapter
 
 - [x] Add bundled MCP configuration and required manifest fields.
+- [x] Add a cross-platform Node MCP launcher that selects `python`/`py -3` on
+  Windows and `python3`/`python` on POSIX systems without editing user config.
+- [x] Keep MCP startup and project TOML configuration importable on Python 3.10
+  with the bundled TOML backport; do not install a user dependency.
 - [x] Render Codex-specific skill instructions.
 - [x] Implement executable Codex capability probing.
 - [x] Normalize Codex agent/tool events without leaking raw formats into core.
@@ -186,6 +190,8 @@ all pause/resume correctly on both package surfaces.
 
 - [x] Run official plugin/skill validators and all unit/simulated integration
   tests.
+- [x] Smoke-test the bundled MCP initialize handshake through the installed
+  plugin shape on Windows and Ubuntu 22.04 (WSL).
 - [x] Run local Codex and Claude binary probes and runner smoke tests.
 - [ ] With explicit cost-bearing test authorization, run one bounded two-round
   model-backed scenario on Codex and the same scenario on Claude. Codex passed

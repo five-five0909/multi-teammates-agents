@@ -38,11 +38,13 @@ class PluginContractTests(unittest.TestCase):
 
     def test_shared_mcp_config_uses_compatible_plugin_root(self) -> None:
         config = json.loads((ROOT / ".mcp.json").read_text(encoding="utf-8"))
+        self.assertEqual("node", config["mcpServers"]["expert-team"]["command"])
         launcher = config["mcpServers"]["expert-team"]["args"][1]
         self.assertIn("PLUGIN_ROOT", launcher)
         self.assertIn("CLAUDE_PLUGIN_ROOT", launcher)
         self.assertNotIn("shell", config["mcpServers"]["expert-team"])
         self.assertTrue((ROOT / "scripts" / "expert_team_mcp.py").is_file())
+        self.assertTrue((ROOT / "scripts" / "expert_team_mcp_launcher.js").is_file())
 
     def test_shared_mcp_launcher_starts_from_both_host_environments(self) -> None:
         config = json.loads((ROOT / ".mcp.json").read_text(encoding="utf-8"))["mcpServers"]["expert-team"]
@@ -56,6 +58,13 @@ class PluginContractTests(unittest.TestCase):
                 completed = subprocess.run([config["command"], *config["args"]], input=request, capture_output=True, text=True, env=environment, timeout=10, check=True)
                 response = json.loads(completed.stdout.strip())
                 self.assertEqual("expert-team", response["result"]["serverInfo"]["name"])
+                self.assertEqual("0.3.1", response["result"]["serverInfo"]["version"])
+        environment = os.environ.copy()
+        environment.pop("PLUGIN_ROOT", None)
+        environment.pop("CLAUDE_PLUGIN_ROOT", None)
+        completed = subprocess.run([config["command"], *config["args"]], input=request, capture_output=True, text=True, env=environment, cwd=ROOT, timeout=10, check=True)
+        response = json.loads(completed.stdout.strip())
+        self.assertEqual("expert-team", response["result"]["serverInfo"]["name"])
 
     def test_skill_metadata_and_references(self) -> None:
         text = (SKILL / "SKILL.md").read_text(encoding="utf-8")

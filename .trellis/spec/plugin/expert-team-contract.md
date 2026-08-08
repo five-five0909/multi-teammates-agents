@@ -92,6 +92,14 @@ contract or JSON failure, and `2` when no fixture is found.
 
 The Codex manifest name must equal the plugin-root directory name, its `skills`
 field must be `./skills/`, and `mcpServers` must resolve to `./.mcp.json`.
+The bundled MCP entry must launch through the package-dependency-free
+cross-platform bridge in `scripts/expert_team_mcp_launcher.js`: it selects
+`python`/`py -3`
+on Windows and `python3`/`python` on POSIX systems, forwards both plugin-root
+environment variables, and never edits a user's Codex or Claude configuration.
+The Python runtime must remain importable on Python 3.10, including when a
+project `.expert-team/config.toml` is present; the package carries its small
+MIT-licensed TOML backport instead of installing a user dependency.
 Managed mode may declare trusted lifecycle hooks, but installing a plugin never
 implicitly trusts them. The Claude package must expose the same
 logical workflow from `.claude-plugin/plugin.json`; host-specific components
@@ -251,6 +259,8 @@ snapshots are atomic, and replay must reproduce the accepted state.
 ## 6. Tests Required
 
 - Unit tests assert manifest name/component integrity and skill references.
+- MCP package tests launch the bundled stdio server through both plugin-root
+  environment names and cover the Windows/POSIX interpreter selection path.
 - Fixtures assert parallel reads, disjoint and overlapping writes, dependency
   failure, cycle rejection, and sequential fallback.
 - Tests assert the six default Qoder-derived roles, workflow shapes, domain

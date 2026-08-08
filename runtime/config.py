@@ -5,8 +5,18 @@ from __future__ import annotations
 from dataclasses import dataclass
 import os
 from pathlib import Path
-import tomllib
 from typing import Any, Mapping
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10: use the bundled TOML 1.0 parser.
+    try:
+        from ._vendor import tomli as tomllib  # type: ignore[no-redef]
+    except ModuleNotFoundError:  # pragma: no cover - exercised by the Python 3.10 smoke check.
+        try:
+            import tomli as tomllib  # type: ignore[no-redef]
+        except ModuleNotFoundError:
+            tomllib = None  # type: ignore[assignment]
 
 from .core.contracts import ContractError
 
@@ -64,6 +74,10 @@ def load_runtime_config(
     config_path = root / ".expert-team" / "config.toml"
     project: Mapping[str, Any] = {}
     if config_path.exists():
+        if tomllib is None:
+            raise ContractError(
+                "a TOML parser is required when .expert-team/config.toml is present"
+            )
         try:
             loaded = tomllib.loads(config_path.read_text(encoding="utf-8"))
         except (OSError, tomllib.TOMLDecodeError) as error:

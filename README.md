@@ -38,7 +38,9 @@ acceptance.
 The repository root is the plugin root. Codex uses
 `.codex-plugin/plugin.json`; Claude Code uses `.claude-plugin/plugin.json`.
 Both load `skills/expert-team/`, the root `.mcp.json`, the shared Python
-runtime, and the same canonical role registry. Claude also auto-discovers the
+runtime, and the same canonical role registry. The bundled MCP entry uses a
+small Node launcher to select `python`/`py -3` on Windows and `python3`/`python`
+on Ubuntu or other POSIX hosts. Claude also auto-discovers the
 twenty generated definitions under `agents/`.
 
 The repository also includes a Codex repo marketplace at
@@ -222,9 +224,13 @@ claude plugin validate . --strict
 ## Installation
 
 The plugin is distributed as source: there is no `pip install` step and no
-separate package registry. You need Git, Python 3.10+, and an authenticated
-Codex CLI or Claude Code installation. Lightweight mode works without Trellis;
-managed mode additionally requires an approved, in-progress Trellis task.
+separate package registry. You need Git, Node.js 12+, Python 3.10+, and an
+authenticated Codex CLI or Claude Code installation. The MCP launcher chooses
+the platform's available Python command, so Ubuntu does not need a `python`
+alias. The plugin bundles a TOML backport for Python 3.10, so copying
+`.expert-team/config.toml` does not add a pip dependency. Lightweight mode works
+without Trellis; managed mode additionally requires an approved, in-progress
+Trellis task.
 
 ### Codex CLI
 
@@ -236,14 +242,31 @@ codex plugin add multi-teammates-agents --marketplace multi-teammates-agents
 codex plugin list --marketplace multi-teammates-agents
 ```
 
-For local development, clone the repository and register its marketplace path:
+The bundled `expert-team` MCP server is registered by the enabled plugin; it is
+not copied into `~/.codex/config.toml`. Start a new Codex session after
+installing or upgrading, then verify it with:
+
+```powershell
+codex mcp list
+```
+
+On Ubuntu, `codex mcp list` should show the plugin server even when only
+`python3` exists. If it is missing, upgrade the marketplace and reinstall the
+plugin with the current Codex CLI before adding a manual server entry.
+
+For Claude local development, clone the repository and load it directly:
 
 ```powershell
 git clone https://github.com/five-five0909/multi-teammates-agents.git
 cd multi-teammates-agents
-codex plugin marketplace add .
-codex plugin add multi-teammates-agents --marketplace multi-teammates-agents
+claude --plugin-dir .
 ```
+
+The checked-in Codex marketplace intentionally points at the public Git source,
+so `codex plugin marketplace add .` still installs the published source rather
+than uncommitted local files. For Codex local changes, run the MCP smoke command
+from the checkout and use a temporary local marketplace configured by your Codex
+installation; after pushing, refresh the public marketplace as shown above.
 
 Update the marketplace before installing a newer revision:
 
@@ -275,6 +298,17 @@ claude plugin marketplace add https://github.com/five-five0909/multi-teammates-a
 claude plugin install multi-teammates-agents@multi-teammates-agents --scope user
 claude plugin list
 ```
+
+Claude Code starts plugin MCP servers automatically when the plugin is enabled.
+Reload the current session (or start a new one) and verify the connection with:
+
+```powershell
+claude mcp list
+```
+
+The entry is named `plugin:multi-teammates-agents:expert-team`. A project-level
+`.mcp.json` entry with the same name may remain pending approval; that is a
+separate project server, not the installed plugin server.
 
 When developing from a checkout, run `claude plugin marketplace add ./` from the
 repository root and use `--scope local` or `--scope project` as appropriate.

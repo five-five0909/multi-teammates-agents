@@ -50,6 +50,32 @@ Added terminal-first public narrative rendering for managed Expert Team runs. In
 - None - task complete
 
 
+## Session 3: 跨平台插件 MCP 自动注册修复
+
+**Date**: 2026-08-08
+**Task**: Long-Horizon Cross-CLI Expert Team Orchestration — MCP portability
+**Branch**: `main`
+
+### Summary
+
+复现并修复 Windows/Ubuntu 安装后的 MCP 启动差异：`.mcp.json` 改为 Node
+跨平台启动桥，由它选择 Windows 的 `python`/`py -3` 或 POSIX 的
+`python3`/`python`；运行时内置 Tomli 兼容层，支持 Ubuntu 22.04 默认 Python
+3.10。插件版本和 MCP server 版本提升到 `0.3.1`，并明确安装不会写用户级
+Codex/Claude 配置。
+
+### Testing
+
+- [OK] Windows 78 个单测、mypy 47 个源文件、Codex/Claude/plugin/skill 校验。
+- [OK] Ubuntu 22.04 WSL 78 个单测；仅有 `python3` 时 MCP initialize 返回
+  `expert-team` / `0.3.1`。
+- [OK] Trellis research、plugin contract、README 中英文和第三方许可记录已同步。
+
+### Status
+
+[OK] **修复完成；父任务仍保持 in_progress，跨宿主模型 E2E 余项未关闭**
+
+
 ## Session 2: 移植 Expert Team 子代理委派纪律
 
 **Date**: 2026-08-08
