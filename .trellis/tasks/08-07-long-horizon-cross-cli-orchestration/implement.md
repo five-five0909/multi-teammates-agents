@@ -54,7 +54,8 @@ skills-only operation.
 
 ## Phase 4 — Codex CLI adapter
 
-- [x] Add bundled MCP configuration and required manifest fields.
+- [x] Add host-managed bundled MCP configuration and required manifest fields
+  (Codex inline map; Claude root `.mcp.json`).
 - [x] Add a cross-platform Node MCP launcher that selects `python`/`py -3` on
   Windows and `python3`/`python` on POSIX systems without editing user config.
 - [x] Keep MCP startup and project TOML configuration importable on Python 3.10

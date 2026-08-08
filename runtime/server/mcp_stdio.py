@@ -105,7 +105,7 @@ class MCPServer:
         if method == "notifications/initialized":
             return None
         if method == "initialize":
-            return self._result(request_id, {"protocolVersion": "2025-06-18", "capabilities": {"tools": {}}, "serverInfo": {"name": "expert-team", "version": "0.3.1"}})
+            return self._result(request_id, {"protocolVersion": "2025-06-18", "capabilities": {"tools": {}}, "serverInfo": {"name": "expert-team", "version": "0.3.2"}})
         if method == "ping":
             return self._result(request_id, {})
         if method == "tools/list":

@@ -1,7 +1,7 @@
 {
   "name": "multi-teammates-agents",
   "displayName": "Multi Teammates Agents",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Coordinate cross-platform specialist agents with lightweight execution or durable Trellis-backed independent audit.",
   "author": {"name": "fifine"},
   "license": "MIT",

@@ -91,8 +91,8 @@ python scripts/expert_team_run.py --probe
 Codex CLI 0.147.0 and Claude Code 2.1.220 available — PASS
 
 MCP initialize smoke (Windows)
-PASS; `.mcp.json` Node launcher selected the installed Python interpreter and
-returned `expert-team` / `0.3.1`
+PASS; the Codex inline entry and Claude `.mcp.json` Node launcher selected the
+installed Python interpreter and returned `expert-team` / `0.3.2`
 
 MCP initialize smoke (Ubuntu 22.04 / WSL)
 PASS; host had `python3` but no `python`, launcher selected `python3` and the

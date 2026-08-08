@@ -90,13 +90,18 @@ contract or JSON failure, and `2` when no fixture is found.
 
 ## 3. Contracts
 
-The Codex manifest name must equal the plugin-root directory name, its `skills`
-field must be `./skills/`, and `mcpServers` must resolve to `./.mcp.json`.
-The bundled MCP entry must launch through the package-dependency-free
-cross-platform bridge in `scripts/expert_team_mcp_launcher.js`: it selects
-`python`/`py -3`
-on Windows and `python3`/`python` on POSIX systems, forwards both plugin-root
-environment variables, and never edits a user's Codex or Claude configuration.
+The Codex manifest name must equal the plugin-root directory name and its
+`skills` field must be `./skills/`. Its `mcpServers` field must inline the
+`expert-team` stdio entry so Codex does not have to parse Claude's
+`mcpServers`-wrapped root file. Claude discovers the equivalent entry from the
+root `.mcp.json`. Both entries must launch through the
+package-dependency-free cross-platform bridge in
+`scripts/expert_team_mcp_launcher.js`: it selects `python`/`py -3` on Windows
+and `python3`/`python` on POSIX systems, forwards both plugin-root environment
+variables, and never edits a user's Codex or Claude configuration. Installing or
+enabling the plugin is the only registration step for the bundled server; a
+manual global MCP entry is only a fallback for hosts that do not support plugin
+MCP discovery.
 The repository also ships `scripts/expert_team_ccswitch_config.js` for the
 manual CC Switch fallback. It must resolve the checkout from its own location,
 emit a direct launcher-path JSON entry and an optional `ccswitch://` import

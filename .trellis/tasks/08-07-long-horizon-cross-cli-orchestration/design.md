@@ -34,7 +34,7 @@ the user-facing workflow and role guidance. No custom UI is required initially.
 | Identity | `.codex-plugin/plugin.json` | `.claude-plugin/plugin.json` | Generate/validate both manifests from one release version. |
 | Workflow | `skills/*/SKILL.md` | `skills/*/SKILL.md` | Keep one semantic workflow; render host-specific invocation wording. |
 | Specialists | Native Codex subagents and bounded dispatch prompts | Plugin `agents/` plus native subagents | Shared role registry, host adapter chooses native representation. |
-| Stateful tools | Bundled `.mcp.json` | Bundled `.mcp.json` | One local MCP orchestration server and tool schema. |
+| Stateful tools | Inline `mcpServers` map in `.codex-plugin/plugin.json` | Root `.mcp.json` | One local MCP orchestration server and tool schema; keep host-specific wrappers at the packaging boundary. |
 | Lifecycle | Plugin `hooks/hooks.json`, user trust required | Plugin `hooks/hooks.json` | Hooks may detect/resume and emit notices; they do not silently start mutations. |
 | Inspection | Native agent/thread UI plus structured MCP status | `/context`, scoped agents, background status plus MCP status | `expert_team_status` is the portable minimum. |
 | Distribution | Codex marketplace/plugin package | Claude marketplace/plugin package | One repository, two manifests, platform-specific marketplace entries. |

@@ -33,10 +33,11 @@
 
 - Codex 使用 `.codex-plugin/plugin.json`；
 - Claude Code 使用 `.claude-plugin/plugin.json`；
-- 两者共同加载 `skills/expert-team/`、根目录 `.mcp.json`、共享 Python 运行时和统一
-  的专家注册表。内置 MCP 使用一个很小的 Node 启动桥：Windows 优先选择
-  `python`/`py -3`，Ubuntu 和其他 POSIX 系统优先选择 `python3`/`python`，因此不依赖
-  Ubuntu 的 `python` 别名；
+- 两者共同加载 `skills/expert-team/`、共享 Python 运行时和统一的专家注册表。Codex
+  在 manifest 中内联 `expert-team` MCP；Claude 从根目录 `.mcp.json` 自动发现同一个
+  服务，避免让两个宿主互相解析对方的配置格式。内置 MCP 使用一个很小的 Node 启动桥：
+  Windows 优先选择 `python`/`py -3`，Ubuntu 和其他 POSIX 系统优先选择
+  `python3`/`python`，因此不依赖 Ubuntu 的 `python` 别名；
 - Claude Code 还会自动发现 `agents/` 下生成的二十个 Agent 定义。
 
 仓库还包含 Codex 的仓库级 marketplace：`.agents/plugins/marketplace.json`。它指向
@@ -200,7 +201,8 @@ claude plugin validate . --strict
 
 ## 安装
 
-插件以源码形式分发：不需要执行 `pip install`，也没有额外的包仓库。你需要安装
+下面的命令会直接安装公开插件，普通用户不需要克隆仓库，也不需要手动填写 MCP。插件以
+源码形式分发：不需要执行 `pip install`，也没有额外的包仓库。你需要安装
 Git、Node.js 12+、Python 3.10+，并完成 Codex CLI 或 Claude Code 的登录。MCP 启动桥会
 自动选择当前系统可用的 Python 命令；Ubuntu 不需要额外创建 `python` 别名。插件还内置
 了 Python 3.10 可用的 TOML 解析兼容层，复制 `.expert-team/config.toml` 不会额外要求
@@ -218,7 +220,8 @@ codex plugin list --marketplace multi-teammates-agents
 ```
 
 内置的 `expert-team` MCP 会由已启用的插件自动注册，不会复制到
-`~/.codex/config.toml`。安装或升级后要重新打开 Codex 会话，然后检查：
+`~/.codex/config.toml`，也不需要手动添加同名服务器。安装或升级后要重新打开 Codex
+会话，然后检查：
 
 ```powershell
 codex mcp list
@@ -283,9 +286,11 @@ claude mcp list
 从本地 checkout 开发时，在仓库根目录执行 `claude plugin marketplace add ./`，再按需
 使用 `--scope local` 或 `--scope project`。
 
-### CC Switch 手动添加 MCP（可移植的 Windows / Ubuntu 方案）
+### 可选：CC Switch 手动 MCP 兜底（Windows / Ubuntu）
 
-不要把某台机器的盘符、用户名或 Claude 插件缓存路径复制给别人。仓库自带一个无第三方
+上面的插件安装已经会自动配置 MCP。只有 CC Switch 管理的宿主无法读取插件自带 MCP 时，
+才使用下面的兜底方案。不要把某台机器的盘符、用户名或 Claude 插件缓存路径复制给别人。
+仓库自带一个无第三方
 依赖的生成器：它会从当前下载目录自动定位插件根目录，并生成当前机器可用的 CC Switch
 配置。Git clone 和解压 ZIP 都可以使用。
 

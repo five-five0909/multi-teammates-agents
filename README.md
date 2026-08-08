@@ -37,10 +37,13 @@ acceptance.
 
 The repository root is the plugin root. Codex uses
 `.codex-plugin/plugin.json`; Claude Code uses `.claude-plugin/plugin.json`.
-Both load `skills/expert-team/`, the root `.mcp.json`, the shared Python
-runtime, and the same canonical role registry. The bundled MCP entry uses a
-small Node launcher to select `python`/`py -3` on Windows and `python3`/`python`
-on Ubuntu or other POSIX hosts. Claude also auto-discovers the
+Both load `skills/expert-team/`, the shared Python runtime, and the same
+canonical role registry. Codex embeds the `expert-team` MCP entry in its
+manifest, while Claude auto-discovers the equivalent entry from the root
+`.mcp.json`; this keeps each host's native package format without duplicating
+the runtime. The bundled MCP entry uses a small Node launcher to select
+`python`/`py -3` on Windows and `python3`/`python` on Ubuntu or other POSIX
+hosts. Claude also auto-discovers the
 twenty generated definitions under `agents/`.
 
 The repository also includes a Codex repo marketplace at
@@ -223,7 +226,9 @@ claude plugin validate . --strict
 
 ## Installation
 
-The plugin is distributed as source: there is no `pip install` step and no
+The commands below install the public plugin directly; an ordinary user does
+not need to clone this repository or manually create an MCP entry. The plugin
+is distributed as source: there is no `pip install` step and no
 separate package registry. You need Git, Node.js 12+, Python 3.10+, and an
 authenticated Codex CLI or Claude Code installation. The MCP launcher chooses
 the platform's available Python command, so Ubuntu does not need a `python`
@@ -243,16 +248,16 @@ codex plugin list --marketplace multi-teammates-agents
 ```
 
 The bundled `expert-team` MCP server is registered by the enabled plugin; it is
-not copied into `~/.codex/config.toml`. Start a new Codex session after
-installing or upgrading, then verify it with:
+not copied into `~/.codex/config.toml` and no manual MCP form is needed. Start
+a new Codex session after installing or upgrading, then verify it with:
 
 ```powershell
 codex mcp list
 ```
 
 On Ubuntu, `codex mcp list` should show the plugin server even when only
-`python3` exists. If it is missing, upgrade the marketplace and reinstall the
-plugin with the current Codex CLI before adding a manual server entry.
+`python3` exists. If it is missing, refresh the marketplace and reinstall the
+plugin with the current Codex CLI; do not add a second manual server entry.
 
 For Claude local development, clone the repository and load it directly:
 
@@ -313,8 +318,10 @@ separate project server, not the installed plugin server.
 When developing from a checkout, run `claude plugin marketplace add ./` from the
 repository root and use `--scope local` or `--scope project` as appropriate.
 
-### CC Switch manual MCP entry (portable Windows / Ubuntu setup)
+### Optional CC Switch manual MCP fallback (Windows / Ubuntu)
 
+Normal plugin installation above configures MCP automatically. Use this
+fallback only when a CC Switch-managed host cannot load bundled plugin MCP.
 Do not copy a hard-coded drive letter, username, or Claude plugin cache path
 from another machine. The repository includes a dependency-free generator that
 locates its own checkout and emits a CC Switch entry with the correct local
