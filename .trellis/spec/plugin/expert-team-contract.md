@@ -236,6 +236,7 @@ snapshots are atomic, and replay must reproduce the accepted state.
 | Host emits prelude/progress assistant messages before final JSON | Select the final standalone JSON object as `visible_output`; do not parse a concatenated transcript. |
 | Model returns a natural-language or wrong-field JSON schema | Fail closed as a structured-output error and consume a bounded retry; do not coerce fields. |
 | Config contains an unknown field, invalid host/limit, or persisted secret | Reject before launching any role process. |
+| Codex manifest delegates to a Claude-wrapped root file or hard-codes a plugin path | Reject the package; inline the portable `expert-team` map in the Codex manifest. |
 | Project config and environment disagree | Project value wins; explicit invocation override wins over both. |
 | Supervisor restarts with unmatched `episode.started` | Record `episode.abandoned`, retry only unaccepted work, and keep accepted work unchanged. |
 | Test uses only fixture events for a real-host acceptance criterion | Keep the criterion open and label the evidence simulated. |
@@ -265,8 +266,14 @@ snapshots are atomic, and replay must reproduce the accepted state.
   rather than translating it.
 - Good configuration: project config binds Auditor to Claude while an explicit
   invocation override shortens only its timeout; no credentials enter TOML.
+- Good package: Codex's inline `expert-team` map and Claude's root `.mcp.json`
+  entry use the same Node bridge, so enabling either plugin registers MCP without
+  a user path or a second global server.
 - Bad configuration: store a token in `.expert-team/config.toml` or inject a
   host permission-bypass switch into runner arguments.
+- Bad package: point Codex at the Claude `mcpServers` wrapper or copy an
+  absolute `PLUGIN_ROOT` into a marketplace manifest; installation becomes
+  host-dependent or non-portable.
 
 ## 6. Tests Required
 
@@ -424,3 +431,7 @@ create_subprocess_exec(resolved or "codex", ...)
   the schema authority and never translates model-invented field names.
 - Resolve command shims before shell-free process launch so Windows npm CLI
   installs remain compatible without introducing shell execution.
+- Keep host-specific MCP packaging at the manifest boundary: Claude owns the
+  root `.mcp.json` wrapper, while Codex owns an inline server map. This avoids
+  relying on cross-host JSON aliases and lets normal plugin installation perform
+  registration without mutating user configuration.
