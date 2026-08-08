@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import re
 import sys
+from typing import Any
 from uuid import uuid4
 
 
@@ -68,6 +69,30 @@ def _payload_text(data: dict[str, object]) -> str:
     return " ".join(str(value) for value in values if value is not None).casefold()
 
 
+def _host_version_fields(data: dict[str, object]) -> dict[str, Any]:
+    """Forward host-reported compatibility metadata when the hook provides it."""
+
+    aliases = {
+        "host_package_version": ("host_package_version", "package_version", "EXPERT_TEAM_HOST_PACKAGE_VERSION"),
+        "host_entry_contract_version": ("host_entry_contract_version", "entry_contract_version", "EXPERT_TEAM_HOST_ENTRY_CONTRACT_VERSION"),
+        "host_hook_schema_version": ("host_hook_schema_version", "hook_schema_version", "EXPERT_TEAM_HOST_HOOK_SCHEMA_VERSION"),
+        "host_toolset_fingerprint": ("host_toolset_fingerprint", "toolset_fingerprint", "EXPERT_TEAM_HOST_TOOLSET_FINGERPRINT"),
+    }
+    result: dict[str, Any] = {}
+    for target, candidates in aliases.items():
+        for candidate in candidates:
+            value = data.get(candidate) if candidate in data else os.environ.get(candidate)
+            if value is not None and str(value).strip():
+                if target in {"host_entry_contract_version", "host_hook_schema_version"}:
+                    try:
+                        value = int(str(value))
+                    except (TypeError, ValueError):
+                        pass
+                result[target] = value
+                break
+    return result
+
+
 def _planning_only(tool: str, payload: str) -> bool:
     if any(command in payload for command in READ_ONLY_COMMANDS):
         return True
@@ -92,6 +117,7 @@ def _prompt_submit(data: dict[str, object]) -> int:
     service = ExpertTeamService(workspace, session_id=_session_id(data), workspace_trusted=True)
     invocation_id = str(data.get("invocation_id") or uuid4())
     try:
+        host_versions = _host_version_fields(data)
         assessment = service.prepare(
             prompt,
             invocation_id=invocation_id,
@@ -100,6 +126,7 @@ def _prompt_submit(data: dict[str, object]) -> int:
             source_event_id=str(data.get("event_id") or invocation_id),
             selection_surface="native_single_select" if data.get("native_single_select") else "plain_reply",
             hook_trusted=True,
+            **host_versions,
         )
     except Exception as error:  # hook failures must be visible, never a false allow
         _emit_context(f"Expert Team entry gate unavailable: {error}. Stop before project mutation and refresh the plugin/session.")

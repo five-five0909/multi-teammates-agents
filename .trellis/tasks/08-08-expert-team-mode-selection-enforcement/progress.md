@@ -20,9 +20,11 @@
   user selection to the prepare source event, validates canonical mode and
   qualification receipts, records `run_started`, and permits only Trellis
   planning/read-only commands before qualification.
-- W7 docs/spec/version updates are in progress. Codex and Claude base version
-  is `0.4.0`; Codex cachebuster is `0.4.0+codex.20260808151000`, refreshed
-  through the plugin-creator helper.
+- W7 docs/spec/version updates are in progress. The release gate now compares
+  package, entry-contract, hook-schema, and toolset versions. Codex cachebuster
+  metadata is normalized against base release `0.4.1`; a real mismatch returns
+  `upgrade_required` plus executable Codex commands and requires a new host
+  session.
 
 ## Verification evidence so far
 
@@ -48,6 +50,9 @@
   new version is enabled.
 - The current conversation's host tool snapshot is still immutable; a fresh
   Codex/Claude thread is required to expose the new tool list and skill.
+- The standalone `expert_team_version` MCP diagnostic and read-only
+  `scripts/expert_team_upgrade.py --check` are covered by regression tests;
+  `--upgrade` refreshes marketplace/install without deleting cache entries.
 - Run the final Trellis check/spec review, clean generated local gate files,
   and prepare an ownership-scoped commit; unrelated pre-existing dirty files
   remain uncommitted.

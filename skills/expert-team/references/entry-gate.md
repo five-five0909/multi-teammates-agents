@@ -6,7 +6,11 @@ observable before any project mutation or managed-run mutation occurs.
 
 ## Required order
 
-1. Resolve the current Trellis task and host execution mode. For Codex inline,
+1. Resolve the current Trellis task and host execution mode, then call
+   `expert_team_version` with host package/protocol/toolset metadata. If the
+   report says `upgrade_required`, run the printed upgrade commands (or
+   `python scripts/expert_team_upgrade.py --upgrade`) and open a new host
+   session before continuing. For Codex inline,
    use `host_mode=inline`; for a host that can dispatch native subagents, use
    `host_mode=subagent`.
 2. Call `expert_team_prepare` with the original request, intent, task ID (when
@@ -61,3 +65,6 @@ observable before any project mutation or managed-run mutation occurs.
 - If a newly added tool is absent from the host tool list, treat the session as
   stale: do not claim the new entry gate ran; ask for a plugin refresh/new
   thread or use the explicit sequential fallback with the omission recorded.
+- A `stale_session` response is a hard stop. Preserve its version report and
+  upgrade commands; never bypass it by omitting host metadata or selecting a
+  lower execution tier.

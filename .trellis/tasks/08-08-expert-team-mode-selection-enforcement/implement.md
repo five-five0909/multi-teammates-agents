@@ -13,7 +13,7 @@
 
 - [x] 记录 `git status --short`、当前 task/parent 状态、checkout 与 installed-cache 版本/tool list（当前会话工具表缺 prepare，已记录为 stale/sequential fallback）。
 - [x] 把本任务预期修改文件与现有脏文件对比；任何重叠先做 diff ownership 审计。
-- [x] 固定 schema/version/cachebuster 发布策略（base 0.4.0，Codex cachebuster 由 plugin-creator 更新）。
+- [x] 固定 schema/version/cachebuster 发布策略（base 0.4.1，Codex cachebuster 由 plugin-creator 更新）。
 
 Completion check: baseline 写入 task research/check 记录，未知脏文件未被覆盖。
 
@@ -52,6 +52,7 @@ Ownership: `runtime/server/mcp_stdio.py`、console/projection、MCP tests、fixt
 - [x] 收紧 `expert_team_qualify` 和 `expert_team_start` schema。
 - [x] MCP initialize/prepare 返回 contract/toolset/version fingerprint。
 - [x] 增加合规结果 projection（`expert_team_compliance`）。
+- [x] 增加独立 `expert_team_version` 诊断，prepare 对包/协议/工具集做统一兼容性校验。
 - [x] 错误路径 fail closed 并返回可执行的状态/原因/下一步文本。
 
 Completion check: tools/list、正常路径、每个非法跳步、no-action 和错误结构测试通过。
@@ -100,10 +101,11 @@ Ownership: `README.md`、`README_zh.md`、`.trellis/spec/plugin/expert-team-cont
 
 - [x] README/README_zh 已补模式单选、收据、长任务状态跟随、inline/subagent 和 hook 边界说明。
 - [x] 已记录 hooks 的强制边界、升级/重开会话、回滚和诊断步骤。
-- [x] Codex/Claude base version 同步为 0.4.0，并用 plugin-creator 更新 Codex cachebuster。
+- [x] Codex/Claude base version 同步为 0.4.1，并用 plugin-creator 更新 Codex cachebuster。
+- [x] 版本不匹配返回可执行升级命令；补充 `scripts/expert_team_upgrade.py` 和中英文升级说明。
 - [x] 从安装缓存运行完整 initialize/tools-list/prepare/qualify/start/compliance smoke；当前 host 会话工具表仍需重开才热加载。
 - [x] 已运行当前范围的完整检查；trellis-check/trellis-update-spec 的最终门禁待最后一轮执行。
-- [ ] 形成按所有权分组的 commit 计划；未知脏文件单列，不自动 push。
+- [x] 形成按所有权分组的 commit 计划；未知脏文件单列，不自动覆盖或纳入提交。
 
 Completion check: AC23-AC28 通过，用户审核最终合规报告后才进入 finish/archive。
 

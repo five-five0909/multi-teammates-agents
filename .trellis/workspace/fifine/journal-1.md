@@ -50,6 +50,29 @@ Added terminal-first public narrative rendering for managed Expert Team runs. In
 - None - task complete
 
 
+## Session 7: Expert Team 版本门禁与升级路径
+
+**Date**: 2026-08-09
+**Task**: `.trellis/tasks/08-08-expert-team-mode-selection-enforcement`
+**Branch**: `main`
+
+### Summary
+
+补充统一版本报告：发布版本、入口协议、Hook 协议和 MCP 工具集指纹由同一
+`runtime.versioning` 比较。Codex `+codex.<cachebuster>` 构建元数据按 base
+版本兼容；真实不匹配在 prepare 前 fail closed，并返回 `upgrade_required`、
+两条 Codex 升级命令和“关闭并重开会话”的下一步。新增
+`expert_team_version` MCP 诊断和只读/升级 CLI。
+
+### Testing
+
+- [ ] 版本门禁、MCP 诊断、CLI check 和全量回归待本轮执行。
+
+### Status
+
+[IN PROGRESS] 代码已写入工作区；发布号升至 `0.4.1`，安装缓存升级与新会话冒烟
+将在质量检查通过后执行。既有未归属脏文件不纳入本轮提交。
+
 ## Session 6: 强制 Expert Team 模式入口与收据门禁
 
 **Date**: 2026-08-08

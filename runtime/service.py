@@ -17,6 +17,13 @@ from .core.scheduling import validate_work_graph
 from .entry_gate import EntryGateStore, ModeDecision, QualificationReceipt, fingerprint, graph_waves, new_invocation_id, now_iso, workspace_fingerprint
 from .routing import build_mode_assessment
 from .security import redact_value
+from .versioning import (
+    ENTRY_CONTRACT_VERSION,
+    HOOK_SCHEMA_VERSION,
+    PACKAGE_VERSION,
+    compare_versions,
+    stale_session_message,
+)
 
 
 def _now() -> str:
@@ -24,8 +31,9 @@ def _now() -> str:
 
 
 class ExpertTeamService:
-    ENTRY_CONTRACT_VERSION = 2
-    PACKAGE_VERSION = "0.4.0"
+    ENTRY_CONTRACT_VERSION = ENTRY_CONTRACT_VERSION
+    PACKAGE_VERSION = PACKAGE_VERSION
+    HOOK_SCHEMA_VERSION = HOOK_SCHEMA_VERSION
 
     def __init__(
         self,
@@ -47,6 +55,23 @@ class ExpertTeamService:
         self.session_id: str = session_id or os.environ.get("EXPERT_TEAM_SESSION_ID") or "default"
         self.workspace_trusted = workspace_trusted
         self.gates = EntryGateStore(self.repo_root, session_id=self.session_id)
+
+    def version(
+        self,
+        *,
+        host_package_version: str | None = None,
+        host_entry_contract_version: int | None = None,
+        host_hook_schema_version: int | None = None,
+        host_toolset_fingerprint: str | None = None,
+    ) -> dict[str, Any]:
+        """Compare host metadata without requiring a trusted workspace or task."""
+
+        return compare_versions(
+            host_package_version=host_package_version,
+            host_entry_contract_version=host_entry_contract_version,
+            host_hook_schema_version=host_hook_schema_version,
+            host_toolset_fingerprint=host_toolset_fingerprint,
+        ).to_dict()
 
     def _task_dir(self, task_id: str, *, require_active: bool = False) -> Path:
         tasks_root = self.repo_root / ".trellis" / "tasks"
@@ -113,15 +138,15 @@ class ExpertTeamService:
             raise ContractError("workspace_unbound: request workspace differs from the trusted host workspace")
         if not self.workspace_trusted:
             raise ContractError("workspace_unbound: MCP package root is not a trusted user workspace; provide host session workspace")
-        expected_toolset = fingerprint({"prepare": 2, "select_mode": 1, "qualify": 2, "compliance": 1})
-        if host_package_version is not None and host_package_version != self.PACKAGE_VERSION:
-            raise ContractError("stale_session: host package version does not match the MCP server")
-        if host_entry_contract_version is not None and host_entry_contract_version != self.ENTRY_CONTRACT_VERSION:
-            raise ContractError("stale_session: entry-gate contract version does not match the MCP server")
-        if host_hook_schema_version is not None and host_hook_schema_version != 1:
-            raise ContractError("stale_session: hook schema version does not match the MCP server")
-        if host_toolset_fingerprint is not None and host_toolset_fingerprint != expected_toolset:
-            raise ContractError("stale_session: MCP toolset fingerprint does not match the server")
+        version_report = compare_versions(
+            host_package_version=host_package_version,
+            host_entry_contract_version=host_entry_contract_version,
+            host_hook_schema_version=host_hook_schema_version,
+            host_toolset_fingerprint=host_toolset_fingerprint,
+        )
+        if not version_report.compatible:
+            raise ContractError(stale_session_message(version_report))
+        expected_toolset = version_report.expected_toolset_fingerprint
         if session_id is not None and session_id != self.session_id:
             raise ContractError("session_id does not match the current host session")
         if hook_trusted is None:
@@ -179,7 +204,7 @@ class ExpertTeamService:
         assessment_value["tooling"] = {
             "package_version": self.PACKAGE_VERSION,
             "entry_contract_version": self.ENTRY_CONTRACT_VERSION,
-            "hook_schema_version": 1,
+            "hook_schema_version": self.HOOK_SCHEMA_VERSION,
             "toolset_fingerprint": expected_toolset,
         }
         record = self.gates.create(assessment_value, source_event_id=source_event_id)
@@ -244,6 +269,7 @@ class ExpertTeamService:
                 "mode_options": mode_options,
                 "assessment_fingerprint": assessment_value["assessment_fingerprint"],
                 "tooling": dict(assessment_value["tooling"]),
+                "version_report": version_report.to_dict(),
                 "execution_tier": "managed" if assessment.decision_state == "policy_locked" else None,
                 "execution_mode": assessment.host.get("execution_mode"),
                 "fallback_reason": assessment.host.get("fallback_reason"),

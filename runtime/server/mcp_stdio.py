@@ -19,6 +19,7 @@ from ..supervisor import ManagedRunSupervisor
 TOOL_SCHEMAS: dict[str, dict[str, Any]] = {
     "expert_team_start": {"type": "object", "additionalProperties": False, "required": ["task_id", "run_id", "contract", "work_items", "qualification_receipt"], "properties": {"task_id": {"type": "string"}, "run_id": {"type": "string"}, "contract": {"type": "object"}, "work_items": {"type": "array"}, "qualification_receipt": {"type": "object"}, "max_rounds": {"type": "integer", "minimum": 1}, "retry_limit": {"type": "integer", "minimum": 1}}},
     "expert_team_status": {"type": "object", "additionalProperties": False, "required": ["task_id", "run_id"], "properties": {"task_id": {"type": "string"}, "run_id": {"type": "string"}}},
+    "expert_team_version": {"type": "object", "additionalProperties": False, "properties": {"host_package_version": {"type": "string"}, "host_entry_contract_version": {"type": "integer"}, "host_hook_schema_version": {"type": "integer"}, "host_toolset_fingerprint": {"type": "string"}}},
     "expert_team_compliance": {"type": "object", "additionalProperties": False, "required": ["task_id", "run_id", "invocation_id"], "properties": {"task_id": {"type": "string"}, "run_id": {"type": "string"}, "invocation_id": {"type": "string"}, "checks": {"type": "array", "items": {"type": "string"}}}},
     "expert_team_next": {"type": "object", "additionalProperties": False, "required": ["task_id", "run_id", "action", "payload"], "properties": {"task_id": {"type": "string"}, "run_id": {"type": "string"}, "action": {"enum": ["manage", "start_execution", "start_audit", "request_gate", "block"]}, "payload": {"type": "object"}}},
     "expert_team_submit_result": {"type": "object", "additionalProperties": False, "required": ["task_id", "run_id", "result"], "properties": {"task_id": {"type": "string"}, "run_id": {"type": "string"}, "result": {"type": "object"}}},
@@ -37,6 +38,7 @@ TOOL_SCHEMAS: dict[str, dict[str, Any]] = {
 DESCRIPTIONS = {
     "expert_team_start": "Start a durable Trellis-backed Expert Team run.",
     "expert_team_status": "Read the validated current snapshot of a managed run.",
+    "expert_team_version": "Compare host/plugin versions and return actionable upgrade commands before entry qualification.",
     "expert_team_compliance": "Build the read-only entry/qualification/graph/verification compliance projection.",
     "expert_team_next": "Advance one legal Manager/wave/gate transition.",
     "expert_team_submit_result": "Submit an unverified Executor result for independent audit.",
@@ -58,6 +60,7 @@ class MCPServer:
         self.handlers: dict[str, Callable[..., dict[str, Any]]] = {
             "expert_team_start": self._start,
             "expert_team_status": service.status,
+            "expert_team_version": service.version,
             "expert_team_compliance": lambda task_id, run_id, invocation_id, checks=None: service.compliance(task_id, run_id, invocation_id, checks),
             "expert_team_next": service.next,
             "expert_team_submit_result": lambda task_id, run_id, result: service.submit_result(task_id, run_id, result),

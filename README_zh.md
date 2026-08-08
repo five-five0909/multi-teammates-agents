@@ -120,6 +120,13 @@ Codex inline 模式会明确报告 `main-session-sequential`，表示实现和�
 如果宿主已经安装了旧版本插件，必须重新安装/刷新插件并开启新会话，宿主才会重新
 加载新增的 MCP 工具；当前会话不会热加载工具清单。
 
+入口检查前可以调用 `expert_team_version`。它会同时比较发布版本、入口协议版本、
+Hook 协议版本和 MCP 工具集指纹。Codex 的 `0.4.1+codex.<缓存标识>` 只是缓存构建号，
+与发布版 `0.4.1` 兼容；真正不匹配时会返回 `upgrade_required=true` 和可复制的升级命令。
+可以在 checkout 根目录执行 `python scripts/expert_team_upgrade.py --upgrade`，也可以
+直接执行下面两条 Codex 命令；升级完成后必须关闭并重新打开 Codex/Claude，再重试。当前
+会话不能安全地热替换已经加载的 MCP 工具清单。
+
 如果 MCP 从安装缓存启动却没有可信的用户工作区，会以 `workspace_unbound` 失败关闭；
 需要由宿主提供 `EXPERT_TEAM_WORKSPACE`、`CODEX_PROJECT_DIR` 或
 `CLAUDE_PROJECT_DIR`，然后重新开会话。钩子覆盖会明确标成 `enforced`、`partial` 或
@@ -453,6 +460,7 @@ Codex 中测试未提交改动，请先在 checkout 中运行 MCP 冒烟检查�
 
 ```powershell
 codex plugin marketplace upgrade multi-teammates-agents
+codex plugin add multi-teammates-agents@multi-teammates-agents
 ```
 
 ### Claude Code

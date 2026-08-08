@@ -18,6 +18,10 @@ expert-team-compliant run.
 ## 1. Establish the run contract
 
 1. Resolve the current Trellis task and host execution mode, then call
+   `expert_team_version` with the host's package/protocol/toolset metadata.
+   If it returns `upgrade_required`, run its printed Codex commands (or
+   `python scripts/expert_team_upgrade.py --upgrade`) and open a new host
+   session before retrying. Only after a compatible report call
    `expert_team_prepare` before editing code or changing Trellis state. Follow
    its returned `next_action`; in Codex inline mode this normally records
    `main-session-sequential`.

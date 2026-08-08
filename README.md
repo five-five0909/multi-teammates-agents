@@ -136,6 +136,15 @@ After changing the plugin package, reinstall or refresh the installed plugin and
 start a new host thread; an existing host session does not hot-load a new MCP
 tool list.
 
+Before the entry handshake, the host can call `expert_team_version`. It compares
+the release version (including the entry contract, hook schema, and toolset
+fingerprint). Codex cache metadata such as `0.4.1+codex.<cachebuster>` is
+compatible with release `0.4.1`; a real mismatch returns `upgrade_required=true`
+and the exact commands to run. Run `python scripts/expert_team_upgrade.py
+--upgrade` from a checkout, or run the two Codex commands below, then close and
+reopen the host session before retrying. The current session cannot upgrade its
+own already-loaded MCP tool table safely.
+
 If the MCP process starts from an installed cache without a trusted host
 workspace, it fails closed with `workspace_unbound`; provide
 `EXPERT_TEAM_WORKSPACE`, `CODEX_PROJECT_DIR`, or `CLAUDE_PROJECT_DIR` and open
@@ -508,6 +517,7 @@ Update the marketplace before installing a newer revision:
 
 ```powershell
 codex plugin marketplace upgrade multi-teammates-agents
+codex plugin add multi-teammates-agents@multi-teammates-agents
 ```
 
 ### Claude Code
