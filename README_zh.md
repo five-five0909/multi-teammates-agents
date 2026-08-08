@@ -103,9 +103,20 @@ Claude CLI 进程，收集规范化事件，执行超时/取消控制，并在�
 Executor 的结果在独立 Auditor 接受真实证据前都不会被视为已验证。任务完成还要求
 所有必需工作项通过审计，并且人工完成门禁获得批准。
 
+如果取消操作与正在运行的角色 Episode 发生竞争，运行会立即进入终止状态，不会再接受
+迟到的 Executor 结果或 Auditor 决定。之后恢复运行时，系统会把没有终态的 Episode 起始
+事件标记为 `episode.abandoned`，因此已接受的工作不会重复，未验证结果也不会被提升。
+
 MCP 的资格判定默认不写入状态；如果调用方已经准备好活动 Trellis task、run ID、
 TaskContract 和 WorkItem 图，可以显式传 `auto_start=true`，在同一次 managed 资格
 调用中创建持久化运行。轻量级请求永远不会因为资格判定创建运行目录。
+
+内置 MCP 接口与本地生命周期保持一致：`expert_team_qualify` 负责选择模式（显式
+`auto_start=true` 时还可以原子创建 managed run），`expert_team_run` 驱动自动
+Supervisor，`expert_team_status`、`expert_team_resume`、`expert_team_answer`、
+`expert_team_cancel` 负责查看状态和处理人工门禁。较底层的
+`expert_team_start`、`expert_team_next`、结果/审计提交和宿主事件接口仍可用于恢复与
+集成，但正常的 managed 流程不需要手动调用它们。
 
 ## 命令行叙事控制台
 
@@ -204,6 +215,8 @@ Episode。`--json` 和 `--quiet` 仍可与状态输出动作组合；`resume` �
 可以复制 `examples/expert-team-config.toml` 到 `.expert-team/config.toml` 来定制管理
 模式默认值。配置支持全局和按角色设置宿主、模型、超时以及上下文预算。认证仍由
 Codex/Claude 当前环境负责，持久化配置会拒绝 key、token、password 和 secret 字段。
+配置优先级依次为：显式 MCP/CLI 覆盖、项目 TOML、环境变量、内置默认值。按角色配置
+默认继承全局运行配置，只有显式设置的字段会覆盖它。
 
 在不启动模型 Episode 的情况下检查两个宿主运行时：
 
@@ -215,6 +228,14 @@ python scripts/expert_team_run.py --probe
 
 管理运行时只会写入已批准任务的 `runs/` 目录，不会修改 Trellis 任务的状态、阶段、
 审批或归档状态。没有 Trellis 时，轻量模式仍然可用。
+
+## 验证状态
+
+当前本地的契约、回放、Supervisor、进程生命周期、完整性、配置和插件打包检查均已通过，
+宿主能力探针和仓库 CLI 生命周期也已通过。Codex 已完成一次模型驱动的 managed 运行；
+Claude Code 的模型驱动运行仍受本机组织/账号模型访问策略限制。fake backend、fixture
+事件流和 `--probe` 都不能替代跨宿主的模型 E2E 证据。剩余的跨宿主一致性、中断恢复、权限
+和人工门禁证据记录在活动 Trellis 的[验证报告](.trellis/tasks/08-07-long-horizon-cross-cli-orchestration/check.md)中。
 
 ## 校验
 

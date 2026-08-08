@@ -126,6 +126,15 @@ active Trellis task, run ID, TaskContract, and WorkItem graph may explicitly set
 `auto_start=true` on the managed qualification call to create the durable run in
 that same MCP operation; lightweight qualification never creates a run.
 
+The bundled MCP surface mirrors the local lifecycle: `expert_team_qualify`
+chooses a tier (and can atomically create a managed run when `auto_start=true`),
+`expert_team_run` drives the automatic supervisor, and
+`expert_team_status`/`expert_team_resume`/`expert_team_answer`/
+`expert_team_cancel` expose inspection and human-gate control. The lower-level
+`expert_team_start`, `expert_team_next`, result/audit submission, and host-event
+tools remain available for recovery and integration; they are not required for
+the normal managed path.
+
 ### Run the console locally
 
 The local entry point can render an existing run without starting another model
@@ -186,6 +195,11 @@ Executor output is unverified until a different Auditor accepts real evidence.
 Completion additionally requires all required items accepted and the human
 completion gate approved.
 
+If cancellation races with a running role episode, the run becomes terminal
+without accepting a late Executor result or Auditor decision. A later resume
+reconciles the unmatched episode start as `episode.abandoned`, so accepted work
+is not repeated and unverified work is never promoted.
+
 ## Safe parallel writes
 
 Research, diagnosis, review, and QA are read-only by default. Implementation
@@ -231,6 +245,9 @@ Managed defaults can be customized by copying
 supports global and per-role host/model/timeouts/context budgets. Authentication
 continues to come from Codex/Claude's active environment; persisted configuration
 rejects keys, tokens, passwords, and secrets.
+Values resolve in this order: explicit MCP/CLI overrides, project TOML,
+environment variables, then built-in defaults. Per-role settings inherit the
+global run values unless overridden.
 
 Probe both installed host runtimes without starting a model episode:
 
@@ -243,6 +260,17 @@ python scripts/expert_team_run.py --probe
 The managed runtime writes only inside an approved task's `runs/` directory and
 never changes Trellis task status, phase, approval, or archive state. Without
 Trellis, lightweight mode remains available.
+
+## Verification status
+
+The deterministic contract, replay, supervisor, process-lifecycle, integrity,
+configuration, and package checks pass locally, as do real host capability
+probes and the repository CLI lifecycle. A Codex model-backed managed run has
+also completed; Claude Code model-backed execution remains blocked by the local
+organization/account model-access policy. Fake backends, fixture event streams,
+and `--probe` are not substitutes for cross-host model-backed E2E evidence.
+The active Trellis [verification report](.trellis/tasks/08-07-long-horizon-cross-cli-orchestration/check.md)
+tracks the remaining parity, interruption, permission, and human-gate proof.
 
 ## Validate
 
