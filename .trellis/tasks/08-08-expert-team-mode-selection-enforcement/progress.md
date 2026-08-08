@@ -40,6 +40,14 @@
 - The checkout MCP smoke (prepare → qualify → start → compliance) passes in a
   temporary trusted workspace; the installed cache remains stale and is not
   claimed as updated.
+- After pushing `db27926`, marketplace refresh installed
+  `0.4.0+codex.20260808151000`; the installed-cache smoke now passes
+  initialize/tools-list plus prepare → qualify → start → compliance with a
+  trusted temporary workspace. `codex plugin add` printed a Windows backup
+  access-denied warning, but `codex plugin list` and the cache path confirm the
+  new version is enabled.
+- The current conversation's host tool snapshot is still immutable; a fresh
+  Codex/Claude thread is required to expose the new tool list and skill.
 - Run the final Trellis check/spec review, clean generated local gate files,
   and prepare an ownership-scoped commit; unrelated pre-existing dirty files
   remain uncommitted.

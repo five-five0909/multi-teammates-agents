@@ -87,8 +87,8 @@ Ownership: tests、scripts validators、installed-cache smoke fixtures。
 
 - [ ] 覆盖 MCP restart、compact/new session、task drift、duplicate run、cancel/late result。
 - [ ] 覆盖 checkout vs installed cache tools/list/version/skill contract。
-- [ ] 从安装缓存启动 MCP，证明 task lookup 使用用户 workspace 而非 plugin cache root。
-- [ ] 覆盖旧会话 stale、重装后新会话、cachebuster、Claude package base version。
+- [x] 从安装缓存启动 MCP，证明 task lookup 使用用户 workspace 而非 plugin cache root。
+- [x] 覆盖旧会话 stale、重装后新会话、cachebuster、Claude package base version；当前会话仍需重开才热加载。
 - [ ] 覆盖 hook trusted/untrusted、interactive/noninteractive、native single-select/fallback。
 - [ ] 把历史 simulation 失守链做成 transcript conformance regression。
 
@@ -101,7 +101,7 @@ Ownership: `README.md`、`README_zh.md`、`.trellis/spec/plugin/expert-team-cont
 - [x] README/README_zh 已补模式单选、收据、长任务状态跟随、inline/subagent 和 hook 边界说明。
 - [x] 已记录 hooks 的强制边界、升级/重开会话、回滚和诊断步骤。
 - [x] Codex/Claude base version 同步为 0.4.0，并用 plugin-creator 更新 Codex cachebuster。
-- [ ] 从安装缓存运行完整 prepare/select/qualify smoke（当前 host 会话工具表缺 prepare，需新会话/重装后完成）。
+- [x] 从安装缓存运行完整 initialize/tools-list/prepare/qualify/start/compliance smoke；当前 host 会话工具表仍需重开才热加载。
 - [x] 已运行当前范围的完整检查；trellis-check/trellis-update-spec 的最终门禁待最后一轮执行。
 - [ ] 形成按所有权分组的 commit 计划；未知脏文件单列，不自动 push。
 

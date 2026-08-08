@@ -76,9 +76,11 @@ cachebuster 通过 plugin-creator helper 刷新。当前会话的工具快照仍
 
 ### Status
 
-[IN PROGRESS] checkout 临时可信工作区已完成 prepare → qualify → start → compliance
-smoke；安装缓存 smoke 仍需要重装插件并开启新宿主会话后完成；最后一轮 Trellis
-check/spec review、按所有权 commit 尚未执行。
+[IN PROGRESS] checkout 与安装缓存均已完成 initialize/tools-list、prepare → qualify
+→ start → compliance smoke；`codex plugin list` 已显示
+`0.4.0+codex.20260808151000`。`codex plugin add` 有一次 Windows 旧缓存备份拒绝访问
+警告，但新缓存已启用。当前宿主工具快照仍需重开 Codex/Claude 会话才会热加载；
+最后一轮 Trellis check/spec review 已完成，任务保持 in_progress 等待用户验收。
 
 
 ## Session 3: 跨平台插件 MCP 自动注册修复
