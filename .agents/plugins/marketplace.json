@@ -1,0 +1,21 @@
+{
+  "name": "multi-teammates-agents",
+  "interface": {
+    "displayName": "Multi Teammates Agents"
+  },
+  "plugins": [
+    {
+      "name": "multi-teammates-agents",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/five-five0909/multi-teammates-agents.git",
+        "ref": "main"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

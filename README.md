@@ -41,6 +41,10 @@ Both load `skills/expert-team/`, the root `.mcp.json`, the shared Python
 runtime, and the same canonical role registry. Claude also auto-discovers the
 twenty generated definitions under `agents/`.
 
+The repository also includes a Codex repo marketplace at
+`.agents/plugins/marketplace.json`. It points back to the public `main` branch,
+so the repository can be installed without copying files into `~/.codex`.
+
 No external account, hosted service, or graphical canvas is required.
 
 ## Use
@@ -202,15 +206,82 @@ python -m mypy runtime scripts tests
 claude plugin validate . --strict
 ```
 
-## Installation and distribution
+## Installation
 
-Validate the repository first. Then add it to a personal or team marketplace
-using the Codex plugin workflow appropriate to the intended audience. This
-repository intentionally does not modify a marketplace automatically.
+The plugin is distributed as source: there is no `pip install` step and no
+separate package registry. You need Git, Python 3.10+, and an authenticated
+Codex CLI or Claude Code installation. Lightweight mode works without Trellis;
+managed mode additionally requires an approved, in-progress Trellis task.
 
-To remove the plugin, uninstall or remove the plugin source. Optional
-`.expert-team/runs/` files are user-owned audit artifacts and are not deleted
-automatically.
+### Codex CLI
+
+Install the public repository's bundled marketplace and then install the plugin:
+
+```powershell
+codex plugin marketplace add https://github.com/five-five0909/multi-teammates-agents.git --ref main --sparse .agents/plugins
+codex plugin add multi-teammates-agents --marketplace multi-teammates-agents
+codex plugin list --marketplace multi-teammates-agents
+```
+
+For local development, clone the repository and register its marketplace path:
+
+```powershell
+git clone https://github.com/five-five0909/multi-teammates-agents.git
+cd multi-teammates-agents
+codex plugin marketplace add .
+codex plugin add multi-teammates-agents --marketplace multi-teammates-agents
+```
+
+Update the marketplace before installing a newer revision:
+
+```powershell
+codex plugin marketplace upgrade multi-teammates-agents
+```
+
+### Claude Code
+
+Load a local checkout for the current Claude Code session:
+
+```powershell
+git clone https://github.com/five-five0909/multi-teammates-agents.git
+cd multi-teammates-agents
+claude --plugin-dir .
+```
+
+Or load the public `main` branch as a ZIP for one session without cloning:
+
+```powershell
+claude --plugin-url https://github.com/five-five0909/multi-teammates-agents/archive/refs/heads/main.zip
+```
+
+`--plugin-dir` and `--plugin-url` are session-scoped. For a persistent Claude
+Code installation, add this plugin to a Claude marketplace and install it with
+`claude plugin install <plugin>@<marketplace>`.
+
+### Verify and remove
+
+After installation, verify both host probes and the plugin contract:
+
+```powershell
+python scripts/expert_team_run.py --probe
+claude plugin validate . --strict
+```
+
+Remove a Codex installation with:
+
+```powershell
+codex plugin remove multi-teammates-agents --marketplace multi-teammates-agents
+codex plugin marketplace remove multi-teammates-agents
+```
+
+Remove a persistent Claude Code installation with:
+
+```powershell
+claude plugin uninstall multi-teammates-agents
+```
+
+Removing the plugin does not delete user-owned `.expert-team/runs/` audit
+artifacts.
 
 ## Qoder-to-Codex mapping
 

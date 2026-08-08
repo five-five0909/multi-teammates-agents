@@ -37,6 +37,9 @@
   的专家注册表；
 - Claude Code 还会自动发现 `agents/` 下生成的二十个 Agent 定义。
 
+仓库还包含 Codex 的仓库级 marketplace：`.agents/plugins/marketplace.json`。它指向
+公开仓库的 `main` 分支，因此不需要把文件复制到 `~/.codex` 就能安装。
+
 不需要外部账户、托管服务或图形化画布即可运行。
 
 ## 使用方式
@@ -182,13 +185,80 @@ python -m mypy runtime scripts tests
 claude plugin validate . --strict
 ```
 
-## 安装与分发
+## 安装
 
-先完成仓库校验，再根据目标用户选择 Codex 插件工作流，将其加入个人或团队市场。
-本仓库不会自动修改任何 marketplace。
+插件以源码形式分发：不需要执行 `pip install`，也没有额外的包仓库。你需要安装
+Git、Python 3.10+，并完成 Codex CLI 或 Claude Code 的登录。轻量模式不依赖 Trellis；
+管理模式还要求存在一个已批准且处于 `in_progress` 的 Trellis 任务。
 
-移除插件时，卸载或删除插件源即可。用户自行创建的 `.expert-team/runs/` 审计文件
-不会被自动删除。
+### Codex CLI
+
+先添加仓库自带的公开 marketplace，再安装插件：
+
+```powershell
+codex plugin marketplace add https://github.com/five-five0909/multi-teammates-agents.git --ref main --sparse .agents/plugins
+codex plugin add multi-teammates-agents --marketplace multi-teammates-agents
+codex plugin list --marketplace multi-teammates-agents
+```
+
+本地开发时，可以克隆仓库并直接注册本地 marketplace：
+
+```powershell
+git clone https://github.com/five-five0909/multi-teammates-agents.git
+cd multi-teammates-agents
+codex plugin marketplace add .
+codex plugin add multi-teammates-agents --marketplace multi-teammates-agents
+```
+
+要安装更新后的版本，先刷新 marketplace：
+
+```powershell
+codex plugin marketplace upgrade multi-teammates-agents
+```
+
+### Claude Code
+
+在当前 Claude Code 会话中加载本地仓库：
+
+```powershell
+git clone https://github.com/five-five0909/multi-teammates-agents.git
+cd multi-teammates-agents
+claude --plugin-dir .
+```
+
+也可以不克隆仓库，直接把公开 `main` 分支作为 ZIP 加载到当前会话：
+
+```powershell
+claude --plugin-url https://github.com/five-five0909/multi-teammates-agents/archive/refs/heads/main.zip
+```
+
+`--plugin-dir` 和 `--plugin-url` 都只对当前会话生效。要持久安装到 Claude Code，
+请先把插件加入 Claude marketplace，再使用
+`claude plugin install <plugin>@<marketplace>`。
+
+### 验证与移除
+
+安装后，执行宿主探针和插件校验：
+
+```powershell
+python scripts/expert_team_run.py --probe
+claude plugin validate . --strict
+```
+
+移除 Codex 安装：
+
+```powershell
+codex plugin remove multi-teammates-agents --marketplace multi-teammates-agents
+codex plugin marketplace remove multi-teammates-agents
+```
+
+移除持久化的 Claude Code 安装：
+
+```powershell
+claude plugin uninstall multi-teammates-agents
+```
+
+移除插件不会删除用户自行创建的 `.expert-team/runs/` 审计文件。
 
 ## Qoder 到 Codex 的映射
 
@@ -219,4 +289,3 @@ Agent/command 格式或团队运行时假设。
 ## 许可证
 
 MIT，详见 [LICENSE](LICENSE)。
-
