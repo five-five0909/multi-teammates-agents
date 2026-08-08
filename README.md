@@ -120,9 +120,137 @@ tool list.
 evidence-heavy, or human-gated work. It requires an existing approved Trellis
 task and uses this lifecycle:
 
-```text
-Manager -> Executor wave -> independent Auditor wave -> merge/rework/gate
+### Long-task execution order
+
+The following is the contract for a managed run. `prepare` is read-only;
+`qualify` only creates a run when the caller has an approved task, a complete
+`TaskContract`/`WorkItem` graph, and explicitly opts into `auto_start=true`.
+`status` and `resume` inspect or recover a run; they do not silently start a
+new model episode.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User / host
+    participant G as Entry gate
+    participant T as Trellis store
+    participant M as Manager
+    participant E as Executor wave
+    participant A as Independent Auditor
+    participant H as Human gate
+    U->>G: expert_team_prepare (read-only)
+    G-->>U: task, consent, mode, next action
+    U->>G: expert_team_qualify
+    alt managed + approved
+        G->>T: auto_start (optional)
+        T-->>M: initialized -> managing
+        loop each execution round
+            M->>T: select dependency-ready WorkItems
+            T-->>E: executing_wave
+            par disjoint WorkItems
+                E->>T: episode started + result submitted
+            end
+            T-->>A: auditing_wave + workspace before/after
+            A->>T: accepted / rework / invalid audit
+            alt accepted
+                T->>T: verified_progress += accepted evidence
+            else rework
+                T->>M: bounded retry (max 2)
+            else failure / blocked
+                T-->>H: needs_input or blocked
+                H->>T: answer/resume or cancel
+            end
+        end
+        T-->>H: proposed_complete + completion gate
+        H->>T: approve
+        T-->>U: completed + public narrative
+    else lightweight or inline
+        G-->>U: main-session-sequential
+        U->>U: execute the same task/result contract
+    end
+    Note over T: append event -> reduce -> atomic state snapshot
+    U->>T: status / resume after a restart
+    T->>T: unmatched episode.started -> episode.abandoned
+    T-->>U: compact state and evidence projection
 ```
+
+At every round, the Manager chooses only dependency-ready work. Executors may
+run disjoint items in parallel, but an Executor result is still unverified
+until a separate Auditor accepts evidence. An invalid result goes through the
+bounded rework loop; a failure, permission issue, budget limit, cancellation,
+or completion decision becomes a durable human gate rather than an implicit
+retry.
+
+### How long-task state follows across sessions
+
+The state is followed by replayable facts, not by chat history or a best-effort
+summary. The authoritative layers are:
+
+| Layer | Durable source | What it means |
+| --- | --- | --- |
+| Trellis task | `.trellis/tasks/<task-id>/task.json` | Project lifecycle and approval (`planning`, `in_progress`, archive/finish). |
+| Managed run snapshot | `.trellis/tasks/<task-id>/runs/<run-id>/state.json` | The current `RunState`, work-item statuses, round/budget counters, `pending_gate`, and `verified_progress`. |
+| Event history | `events.jsonl` plus rounds/decisions logs in the run directory | Append-only normalized events; loading replays them and checks the snapshot. |
+| Work-item evidence | `work-items/` and role-result records | Result, evidence, checks, risks, attempt, and ownership for one bounded item. |
+| Host episodes | `episode.started` and terminal episode events | Process lifecycle. On restart, an unmatched start becomes `episode.abandoned`; it is never treated as accepted work. |
+| Raw traces | `.trellis/workspace/<developer>/traces/<run-id>/` | Diagnostics only; they are not the public state or acceptance evidence. |
+
+The update path is deliberately one-way:
+
+```mermaid
+flowchart LR
+    E["normalized event"] --> L["append-only events.jsonl"]
+    L --> R["reducer validates transition"]
+    R --> S["atomic state.json snapshot"]
+    S --> P["status / resume / public narrative"]
+    P --> N["next session"]
+    N --> X["replay events + reconcile episodes"]
+    X --> R
+    A["independent accepted audit"] --> V["verified_progress"]
+    V --> S
+    Q["raw host trace"] -. diagnostic only .-> P
+```
+
+Only an accepted independent audit can advance `verified_progress`; an
+Executor's own claim, a raw trace, or a late result cannot promote work. A
+cancelled run is terminal and ignores late Executor/Auditor decisions. A
+`resume` reconstructs the compact snapshot, reconciles abandoned episodes, and
+continues only from a legal state or returns the pending human gate.
+
+### Subagent collaboration model
+
+The lead owns decomposition, integration, and final acceptance. The managed
+runtime uses dependency waves, while native subagents are only the execution
+substrate:
+
+```mermaid
+flowchart TD
+    L["Lead / Manager<br/>decompose + schedule"] --> R["Wave 0<br/>read-only research / exploration"]
+    R --> L
+    L --> W["Wave N<br/>dependency-ready Executors"]
+    W --> A["Independent Auditor<br/>different identity + workspace check"]
+    A -->|accepted| V["verified_progress"]
+    A -->|rework| W
+    A -->|invalid / blocked| G["Human gate"]
+    V --> L
+    G -->|answer / resume| L
+    L --> F["integrate changes<br/>run checks + accept"]
+```
+
+| Role | Responsibility | Hard boundary |
+| --- | --- | --- |
+| Lead / Manager | Turn the request into a contract, dependency graph, waves, and final integration. | Does not self-certify an Executor result. |
+| Researcher / explorer | Read-only search, diagnosis, or comparison; return `file:line` evidence. | No product writes and no acceptance decision. |
+| Executor / worker | Complete one bounded objective under explicit file ownership and return structured evidence. | Cannot mark its own work accepted. |
+| Independent Auditor / QA | Re-check the actual workspace and evidence with a different identity. | Read-only with respect to product changes; a dirty workspace makes the audit invalid. |
+| Human gate | Resolve ask, blocked, repeated failure, budget, permission, cancellation, or completion decisions. | The run cannot skip a required gate by guessing. |
+
+In Codex inline mode, the graph, state machine, result schema, and audit rules
+still apply, but implementation and checking are reported as
+`main-session-sequential`; the host must not claim native delegation that did
+not happen. On a subagent-capable host, only independent, disjoint work is
+parallelized; integration-sensitive writes and final checks stay with the
+lead.
 
 The bundled supervisor now owns this loop. `expert_team_run` launches a fresh
 Codex or Claude CLI process for each role episode, streams normalized events,

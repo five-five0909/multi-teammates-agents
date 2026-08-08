@@ -105,9 +105,128 @@ Codex inline 模式会明确报告 `main-session-sequential`，表示实现和�
 
 对于跨会话、多轮次、证据密集型或需要人工门禁的任务，可以显式选择 `managed`：
 
-```text
-Manager -> Executor 执行波次 -> 独立 Auditor 审计波次 -> 合并/返工/门禁
+### 长任务执行顺序
+
+下面这张图就是 managed run 的执行契约。`prepare` 只读；只有调用方已有获批的
+Trellis task、完整的 `TaskContract`/`WorkItem` 任务图，并且明确传
+`auto_start=true` 时，`qualify` 才会创建运行。`status` 和 `resume` 只查看或恢复，
+不会悄悄启动新的模型 Episode。
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as 用户 / 宿主
+    participant G as 入口检查
+    participant T as Trellis 状态存储
+    participant M as Manager
+    participant E as Executor 执行波次
+    participant A as 独立 Auditor
+    participant H as 人工门禁
+    U->>G: expert_team_prepare（只读）
+    G-->>U: task、同意、模式、下一步
+    U->>G: expert_team_qualify
+    alt managed 且已获批
+        G->>T: auto_start（可选）
+        T-->>M: initialized -> managing
+        loop 每一轮执行
+            M->>T: 选择依赖已满足的 WorkItem
+            T-->>E: executing_wave
+            par 互不冲突的 WorkItem
+                E->>T: Episode 开始 + 提交结果
+            end
+            T-->>A: auditing_wave + 工作区前后快照
+            A->>T: accepted / rework / invalid 审计
+            alt accepted
+                T->>T: verified_progress += 已接受证据
+            else rework
+                T->>M: 有界返工（最多 2 轮）
+            else failure / blocked
+                T-->>H: needs_input 或 blocked
+                H->>T: answer/resume 或 cancel
+            end
+        end
+        T-->>H: proposed_complete + 完成门禁
+        H->>T: 批准
+        T-->>U: completed + 公开叙事
+    else lightweight 或 inline
+        G-->>U: main-session-sequential
+        U->>U: 仍执行同一任务图和结果契约
+    end
+    Note over T: 追加事件 -> reducer 归约 -> 原子写入状态快照
+    U->>T: 重启后的 status / resume
+    T->>T: 未闭合的 episode.started -> episode.abandoned
+    T-->>U: 紧凑状态和证据投影
 ```
+
+每一轮都只调度依赖满足的工作项。Executor 可以并行处理互不冲突的工作项，但
+Executor 的结果必须经过不同身份的 Auditor 接受证据后，才算已验证。无效结果进入
+有界返工；失败、权限、预算、取消或完成判断都会形成持久化人工门禁，不会被隐式重试。
+
+### 长任务状态如何跨会话跟随
+
+状态跟随依靠可重放的事实，不依靠聊天记录或“差不多的摘要”。权威层次如下：
+
+| 层次 | 持久化来源 | 含义 |
+| --- | --- | --- |
+| Trellis task | `.trellis/tasks/<task-id>/task.json` | 项目生命周期和立项状态（`planning`、`in_progress`、归档/完成）。 |
+| Managed run 快照 | `.trellis/tasks/<task-id>/runs/<run-id>/state.json` | 当前 `RunState`、工作项状态、轮次/预算计数、`pending_gate` 和 `verified_progress`。 |
+| 事件历史 | run 目录里的 `events.jsonl` 以及 rounds/decisions 日志 | 只追加的规范化事件；加载时会重放并校验快照。 |
+| 工作项证据 | `work-items/` 和角色结果记录 | 一个有边界工作项的结果、证据、检查、风险、尝试次数和所有权。 |
+| 宿主 Episode | `episode.started` 与 Episode 终态事件 | 进程生命周期。重启时未闭合的开始事件会变成 `episode.abandoned`，绝不会被当成已接受工作。 |
+| 原始轨迹 | `.trellis/workspace/<developer>/traces/<run-id>/` | 只用于诊断，不是公开状态，也不是验收证据。 |
+
+更新路径是单向且可审计的：
+
+```mermaid
+flowchart LR
+    E["规范化事件"] --> L["追加到 events.jsonl"]
+    L --> R["reducer 校验状态转移"]
+    R --> S["原子写入 state.json"]
+    S --> P["status / resume / 公开叙事"]
+    P --> N["下一次会话"]
+    N --> X["重放事件 + 对账 Episode"]
+    X --> R
+    A["独立 Auditor 接受"] --> V["verified_progress"]
+    V --> S
+    Q["宿主原始轨迹"] -. 仅诊断 .-> P
+```
+
+只有独立 Auditor 的 `accepted` 审计可以推进 `verified_progress`；Executor 自己的
+声明、原始轨迹或迟到结果都不能把工作提升为已验证。取消后的 run 是终态，迟到的
+Executor/Auditor 决定会被忽略。`resume` 会重建紧凑快照、对账 abandoned Episode，
+然后只从合法状态继续，或返回待处理的人工门禁。
+
+### Subagents / 子代理协作模型
+
+Lead 负责拆解、集成和最终验收。managed runtime 负责依赖波次，原生 subagents 只是
+执行载体：
+
+```mermaid
+flowchart TD
+    L["Lead / Manager<br/>拆解 + 调度"] --> R["第 0 波<br/>只读研究 / 探索"]
+    R --> L
+    L --> W["第 N 波<br/>依赖满足的 Executor"]
+    W --> A["独立 Auditor<br/>不同身份 + 工作区检查"]
+    A -->|accepted| V["verified_progress"]
+    A -->|rework| W
+    A -->|invalid / blocked| G["人工门禁"]
+    V --> L
+    G -->|answer / resume| L
+    L --> F["集成修改<br/>运行检查 + 验收"]
+```
+
+| 角色 | 负责什么 | 硬边界 |
+| --- | --- | --- |
+| Lead / Manager | 把需求变成契约、依赖图、执行波次，并负责最终集成。 | 不能自己给 Executor 结果盖“已验收”章。 |
+| Researcher / explorer | 只读检索、诊断、对比，返回带 `file:line` 的证据。 | 不写产品代码，也不做验收决定。 |
+| Executor / worker | 在明确的文件所有权和单一目标内完成工作，返回结构化证据。 | 不能把自己的结果标记为 accepted。 |
+| Independent Auditor / QA | 用不同身份复核真实工作区和证据。 | 对产品改动保持只读；工作区不干净时审计无效。 |
+| Human gate | 处理 ask、blocked、重复失败、预算、权限、取消和完成判断。 | 不能靠猜测跳过必需门禁。 |
+
+在 Codex inline 模式下，任务图、状态机、结果 schema 和审计规则仍然生效，但实现和
+检查必须报告为 `main-session-sequential`；没有发生原生派发就不能声称已经委派。在
+支持 subagents 的宿主上，也只并行处理互相独立且文件不冲突的工作；集成敏感的写入
+和最终检查仍由 Lead 顺序完成。
 
 内置 Supervisor 负责完整闭环。`expert_team_run` 会为每个角色启动全新的 Codex 或
 Claude CLI 进程，收集规范化事件，执行超时/取消控制，并在人工门禁处暂停。
