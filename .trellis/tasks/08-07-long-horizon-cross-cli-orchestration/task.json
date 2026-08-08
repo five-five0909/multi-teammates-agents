@@ -15,7 +15,7 @@
   "branch": "main",
   "base_branch": "main",
   "worktree_path": "E:/code_space/agent-space/multi-teammates-agents",
-  "commit": "2f385eb",
+  "commit": "9a6b564",
   "pr_url": null,
   "subtasks": [],
   "children": [
@@ -31,6 +31,6 @@
     "schemas/",
     "tests/"
   ],
-  "notes": "Hybrid lightweight/managed mode approved on 2026-08-07. Milestone e6ddfba plus 2f385eb add real CLI runners, autonomous supervision, protected Auditor, strict configuration, qualification, recovery, terminal lifecycle commands, failure gates, and durable redaction. Task remains active until model-backed cross-host E2E and the remaining failure matrices pass.",
+  "notes": "Hybrid lightweight/managed mode approved on 2026-08-07. Milestones e6ddfba, 2f385eb, and 9a6b564 add real CLI runners, autonomous supervision, protected Auditor, strict configuration, automatic qualification, recovery, terminal lifecycle commands, failure gates, and durable redaction. Task remains active until model-backed cross-host E2E and the remaining failure matrices pass.",
   "meta": {}
 }
