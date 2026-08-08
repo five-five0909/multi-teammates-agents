@@ -48,3 +48,36 @@ Added terminal-first public narrative rendering for managed Expert Team runs. In
 ### Next Steps
 
 - None - task complete
+
+
+## Session 2: 移植 Expert Team 子代理委派纪律
+
+**Date**: 2026-08-08
+**Task**: 移植 Expert Team 子代理委派纪律
+**Branch**: `main`
+
+### Summary
+
+按用户要求仅修改项目：新增 delegation guardrails，接入 Expert Team 技能，保留 explorer/worker/default 角色与 Trellis 合同；同步中英文 README 与插件规范。未修改或备份用户级 ~/.codex 配置。插件校验、技能校验、20 个 Claude Agent 检查、合约 fixtures、78 个单测和 mypy 全部通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `35203a7` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
