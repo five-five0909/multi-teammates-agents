@@ -18,6 +18,11 @@
   current checkout and emits a direct launcher-path entry or a `ccswitch://`
   import link; its default target is Claude so Codex config is not changed by
   accident.
+- A fresh isolated Codex `0.147.0` install of plugin `0.3.2` loads the inline
+  manifest MCP map and completes an `expert-team/0.3.2` initialize handshake.
+  A fresh isolated Claude Code `2.1.220` install reports the namespaced plugin
+  server as connected. This was verified without touching either user's normal
+  config directory.
 
 ## Host packaging facts
 

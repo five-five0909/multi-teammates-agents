@@ -195,6 +195,8 @@ all pause/resume correctly on both package surfaces.
   tests.
 - [x] Smoke-test the bundled MCP initialize handshake through the installed
   plugin shape on Windows and Ubuntu 22.04 (WSL).
+- [x] Re-test fresh public plugin installation on isolated Codex and Claude
+  config directories after the host-specific MCP packaging fix (`0.3.2`).
 - [x] Run local Codex and Claude binary probes and runner smoke tests.
 - [ ] With explicit cost-bearing test authorization, run one bounded two-round
   model-backed scenario on Codex and the same scenario on Claude. Codex passed

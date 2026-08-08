@@ -271,6 +271,8 @@ snapshots are atomic, and replay must reproduce the accepted state.
 ## 6. Tests Required
 
 - Unit tests assert manifest name/component integrity and skill references.
+- Package tests assert the Codex inline `mcpServers` map is equivalent to the
+  Claude root `.mcp.json` entry and contains no machine-specific path.
 - MCP package tests launch the bundled stdio server through both plugin-root
   environment names and cover the Windows/POSIX interpreter selection path.
 - CCSwitch generator tests run outside the checkout working directory, verify

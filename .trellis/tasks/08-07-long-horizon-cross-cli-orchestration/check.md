@@ -14,6 +14,22 @@ earlier implementation gap. Codex now has one passing model-backed managed E2E
 run. Claude Code model-backed E2E is blocked by the local organization/account
 configuration, and several failure matrix cases still require further tests.
 
+## 2026-08-08 host-managed plugin install recheck
+
+The packaging fix is released as `0.3.2`. A fresh isolated Codex home installed
+the public `main` marketplace without a checkout or manual MCP entry. Codex
+loaded the inline manifest map, reported `expert-team` as enabled through
+`codex mcp get`, and an initialize request returned `expert-team/0.3.2`.
+A fresh isolated Claude config installed the same public plugin and reported
+`plugin:multi-teammates-agents:expert-team` as `Connected`; the unrelated
+project-root `.mcp.json` entry remained separately marked pending approval.
+Ubuntu 22.04 WSL, with no `python` alias and only `python3`, also initialized
+the bundled launcher and returned `expert-team/0.3.2`.
+
+This proves plugin-managed MCP registration on both package surfaces without
+editing the user's Codex or Claude configuration. CC Switch JSON remains only
+the documented fallback for hosts that cannot consume bundled plugin MCP.
+
 ## Evidence classification
 
 | Level | Meaning | Present |
@@ -93,6 +109,10 @@ Codex CLI 0.147.0 and Claude Code 2.1.220 available — PASS
 MCP initialize smoke (Windows)
 PASS; the Codex inline entry and Claude `.mcp.json` Node launcher selected the
 installed Python interpreter and returned `expert-team` / `0.3.2`
+
+Fresh plugin install smoke (Windows / Ubuntu 22.04 WSL)
+PASS; Codex `0.147.0` and Claude Code `2.1.220` registered the bundled MCP from
+the public plugin install. Ubuntu had no `python` alias and selected `python3`.
 
 MCP initialize smoke (Ubuntu 22.04 / WSL)
 PASS; host had `python3` but no `python`, launcher selected `python3` and the
