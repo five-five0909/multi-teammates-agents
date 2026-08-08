@@ -181,6 +181,71 @@ class MCPProtocolTests(unittest.TestCase):
         assert listed is not None
         self.assertEqual(set(TOOL_SCHEMAS), {tool["name"] for tool in listed["result"]["tools"]})
 
+    def test_prepare_entry_handshake_requires_consent_and_declares_inline_fallback(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            server = MCPServer(ExpertTeamService(root))
+            response = server.dispatch(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 3,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "expert_team_prepare",
+                        "arguments": {
+                            "request": "修复跨层动画并验证接口",
+                            "host_mode": "inline",
+                            "intent": "implementation",
+                            "evidence_heavy": True,
+                        },
+                    },
+                }
+            )
+            assert response is not None
+            content = response["result"]["structuredContent"]
+            self.assertTrue(content["prepared"])
+            self.assertEqual("managed", content["execution_tier"])
+            self.assertEqual("main-session-sequential", content["execution_mode"])
+            self.assertEqual("request_task_consent", content["next_action"])
+            self.assertTrue(content["requires_task_consent"])
+            self.assertFalse(content["managed_runtime_eligible"])
+            self.assertFalse((root / ".trellis").exists())
+
+    def test_prepare_entry_handshake_routes_active_subagent_to_managed_start(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            task = root / ".trellis" / "tasks" / "08-07-example"
+            task.mkdir(parents=True)
+            (task / "task.json").write_text(
+                json.dumps({"id": "example", "name": "example", "status": "in_progress"}),
+                encoding="utf-8",
+            )
+            server = MCPServer(ExpertTeamService(root, developer="tester"))
+            response = server.dispatch(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 4,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "expert_team_prepare",
+                        "arguments": {
+                            "request": "跨会话持续执行这个项目",
+                            "task_id": "example",
+                            "host_mode": "subagent",
+                            "intent": "implementation",
+                        },
+                    },
+                }
+            )
+            assert response is not None
+            content = response["result"]["structuredContent"]
+            self.assertEqual("managed", content["execution_tier"])
+            self.assertEqual("managed-supervised", content["execution_mode"])
+            self.assertEqual("qualify_auto_start", content["next_action"])
+            self.assertFalse(content["requires_task_consent"])
+            self.assertTrue(content["managed_runtime_eligible"])
+            self.assertEqual("in_progress", content["trellis"]["task_status"])
+
     def test_tool_contract_error_is_returned_as_tool_error(self) -> None:
         server = MCPServer(ExpertTeamService(Path.cwd()))
         response = server.dispatch({"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "expert_team_status", "arguments": {"task_id": "missing", "run_id": "run-1"}}})

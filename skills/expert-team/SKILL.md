@@ -9,24 +9,39 @@ Run one bounded expert-team workflow on Codex CLI or Claude Code. Keep the lead
 focused on requirements, coordination, synthesis, and the final acceptance
 proposal. Delegate only work that is concrete enough to verify independently.
 
+The entry gate in [entry-gate.md](references/entry-gate.md) is mandatory. It
+forces every explicit invocation through a read-only preparation check and an
+observable lightweight/managed qualification before implementation or managed
+state changes. A skill invocation without that evidence is not an
+expert-team-compliant run.
+
 ## 1. Establish the run contract
 
-1. Restate the requested outcome, constraints, and completion criteria.
-2. Read [workflow-routing.md](references/workflow-routing.md). Select a domain
+1. Resolve the current Trellis task and host execution mode, then call
+   `expert_team_prepare` before editing code or changing Trellis state. Follow
+   its returned `next_action`; in Codex inline mode this normally records
+   `main-session-sequential`.
+2. Call `expert_team_qualify` for every invocation, including lightweight
+   requests. Qualification is side-effect-free unless an explicit managed
+   `auto_start=true` call supplies an active task, strict contract, and work
+   item graph.
+3. Restate the requested outcome, constraints, and completion criteria.
+4. Read [workflow-routing.md](references/workflow-routing.md). Select a domain
    lens and the lightest valid workflow shape. Do not form a fake team when one
    specialist is sufficient.
-3. Read [agent-registry.md](references/agent-registry.md) and its
+5. Read [agent-registry.md](references/agent-registry.md) and its
    `agent-registry.json`, select the smallest
    applicable set, then read each selected profile under `references/agents/`.
    Coordinator profiles are lead playbooks: apply them in the current lead and
    never dispatch a nested orchestrator.
-4. Detect `.trellis/`. If present, read
+6. Detect `.trellis/`. If present, read
    [trellis-integration.md](references/trellis-integration.md) before changing
    task state or project files.
-5. Load project role overrides from `.expert-team/roles/` when that directory
+7. Load project role overrides from `.expert-team/roles/` when that directory
    exists. Then read [expert-catalog.md](references/expert-catalog.md) and merge
    matching overrides by role name.
-6. Select an execution tier:
+8. Select an execution tier and keep it consistent with the qualification
+   response:
    - Use `lightweight` for bounded work that fits one session and does not need
      durable audit or human gates.
    - Use `managed` when explicitly requested or for cross-session, multi-wave,
@@ -105,9 +120,10 @@ resolved.
 Report:
 
 1. outcome and execution mode;
-2. completed expert tasks and their evidence;
-3. changed files and checks run;
-4. failed, blocked, cancelled, or omitted work;
-5. unresolved risks and recommended follow-ups.
+2. entry-gate and qualification evidence;
+3. completed expert tasks and their evidence;
+4. changed files and checks run;
+5. failed, blocked, cancelled, or omitted work;
+6. unresolved risks and recommended follow-ups.
 
 Never claim success when a required task or required verification failed.

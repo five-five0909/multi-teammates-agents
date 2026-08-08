@@ -100,6 +100,22 @@ does not edit `~/.codex/config.toml`, `~/.codex/AGENTS.md`, or user agent files.
 `lightweight` is the default for bounded work that fits one session. It uses
 native agents and creates no managed-run directory.
 
+### Mandatory entry handshake
+
+Every explicit `$expert-team` invocation first calls the read-only
+`expert_team_prepare` tool and then `expert_team_qualify`. The two responses
+record the current Trellis task, consent requirement, execution tier, host
+dispatch mode, and next legal action. Without these records the run must not
+edit code or create managed state.
+
+Codex inline mode reports `main-session-sequential`; it must not be presented
+as native delegation. If MCP or native subagents are unavailable, retain the
+same task graph and result contract and label the run `sequential-fallback`.
+
+After changing the plugin package, reinstall or refresh the installed plugin and
+start a new host thread; an existing host session does not hot-load a new MCP
+tool list.
+
 `managed` is selected explicitly or for cross-session, multi-wave,
 evidence-heavy, or human-gated work. It requires an existing approved Trellis
 task and uses this lifecycle:

@@ -89,6 +89,20 @@ $expert-team ops 诊断部署回归并提出可安全回滚的方案。
 `lightweight` 是适合单次会话、有明确边界任务的默认模式。它使用宿主平台的原生
 Agent，不创建 managed run 目录。
 
+### 强制入口检查
+
+每次显式调用 `$expert-team` 都必须先经过只读的
+`expert_team_prepare`，再调用 `expert_team_qualify`。入口检查会报告当前
+Trellis task、是否需要立项同意、执行层级和下一步动作；没有这两份证据，不能
+开始改代码或创建 managed run。
+
+Codex inline 模式会明确报告 `main-session-sequential`，表示实现和检查由主会话
+顺序完成，不能把它伪装成已经派发了原生 Agent。宿主不支持 MCP 时也必须保留同一
+任务图和结果契约，并明确标记 `sequential-fallback`。
+
+如果宿主已经安装了旧版本插件，必须重新安装/刷新插件并开启新会话，宿主才会重新
+加载新增的 MCP 工具；当前会话不会热加载工具清单。
+
 对于跨会话、多轮次、证据密集型或需要人工门禁的任务，可以显式选择 `managed`：
 
 ```text

@@ -12,6 +12,7 @@ from .adapters.trellis import TrellisRunStore
 from .adapters.claude import normalize_claude_event
 from .adapters.codex import normalize_codex_event
 from .core.contracts import AuditDecision, BackendEvent, ContractError, HumanDecision, RoleResult, RunEvent, TaskContract, WorkItem
+from .routing import qualify_execution_tier
 from .security import redact_value
 
 
@@ -46,6 +47,116 @@ class ExpertTeamService:
 
     def _store(self, task_id: str) -> TrellisRunStore:
         return TrellisRunStore(self.repo_root, self._task_dir(task_id), self.developer)
+
+    def prepare(
+        self,
+        request: str,
+        *,
+        explicit: str | None = None,
+        dependency_waves: int = 1,
+        durable_audit: bool = False,
+        human_gates: bool = False,
+        evidence_heavy: bool = False,
+        task_id: str | None = None,
+        host_mode: str = "unknown",
+        intent: str = "implementation",
+    ) -> dict[str, Any]:
+        """Run the mandatory, read-only Expert Team entry handshake.
+
+        The skill remains responsible for the conversation and task lifecycle;
+        this method makes the boundary observable and deterministic before any
+        implementation or managed-run mutation is attempted.
+        """
+        if explicit not in {None, "lightweight", "managed"}:
+            raise ContractError("explicit mode must be lightweight or managed")
+        if host_mode not in {"inline", "subagent", "unknown"}:
+            raise ContractError("host_mode must be inline, subagent, or unknown")
+        if intent not in {"analysis", "implementation", "audit"}:
+            raise ContractError("intent must be analysis, implementation, or audit")
+
+        tier = qualify_execution_tier(
+            request,
+            explicit=explicit,  # type: ignore[arg-type]
+            dependency_waves=dependency_waves,
+            durable_audit=durable_audit,
+            human_gates=human_gates,
+            evidence_heavy=evidence_heavy,
+        )
+
+        tasks_root = self.repo_root / ".trellis" / "tasks"
+        trellis_present = tasks_root.is_dir()
+        task_status: str | None = None
+        task_error: str | None = None
+        if task_id is not None:
+            if not task_id.strip():
+                raise ContractError("task_id must not be empty when provided")
+            try:
+                task_dir = self._task_dir(task_id)
+                metadata_path = task_dir / "task.json"
+                metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+                if not isinstance(metadata, dict):
+                    raise ValueError("task metadata must be an object")
+                value = metadata.get("status")
+                task_status = value if isinstance(value, str) else "unknown"
+            except (ContractError, OSError, ValueError, json.JSONDecodeError) as error:
+                task_error = str(error)
+
+        active_task = task_status == "in_progress"
+        requires_task_consent = intent == "implementation" and not active_task
+        blockers: list[str] = []
+        if task_error:
+            blockers.append(task_error)
+        if tier == "managed" and not trellis_present:
+            blockers.append("managed mode requires .trellis/tasks")
+        if tier == "managed" and task_id is not None and not active_task:
+            blockers.append("managed mode requires an active in_progress Trellis task")
+
+        if host_mode == "inline":
+            execution_mode = "main-session-sequential"
+            fallback_reason = "Codex inline mode keeps implementation and checking in the main session"
+        elif host_mode == "subagent":
+            execution_mode = "managed-supervised" if tier == "managed" else "native-delegation"
+            fallback_reason = None
+        else:
+            execution_mode = "unresolved"
+            fallback_reason = "host execution mode must be declared before dispatch"
+
+        if requires_task_consent:
+            next_action = "request_task_consent"
+        elif tier == "managed" and not active_task:
+            next_action = "activate_trellis_task"
+        elif tier == "managed" and host_mode == "subagent":
+            next_action = "qualify_auto_start"
+        elif host_mode == "inline":
+            next_action = "build_graph_then_execute_in_main"
+        elif host_mode == "subagent":
+            next_action = "build_graph_then_dispatch"
+        else:
+            next_action = "declare_host_mode"
+
+        obligations = [
+            "record the prepare result and execution mode",
+            "record a dependency-aware task graph before implementation",
+            "normalize every task result with the Expert Result Contract",
+            "run verification and report incomplete work explicitly",
+        ]
+        return {
+            "schema_version": 1,
+            "prepared": True,
+            "execution_tier": tier,
+            "execution_mode": execution_mode,
+            "fallback_reason": fallback_reason,
+            "next_action": next_action,
+            "requires_task_consent": requires_task_consent,
+            "managed_runtime_eligible": tier == "managed" and active_task and host_mode == "subagent",
+            "trellis": {
+                "present": trellis_present,
+                "task_id": task_id,
+                "task_status": task_status,
+            },
+            "blockers": blockers,
+            "obligations": obligations,
+        }
 
     def start(self, task_id: str, run_id: str, contract: Any, work_items: Any, *, max_rounds: int = 20, retry_limit: int = 2) -> dict[str, Any]:
         if not isinstance(work_items, list):

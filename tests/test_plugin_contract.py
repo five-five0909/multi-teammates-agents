@@ -146,9 +146,13 @@ class PluginContractTests(unittest.TestCase):
             "run-ledger-template.md",
             "managed-mode.md",
             "delegation-guardrails.md",
+            "entry-gate.md",
         ):
             self.assertTrue((SKILL / "references" / name).is_file(), name)
             self.assertIn(name, text)
+        self.assertIn("expert_team_prepare", text)
+        self.assertIn("expert_team_qualify", text)
+        self.assertIn("main-session-sequential", text)
 
     def test_openai_metadata_keeps_implicit_invocation(self) -> None:
         text = (SKILL / "agents" / "openai.yaml").read_text(encoding="utf-8")

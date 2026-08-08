@@ -26,6 +26,7 @@ TOOL_SCHEMAS: dict[str, dict[str, Any]] = {
     "expert_team_resume": {"type": "object", "additionalProperties": False, "required": ["task_id", "run_id"], "properties": {"task_id": {"type": "string"}, "run_id": {"type": "string"}}},
     "expert_team_cancel": {"type": "object", "additionalProperties": False, "required": ["task_id", "run_id"], "properties": {"task_id": {"type": "string"}, "run_id": {"type": "string"}}},
     "expert_team_record_host_event": {"type": "object", "additionalProperties": False, "required": ["task_id", "run_id", "host", "role", "event"], "properties": {"task_id": {"type": "string"}, "run_id": {"type": "string"}, "host": {"enum": ["codex", "claude"]}, "role": {"enum": ["manager", "executor", "auditor"]}, "event": {"type": "object"}}},
+    "expert_team_prepare": {"type": "object", "additionalProperties": False, "required": ["request"], "properties": {"request": {"type": "string"}, "explicit": {"enum": ["lightweight", "managed"]}, "dependency_waves": {"type": "integer", "minimum": 1}, "durable_audit": {"type": "boolean"}, "human_gates": {"type": "boolean"}, "evidence_heavy": {"type": "boolean"}, "task_id": {"type": "string"}, "host_mode": {"enum": ["inline", "subagent", "unknown"]}, "intent": {"enum": ["analysis", "implementation", "audit"]}}},
     "expert_team_qualify": {"type": "object", "additionalProperties": False, "required": ["request"], "properties": {"request": {"type": "string"}, "explicit": {"enum": ["lightweight", "managed"]}, "dependency_waves": {"type": "integer", "minimum": 1}, "durable_audit": {"type": "boolean"}, "human_gates": {"type": "boolean"}, "evidence_heavy": {"type": "boolean"}, "auto_start": {"type": "boolean"}, "task_id": {"type": "string"}, "run_id": {"type": "string"}, "contract": {"type": "object"}, "work_items": {"type": "array"}, "max_rounds": {"type": "integer", "minimum": 1}, "retry_limit": {"type": "integer", "minimum": 1}}},
     "expert_team_run": {"type": "object", "additionalProperties": False, "required": ["task_id", "run_id"], "properties": {"task_id": {"type": "string"}, "run_id": {"type": "string"}, "config": {"type": "object"}}},
 }
@@ -41,6 +42,7 @@ DESCRIPTIONS = {
     "expert_team_resume": "Return compact verified resume context without raw trajectories.",
     "expert_team_cancel": "Safely cancel a managed run without deleting evidence.",
     "expert_team_record_host_event": "Normalize a Codex or Claude host event and append it to the separate diagnostic trace.",
+    "expert_team_prepare": "Run the mandatory read-only Expert Team entry handshake before task changes or managed execution.",
     "expert_team_qualify": "Select lightweight or managed mode; optionally create a managed run atomically when auto_start is explicit.",
     "expert_team_run": "Run the automatic Manager/Executor/Auditor supervisor until a terminal state or human gate.",
 }
@@ -59,6 +61,7 @@ class MCPServer:
             "expert_team_resume": service.resume,
             "expert_team_cancel": service.cancel,
             "expert_team_record_host_event": lambda task_id, run_id, host, role, event: service.record_host_event(task_id, run_id, host, role, event),
+            "expert_team_prepare": service.prepare,
             "expert_team_qualify": self._qualify,
             "expert_team_run": self._run,
         }
