@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawn } from "node:child_process";
@@ -53,7 +53,7 @@ test("status resolves the Git root from a nested Unicode path", async () => {
     const result = await run(["status", "--project", nested, "--json"]);
     assert.equal(result.code, 0, result.stderr);
     const status = JSON.parse(result.stdout);
-    assert.equal(status.projectRoot, project);
+    assert.equal(status.projectRoot, await realpath(project));
     assert.equal(status.applied, false);
     assert.equal(status.receiptValid, null);
     assert.equal(status.trellis.bound, false);

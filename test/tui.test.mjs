@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -26,7 +26,7 @@ test("TUI snapshot reads the same project and run repositories as CLI and MCP", 
     cachePath,
     fetcher:async () => ({ ok:true, status:200, json:async () => ({ version:"0.5.0-alpha.0" }) }),
   });
-  assert.equal(snapshot.project.projectRoot, project);
+  assert.equal(snapshot.project.projectRoot, await realpath(project));
   assert.equal(snapshot.run.state, "initialized");
   assert.equal(snapshot.run.run_id, "run-1");
   assert.equal(snapshot.update.updateAvailable, false);
@@ -41,7 +41,7 @@ test("TUI startup tolerates offline update checks", async (t) => {
     timeoutMs:20,
     fetcher:async () => { throw new Error("offline"); },
   });
-  assert.equal(snapshot.project.projectRoot, project);
+  assert.equal(snapshot.project.projectRoot, await realpath(project));
   assert.equal(snapshot.update, null);
   assert.match(snapshot.updateError, /offline/u);
 });

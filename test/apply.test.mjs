@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -39,7 +39,7 @@ test("apply dry-run is read-only and commit is idempotent", async () => {
     const mcp = JSON.parse(await readFile(join(project, ".mcp.json"), "utf8"));
     assert.equal(mcp.mcpServers["expert-team"].command, process.execPath);
     assert.match(mcp.mcpServers["expert-team"].args[0], /[\\/]bin[\\/]mta\.js$/u);
-    assert.deepEqual(mcp.mcpServers["expert-team"].args.slice(1), ["mcp", "serve", "--project", project]);
+    assert.deepEqual(mcp.mcpServers["expert-team"].args.slice(1), ["mcp", "serve", "--project", await realpath(project)]);
     assert.match(await readFile(join(project, "AGENTS.md"), "utf8"), /mta:lifecycle:start/u);
     assert.match(await readFile(join(project, ".agents", "skills", "expert-team", "SKILL.md"), "utf8"), /name: expert-team/u);
     assert.equal((await readProjectStatus(project)).integrations.codex.installed, true);

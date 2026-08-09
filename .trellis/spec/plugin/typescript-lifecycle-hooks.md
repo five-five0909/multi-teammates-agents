@@ -27,6 +27,10 @@ readControlStatus(project, sessionId?) -> Promise<ControlStatus>
 - A session pointer binds schema version 1, a safe session ID, canonical Git
   root, Trellis task path, host, and timestamp. Every read revalidates the root
   and task path.
+- Hook workspace roots are canonicalized with filesystem `realpath` before
+  comparison. macOS `/var` versus `/private/var` and Windows short versus long
+  path aliases must resolve to the same trusted project without weakening the
+  workspace boundary.
 - Managed writes require all three proofs: a trusted pre-action Hook, an active
   `in_progress` task, and a valid drift-free apply receipt. Post-action events
   cannot create that proof.
@@ -73,6 +77,7 @@ readControlStatus(project, sessionId?) -> Promise<ControlStatus>
 |---|---|
 | Placeholder PRD/design/implement | Reject task start. |
 | Pointer root or task path escapes the project | Reject as invalid binding. |
+| Hook root does not exist or canonicalizes outside the bound project | Reject as a workspace mismatch. |
 | Untrusted Hook, missing task, invalid receipt, or receipt drift | Deny managed write. |
 | Destructive, permission, cancellation, or completion intent | Return a human gate; never auto-approve. |
 | Codex human gate from `PreToolUse` | Render `deny` with the reason because Codex does not support `ask` there. |
@@ -101,7 +106,8 @@ readControlStatus(project, sessionId?) -> Promise<ControlStatus>
 - Hook tests cover all lifecycle events, host rendering, redaction, receipt
   enforcement, destructive gates, installed/trusted/enforced status, bounded
   Stop continuation, compact context persistence/cleanup, bounded tool outcome
-  metadata, and subagent identity binding without transcript leakage.
+  metadata, subagent identity binding without transcript leakage, and equivalent
+  macOS/Windows path aliases at the canonical workspace boundary.
 - Apply tests cover JSON merging, marker insertion, host switching, exact
   restoration, drift, concurrent changes, rollback, absolute MCP binding, and
   direct execution of the installed Claude Hook and project MCP commands.

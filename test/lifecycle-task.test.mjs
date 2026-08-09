@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -33,7 +33,7 @@ test("start binds one session and changes planning to in_progress", async (t) =>
   const created = await repository.create("Lifecycle Task", { slug:"lifecycle-task" });
   await fillPlanning(root, created.path);
   const pointer = await repository.start("lifecycle-task", "session-1", "codex");
-  assert.equal(pointer.project_root, root);
+  assert.equal(pointer.project_root, await realpath(root));
   const current = await repository.requireActive("session-1");
   assert.equal(current.task.status, "in_progress");
   assert.equal(current.pointer.host, "codex");

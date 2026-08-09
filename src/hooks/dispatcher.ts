@@ -1,4 +1,4 @@
-import { open, mkdir, readFile, rm } from "node:fs/promises";
+import { open, mkdir, readFile, realpath, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { z } from "zod";
 
@@ -62,7 +62,8 @@ export async function dispatchHook(repository: TaskRepository, input: unknown): 
   const parsed = hookEnvelopeSchema.safeParse(input);
   if (!parsed.success) throw new LifecycleError(`HookEnvelope is invalid: ${parsed.error.issues[0]?.message ?? "unknown field"}`);
   const envelope = parsed.data;
-  if (resolve(envelope.project_root) !== repository.projectRoot) throw new LifecycleError("hook workspace does not match the bound project root");
+  const hookProjectRoot = await realpath(resolve(envelope.project_root)).catch(() => undefined);
+  if (hookProjectRoot !== repository.projectRoot) throw new LifecycleError("hook workspace does not match the bound project root");
   const current = await repository.current(envelope.session_id);
   const taskId = current?.task.id ?? null;
   const enforcement = envelope.trusted ? "enforced" : "partial";
