@@ -72,8 +72,14 @@ export async function readProjectStatus(startPath: string): Promise<ProjectStatu
           driftedPaths.push(file.relativePath);
         }
       }
-      const installedPaths: Record<ApplyHost, string> = { codex:".codex/hooks.json", claude:".claude/settings.json" };
-      for (const host of receipt.hosts) integrations[host].installed = receipt.files.some((file) => file.relativePath === installedPaths[host]);
+      const installedPaths: Record<ApplyHost, readonly string[]> = {
+        codex:[".codex/hooks.json", ".agents/skills/expert-team/SKILL.md"],
+        claude:[".claude/settings.json", ".claude/skills/expert-team/SKILL.md"],
+      };
+      const owned = new Set(receipt.files.map((file) => file.relativePath));
+      for (const host of receipt.hosts) {
+        integrations[host].installed = installedPaths[host].every((path) => owned.has(path));
+      }
       for (const entry of await readdir(resolve(projectRoot, ".mta", "sessions"), { withFileTypes:true }).catch(() => [])) {
         if (!entry.isFile() || !entry.name.endsWith(".events.jsonl")) continue;
         const lines = (await readFile(resolve(projectRoot, ".mta", "sessions", entry.name), "utf8")).split(/\r?\n/u);

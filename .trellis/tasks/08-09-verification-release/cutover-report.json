@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-09T04:55:00.000Z",
+  "generatedAt": "2026-08-09T05:39:00.131Z",
   "packageVersion": "0.5.0-alpha.0",
   "registry": {
     "package": "multi-teammates-agents",
@@ -10,7 +10,7 @@
   "releaseLevels": {
     "alpha": {
       "passed": true,
-      "evidence": "strict schemas, CLI/control transactions, fake-host supervisor, Windows and POSIX process cleanup, and isolated tarball lifecycle"
+      "evidence": "strict schemas, CLI/control transactions, fake-host supervisor, Windows and POSIX process cleanup, dual-host skill/profile installation, and isolated tarball lifecycle"
     },
     "beta": {
       "passed": false,

@@ -9,6 +9,7 @@ import {
   planApply,
   unapplyProject,
 } from "../dist/control/apply.js";
+import { readProjectStatus } from "../dist/control/status.js";
 
 async function makeProject() {
   const project = await mkdtemp(join(tmpdir(), "mta-apply-项目-"));
@@ -39,6 +40,21 @@ test("apply dry-run is read-only and commit is idempotent", async () => {
     assert.deepEqual(mcp.mcpServers["expert-team"].args, ["mcp", "serve", "--project", project]);
     assert.match(await readFile(join(project, "AGENTS.md"), "utf8"), /mta:lifecycle:start/u);
     assert.match(await readFile(join(project, ".agents", "skills", "expert-team", "SKILL.md"), "utf8"), /name: expert-team/u);
+    assert.equal((await readProjectStatus(project)).integrations.codex.installed, true);
+  } finally {
+    await rm(project, { recursive: true, force: true });
+  }
+});
+
+test("status does not report a host installed when its skill is absent from an older receipt", async () => {
+  const project = await makeProject();
+  try {
+    await commitApply(await planApply(project, ["codex"]));
+    const receiptPath = join(project, ".mta", "apply-receipt.json");
+    const receipt = JSON.parse(await readFile(receiptPath, "utf8"));
+    receipt.files = receipt.files.filter((file) => file.relativePath !== ".agents/skills/expert-team/SKILL.md");
+    await writeFile(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`);
+    assert.equal((await readProjectStatus(project)).integrations.codex.installed, false);
   } finally {
     await rm(project, { recursive: true, force: true });
   }
