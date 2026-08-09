@@ -5,3 +5,8 @@ __pycache__/
 .ruff_cache/
 .trellis/.runtime/
 .expert-team/entry-gates/
+node_modules/
+dist/
+*.tgz
+temp/
+.mta/

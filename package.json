@@ -1,0 +1,53 @@
+{
+  "name": "multi-teammates-agents",
+  "version": "0.5.0-alpha.0",
+  "description": "Project-scoped AI harness for Trellis-governed, audited long-horizon work",
+  "type": "module",
+  "bin": {
+    "mta": "./bin/mta.js",
+    "multi-teammates-agents": "./bin/mta.js"
+  },
+  "files": [
+    "bin/",
+    "dist/",
+    "templates/",
+    "schemas/",
+    "README.md",
+    "README_zh.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src test bin",
+    "test": "npm run build && node --test \"test/**/*.test.mjs\"",
+    "pack:check": "npm pack --dry-run --json"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fifine/multi-teammates-agents.git"
+  },
+  "keywords": [
+    "ai-agent",
+    "codex",
+    "claude-code",
+    "trellis",
+    "long-horizon"
+  ],
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.2.0",
+    "eslint": "10.8.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.66.0"
+  }
+}
