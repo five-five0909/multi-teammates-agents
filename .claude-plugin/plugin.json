@@ -1,8 +1,8 @@
 {
   "name": "multi-teammates-agents",
   "displayName": "Multi Teammates Agents",
-  "version": "0.4.1",
-  "description": "Coordinate cross-platform specialist agents with lightweight execution or durable Trellis-backed independent audit.",
+  "version": "0.5.0-alpha.0",
+  "description": "Run project-scoped specialist teams through the TypeScript MTA lifecycle and independent audit.",
   "author": {"name": "fifine"},
   "license": "MIT",
   "keywords": ["claude-code", "multi-agent", "orchestration", "expert-team"],

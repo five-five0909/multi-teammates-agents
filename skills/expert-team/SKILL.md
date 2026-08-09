@@ -10,48 +10,33 @@ focused on requirements, coordination, synthesis, and the final acceptance
 proposal. Delegate only work that is concrete enough to verify independently.
 
 The entry gate in [entry-gate.md](references/entry-gate.md) is mandatory. It
-forces every explicit invocation through a read-only preparation check and an
-observable lightweight/managed qualification before implementation or managed
-state changes. A skill invocation without that evidence is not an
-expert-team-compliant run.
+requires an attributable mode choice, a reviewed active Trellis task for
+managed work, and a strict graph before any managed state is created.
 
 ## 1. Establish the run contract
 
-1. Resolve the current Trellis task and host execution mode, then call
-   `expert_team_version` with the host's package/protocol/toolset metadata.
-   If it returns `upgrade_required`, run its printed Codex commands (or
-   `python scripts/expert_team_upgrade.py --upgrade`) and open a new host
-   session before retrying. Only after a compatible report call
-   `expert_team_prepare` before editing code or changing Trellis state. Follow
-   its returned `next_action`; in Codex inline mode this normally records
-   `main-session-sequential`.
-2. If the assessment returns `selection_required`, render exactly one
-   attributable single-select with `expert_team_select_mode`. Never choose
-   lightweight from an AI-supplied `explicit` hint or from a missing user
-   response. A policy-locked managed assessment may proceed without a user
-   downgrade, but still needs an active Trellis task for implementation.
-3. Call `expert_team_qualify` for every invocation, including lightweight
-   requests. It must receive the invocation ID and strict `TaskContract` /
-   `WorkItem[]` graph. Qualification is side-effect-free unless an explicit
-   managed `auto_start=true` call supplies an active task and uses the returned
-   workspace-bound receipt.
-4. Restate the requested outcome, constraints, and completion criteria.
-5. Read [workflow-routing.md](references/workflow-routing.md). Select a domain
+1. Resolve the current Trellis task and call `expert_team_version`. If a newer
+   incompatible package is required, run `mta check-update`, review the exact
+   target, then run `mta update --version <exact> --yes` and open a new host
+   session before retrying.
+2. Restate the requested outcome, constraints, completion criteria, and whether
+   the user selected lightweight or managed execution. Never infer a downgrade
+   from managed when durable audit or cross-session recovery is required.
+3. Read [workflow-routing.md](references/workflow-routing.md). Select a domain
    lens and the lightest valid workflow shape. Do not form a fake team when one
    specialist is sufficient.
-6. Read [agent-registry.md](references/agent-registry.md) and its
+4. Read [agent-registry.md](references/agent-registry.md) and its
    `agent-registry.json`, select the smallest
    applicable set, then read each selected profile under `references/agents/`.
    Coordinator profiles are lead playbooks: apply them in the current lead and
    never dispatch a nested orchestrator.
-7. Detect `.trellis/`. If present, read
+5. Detect `.trellis/`. If present, read
    [trellis-integration.md](references/trellis-integration.md) before changing
    task state or project files.
-8. Load project role overrides from `.expert-team/roles/` when that directory
+6. Load project role overrides from `.expert-team/roles/` when that directory
    exists. Then read [expert-catalog.md](references/expert-catalog.md) and merge
    matching overrides by role name.
-9. Select an execution tier and keep it consistent with the qualification
-   response:
+7. Select one execution tier:
    - Use `lightweight` for bounded work that fits one session and does not need
      durable audit or human gates.
    - Use `managed` when explicitly requested or for cross-session, multi-wave,
@@ -60,10 +45,14 @@ expert-team-compliant run.
    - Read [run-ledger-template.md](references/run-ledger-template.md) only for
      legacy lightweight persistence when managed mode is unavailable.
 
-The server rejects `expert_team_start` without the qualification receipt or
-with a receipt bound to another workspace/task/contract. If the MCP process
-comes from an installed cache without `EXPERT_TEAM_WORKSPACE` (or the host's
-equivalent), stop with `workspace_unbound` and open a fresh session. Hook
+For managed mode, first activate the reviewed Trellis task, build the strict
+`TaskContract` / `WorkItem[]`, and call `expert_team_start` with
+`qualification_receipt: {"approved":true}`. This receipt means the current
+task/graph passed the explicit review gate; never supply it for a planning task
+or an unreviewed graph. Then call `expert_team_run`; use
+`expert_team_status`/`expert_team_resume` for read-only inspection and
+`expert_team_answer` for a pending human gate. If the project MCP was not applied with an explicit
+canonical root, stop with `workspace_unbound`, run `mta apply`, and open a fresh session. Hook
 coverage is reported as `enforced`, `partial`, or `advisory`; never claim a
 host path was blocked when it bypasses hooks.
 

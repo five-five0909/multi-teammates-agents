@@ -15,14 +15,11 @@ only when doing so will not lose an explicit durability or audit requirement.
 
 ## Lifecycle
 
-1. Call `expert_team_qualify` before creating state. A default `lightweight`
-   or `managed` result is side-effect-free and does not create a run. Clients
-   that need a one-call managed handoff may instead set `auto_start=true` and
-   supply the active task ID, run ID, strict TaskContract, and WorkItem graph;
-   the response then returns the newly persisted run identity/state.
-2. For the normal two-step `managed` flow, call `expert_team_start` once with
-   a strict TaskContract and WorkItem graph. Use the task's stable ID, not its
-   dated folder name.
+1. Complete the entry gate, activate the reviewed Trellis task, and build the
+   strict TaskContract and WorkItem graph.
+2. Call `expert_team_start` once with that graph and
+   `qualification_receipt: {"approved":true}`. Use the task's stable ID, not
+   its dated folder name.
 3. Call `expert_team_run`. The bundled supervisor invokes a fresh Manager,
    schedules dependency-ready Executor episodes, records their output as
    unverified, launches separate read-only Auditor episodes, applies the
@@ -41,21 +38,17 @@ Use `expert_team_status` for the full validated snapshot and
 `expert_team_resume` for compact cross-session context. Use
 `expert_team_cancel` to stop safely without deleting evidence.
 
-The repository-local `scripts/expert_team_run.py` exposes the same lifecycle
-for a terminal-only workflow: `--start` creates a run from
-`--contract-file`/`--work-items-file`, `--foreground` (or `--run`) drives the
-supervisor, `--status` renders the public summary, `--resume` prints compact
-state, `--answer decision.json` records a human decision, and `--cancel`
-preserves evidence while stopping the run. Omitting an action keeps the legacy
-foreground behavior. The CLI and MCP surfaces call the same service contracts;
-they do not maintain separate state machines.
+The npm CLI exposes the same lifecycle for terminal workflows:
+`mta run start`, `mta run foreground`, `mta run status`, `mta run resume`,
+`mta run answer`, and `mta run cancel`. The CLI, MCP, and TUI call the same
+TypeScript service contracts and never maintain separate state machines.
 
 When native Codex or Claude structured events are available, call
 `expert_team_record_host_event` with the host and role. The runtime normalizes
 them and writes only the diagnostic projection under the separate Trellis
 workspace trace directory; host payload formats never enter the core reducer.
 
-The supervisor launches real CLI episodes with the host's current permission
+Only `run foreground` / `expert_team_run` launches real CLI episodes with the host's current permission
 policy. Never add approval/sandbox bypass flags. If a host binary, permission, or
 model is unavailable, preserve the failed episode, move the affected work item
 to bounded rework/blocked state, and gate/block the run; never substitute

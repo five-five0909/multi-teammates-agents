@@ -8,15 +8,15 @@ Use this adapter only when `.trellis/` exists in the target repository.
 2. Resolve the current task and phase with the repository-provided scripts.
 3. Treat the active task's PRD, design, and implementation plan as the source
    requirements for expert decomposition.
-4. Run the read-only `expert_team_prepare` entry handshake, then
-   `expert_team_qualify`, before changing task state or project files.
+4. Complete the reviewed task-and-graph entry gate before changing task state
+   or project files.
 5. Follow task-creation consent, planning review, activation, checking, spec
    update, and finish gates exactly as the local workflow defines them.
 6. Do not create, start, archive, or otherwise change Trellis task lifecycle
    merely because the skill was invoked.
 7. Lightweight mode does not write Trellis runtime state. Managed mode may
    write only through the bundled Trellis adapter and only beneath
-   `.trellis/tasks/<approved-task>/runs/<run-id>/`.
+   `.trellis/tasks/<approved-task>/mta-runs/<run-id>/`.
 8. Keep raw host trajectories under
    `.trellis/workspace/<developer>/traces/<run-id>/`; do not append them to PRD,
    design, implementation, or task metadata files.
@@ -28,7 +28,7 @@ Use this adapter only when `.trellis/` exists in the target repository.
 ## Ledger behavior
 
 Use host-native threads and the lead's in-memory ledger in lightweight mode.
-For a qualified managed run, use the MCP service and its append-only event,
+For an approved managed run, use the MCP service and its append-only event,
 audit, and decision records. The run ledger supplements evidence and resume; it
 never replaces Trellis task status or phase gates.
 

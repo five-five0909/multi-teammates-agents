@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-09T04:55:00.000Z",
+  "packageVersion": "0.5.0-alpha.0",
+  "registry": {
+    "package": "multi-teammates-agents",
+    "status": "not_found_or_no_access",
+    "evidence": "npm view returned E404 on 2026-08-09; no publish was attempted"
+  },
+  "releaseLevels": {
+    "alpha": {
+      "passed": true,
+      "evidence": "strict schemas, CLI/control transactions, fake-host supervisor, Windows and POSIX process cleanup, and isolated tarball lifecycle"
+    },
+    "beta": {
+      "passed": false,
+      "evidence": "real Codex managed E2E passed; Claude Code OAuth session expired and could not be refreshed"
+    },
+    "rc": {
+      "passed": false,
+      "evidence": "four-runner Node 22/24 CI is defined but no remote workflow result or clean-machine upgrade/rollback run is available in this session"
+    },
+    "stable": {
+      "passed": false,
+      "evidence": "requires beta and rc plus the complete dual-host model acceptance matrix"
+    }
+  },
+  "cutoverGates": {
+    "typescriptGoldenParity": true,
+    "npmLifecycleWithoutPythonCargo": true,
+    "codexRealManagedE2E": true,
+    "claudeRealManagedE2E": false,
+    "tarballContainsNoPythonRuntime": true,
+    "userDocsAndSkillUseMta": true,
+    "allActiveSpecsUseMta": false,
+    "remoteFourPlatformMatrixPassed": false
+  },
+  "deleteLegacyRuntimeAllowed": false,
+  "blockers": [
+    "Re-authenticate Claude Code and pass one real managed Manager-Executor-Auditor E2E.",
+    "Run the committed Windows/Ubuntu/macOS Intel/macOS arm64 Node 22/24 workflow successfully.",
+    "Finish or reconcile the user's in-progress .trellis/spec/plugin/expert-team-contract.md migration without overwriting that work."
+  ]
+}

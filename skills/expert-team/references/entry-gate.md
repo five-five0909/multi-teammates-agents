@@ -1,70 +1,39 @@
 # Expert Team Entry Gate
 
-The entry gate is mandatory for every explicit `$expert-team` or
-`/multi-teammates-agents:expert-team` invocation. It makes plugin participation
-observable before any project mutation or managed-run mutation occurs.
+Every explicit expert-team run must pass this gate before managed state or
+project writes are created.
 
 ## Required order
 
-1. Resolve the current Trellis task and host execution mode, then call
-   `expert_team_version` with host package/protocol/toolset metadata. If the
-   report says `upgrade_required`, run the printed upgrade commands (or
-   `python scripts/expert_team_upgrade.py --upgrade`) and open a new host
-   session before continuing. For Codex inline,
-   use `host_mode=inline`; for a host that can dispatch native subagents, use
-   `host_mode=subagent`.
-2. Call `expert_team_prepare` with the original request, intent, task ID (when
-   one is active), evidence flags, and host mode. This call is read-only.
-3. If `decision_state=selection_required`, render the two `mode_options`
-   returned by `prepare` as one host-native single-select. Call
-   `expert_team_select_mode` only after a real host/user event whose
-   `source_event_id` is the one bound by `prepare`; a caller-provided
-   `actor=user` without that event is not attribution. If the policy is locked,
-   do not present a fake downgrade. A host without a selection control must
-   stop at `needs_input`.
-4. Follow the returned `next_action`:
-   - `request_task_consent`: ask for Trellis task-creation consent and stop
-     before implementation;
-   - `activate_trellis_task`: finish and review planning artifacts, then start
-     the task through the repository Trellis command;
-   - `qualify_auto_start`: call `expert_team_qualify` with a strict
-     `TaskContract` and `WorkItem` graph and `auto_start=true`;
-   - `build_graph_then_execute_in_main`: keep implementation/checking in the
-     main session and explicitly report the sequential fallback;
-   - `build_graph_then_dispatch`: dispatch only dependency-ready tasks with
-     exact ownership and the result contract.
-5. Call `expert_team_qualify` even when the selected tier is lightweight. Pass
-   the invocation ID plus strict `TaskContract` and `WorkItem[]`; the server
-   re-evaluates graph waves and issues a workspace-bound qualification receipt.
-   A lightweight qualification remains side-effect-free and must not be
-   silently skipped.
-6. Before implementation, record a task graph with stable IDs, dependencies,
-   mode, required flag, ownership, evidence, and completion checks. In inline
-   mode this graph lives in the lead's session summary; in managed mode it is
-   persisted by the runtime.
-7. End with an Expert Result Contract synthesis. Include the prepare result,
-   qualification result, execution mode, completed/failed/blocked/omitted
-   tasks, checks, and unresolved risks.
+1. Call `expert_team_version`. If the active host needs a different package,
+   run `mta check-update`, review the exact target, then use
+   `mta update --version <exact> --yes` and start a fresh host session.
+2. Obtain an attributable user choice between lightweight and managed mode when
+   the request does not already specify one. Managed is required for
+   cross-session, multi-wave, evidence-heavy, or human-gated work.
+3. Restate the exact outcome, constraints, acceptance criteria, and omissions.
+4. For managed work, use an existing reviewed `in_progress` Trellis task or ask
+   for task creation and planning approval. A `planning` task cannot execute.
+5. Build the smallest strict `TaskContract` and `WorkItem[]` graph. Every item
+   needs a stable ID, dependency list, mode, required flag, exact ownership for
+   writes, and evidence requirement.
+6. Only after the task and graph are reviewed, call `expert_team_start` with
+   `qualification_receipt: {"approved":true}`. The receipt records that this
+   explicit gate passed; never fabricate it for an unreviewed graph.
+7. Call `expert_team_run` to enter foreground execution. Use
+   `expert_team_status` or `expert_team_resume` for read-only inspection and
+   `expert_team_answer` for attributable human gates.
+8. End with the selected mode, completed/failed/blocked/omitted work, actual
+   checks, verified evidence, and unresolved risk.
 
 ## Non-compliance rules
 
-- Do not edit code, create a managed run, or claim an expert-team run before
-  the prepare result is available.
-- Do not call `expert_team_qualify` without an invocation ID, strict graph, and
-  (when required) a selected mode; the server must return `needs_input` or a
-  contract error instead of guessing.
-- Do not call `expert_team_start` without the qualification receipt. Receipts
-  are bound to the canonical workspace, task metadata, contract, and graph;
-  changing any of those facts requires a new qualification.
-- Do not claim delegation when `host_mode=inline` returned
-  `main-session-sequential`.
-- Do not call lower-level managed lifecycle methods as a substitute for
-  `expert_team_qualify` in the normal path.
-- If the MCP server is unavailable, state `sequential-fallback` and preserve
-  the same graph and result contract; never silently drop the workflow.
-- If a newly added tool is absent from the host tool list, treat the session as
-  stale: do not claim the new entry gate ran; ask for a plugin refresh/new
-  thread or use the explicit sequential fallback with the omission recorded.
-- A `stale_session` response is a hard stop. Preserve its version report and
-  upgrade commands; never bypass it by omitting host metadata or selecting a
-  lower execution tier.
+- Do not create a managed run before the active task and graph are reviewed.
+- Do not claim delegation when the host executes sequentially in the lead.
+- Do not call `status` or `resume` and imply that they started model work.
+- Do not bypass permission, cancellation, budget, completion, or destructive
+  gates.
+- Do not present Executor output as accepted before an independent Auditor
+  records clean, aligned evidence.
+- If MCP is unbound, run project `mta apply` and open a fresh session; never use
+  plugin install cwd as the project.

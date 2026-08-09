@@ -45,8 +45,8 @@ class PluginContractTests(unittest.TestCase):
         codex = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
         claude = json.loads((ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
         self.assertEqual(codex["name"], claude["name"])
-        self.assertRegex(codex["version"], r"^\d+\.\d+\.\d+\+codex\.[a-z0-9-]+$")
-        self.assertEqual(_base_package_version(codex["version"]), claude["version"])
+        self.assertRegex(codex["version"], r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$")
+        self.assertEqual(codex["version"], claude["version"])
         self.assertEqual("./skills/", claude["skills"])
         self.assertNotIn("agents", claude)
         self.assertNotIn("mcpServers", claude)
@@ -159,9 +159,11 @@ class PluginContractTests(unittest.TestCase):
         ):
             self.assertTrue((SKILL / "references" / name).is_file(), name)
             self.assertIn(name, text)
-        self.assertIn("expert_team_prepare", text)
-        self.assertIn("expert_team_qualify", text)
-        self.assertIn("main-session-sequential", text)
+        self.assertIn("expert_team_version", text)
+        self.assertIn("expert_team_start", text)
+        self.assertIn("expert_team_run", text)
+        self.assertIn("qualification_receipt", text)
+        self.assertIn("mta update --version <exact> --yes", text)
 
     def test_openai_metadata_keeps_implicit_invocation(self) -> None:
         text = (SKILL / "agents" / "openai.yaml").read_text(encoding="utf-8")
