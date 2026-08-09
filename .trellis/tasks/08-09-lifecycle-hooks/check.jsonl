@@ -1,1 +1,6 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file":".trellis/spec/plugin/npm-control-plane.md","reason":"Apply receipt, atomic ownership, drift preservation, legacy conflicts, and shell-free Node product rules."}
+{"file":".trellis/spec/plugin/typescript-runtime.md","reason":"Run/status/resume must share the TypeScript contracts and mta-runs state without starting Episodes."}
+{"file":".trellis/spec/plugin/expert-team-contract.md","reason":"Existing hook, MCP, entry gate, task graph, workspace binding, and human gate behavior."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Hook input crosses host normalization, lifecycle gate, persistence, CLI, and MCP projections."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Templates, event taxonomy, workspace binding, and task status require one source of truth."}
+{"file":".trellis/spec/plugin/typescript-lifecycle-hooks.md","reason":"Executable task, Hook, receipt, legacy transaction, status evidence, and MCP binding contracts created by this task."}

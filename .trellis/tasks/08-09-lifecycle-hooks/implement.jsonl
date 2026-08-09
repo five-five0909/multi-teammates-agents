@@ -1,1 +1,6 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file":".trellis/spec/plugin/npm-control-plane.md","reason":"Extend the current transaction rather than create a second apply/unapply path."}
+{"file":".trellis/spec/plugin/typescript-runtime.md","reason":"Reuse strict contracts, storage, redaction, and public projections."}
+{"file":".trellis/spec/plugin/expert-team-contract.md","reason":"Preserve public expert_team tool names and fail-closed entry/human gate semantics."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Centralize hook/MCP decoding and keep provenance across every projection."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Use one template registry and one lifecycle repository across CLI, Hook, MCP, status, and unapply."}
+{"file":".trellis/spec/plugin/typescript-lifecycle-hooks.md","reason":"Maintain the completed lifecycle, host normalization, ownership evidence, and workspace binding implementation."}

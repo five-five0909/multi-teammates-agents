@@ -121,7 +121,7 @@ class PluginContractTests(unittest.TestCase):
     def test_shared_mcp_launcher_starts_from_both_host_environments(self) -> None:
         config = json.loads((ROOT / ".mcp.json").read_text(encoding="utf-8"))["mcpServers"]["expert-team"]
         codex_manifest = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
-        expected_server_version = _base_package_version(codex_manifest["version"])
+        expected_server_version = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["version"]
         request = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}) + "\n"
         for variable in ("PLUGIN_ROOT", "CLAUDE_PLUGIN_ROOT"):
             with self.subTest(variable=variable):

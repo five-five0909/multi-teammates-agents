@@ -25,11 +25,17 @@ test("apply dry-run is read-only and commit is idempotent", async () => {
 
     const receipt = await commitApply(firstPlan, { now: () => new Date("2026-08-09T00:00:00Z") });
     assert.equal(receipt.hosts[0], "codex");
+    assert.deepEqual(receipt.files.map((file) => file.relativePath), [".mta/runtime.json", ".mcp.json", ".codex/hooks.json", "AGENTS.md"]);
     const secondPlan = await planApply(project, ["codex"]);
     assert.equal(secondPlan.changes[0].action, "unchanged");
     await commitApply(secondPlan);
     const runtime = JSON.parse(await readFile(join(project, ".mta", "runtime.json"), "utf8"));
     assert.deepEqual(runtime.hosts, ["codex"]);
+    const hooks = JSON.parse(await readFile(join(project, ".codex", "hooks.json"), "utf8"));
+    assert.equal(hooks.hooks.PreToolUse[0].hooks[0].command, "mta hook dispatch --host codex");
+    const mcp = JSON.parse(await readFile(join(project, ".mcp.json"), "utf8"));
+    assert.deepEqual(mcp.mcpServers["expert-team"].args, ["mcp", "serve", "--project", project]);
+    assert.match(await readFile(join(project, "AGENTS.md"), "utf8"), /mta:lifecycle:start/u);
   } finally {
     await rm(project, { recursive: true, force: true });
   }
@@ -44,6 +50,9 @@ test("an owned runtime can be atomically updated", async () => {
     await commitApply(update);
     const runtime = JSON.parse(await readFile(join(project, ".mta", "runtime.json"), "utf8"));
     assert.deepEqual(runtime.hosts, ["claude"]);
+    await assert.rejects(readFile(join(project, ".codex", "hooks.json")), { code: "ENOENT" });
+    const settings = JSON.parse(await readFile(join(project, ".claude", "settings.json"), "utf8"));
+    assert.deepEqual(settings.hooks.PreToolUse[0].hooks[0].args, ["hook", "dispatch", "--host", "claude"]);
   } finally {
     await rm(project, { recursive: true, force: true });
   }
@@ -80,12 +89,30 @@ test("unapply removes only unchanged owned files and preserves drift", async () 
     await commitApply(await planApply(project, []));
     const preview = await unapplyProject(project, false);
     assert.equal(preview.changed, false);
-    assert.deepEqual(preview.wouldRemove, [".mta/runtime.json"]);
+    assert.deepEqual(preview.wouldRemove, [".mta/runtime.json", ".mcp.json", ".codex/hooks.json", "AGENTS.md", ".claude/settings.json", "CLAUDE.md"]);
 
     const runtimePath = join(project, ".mta", "runtime.json");
     await writeFile(runtimePath, "user changed this");
     await assert.rejects(unapplyProject(project, true), /preserving user changes/u);
     assert.equal(await readFile(runtimePath, "utf8"), "user changed this");
+  } finally {
+    await rm(project, { recursive: true, force: true });
+  }
+});
+
+test("apply preserves unrelated host settings and unapply restores exact originals", async () => {
+  const project = await makeProject();
+  try {
+    await mkdir(join(project, ".codex"));
+    const hookPath = join(project, ".codex", "hooks.json");
+    const original = `${JSON.stringify({ description: "user hooks", hooks: { Stop: [{ hooks: [{ type: "command", command: "echo user" }] }] } }, null, 2)}\n`;
+    await writeFile(hookPath, original);
+    await commitApply(await planApply(project, ["codex"]));
+    const applied = JSON.parse(await readFile(hookPath, "utf8"));
+    assert.equal(applied.hooks.Stop[0].hooks[0].command, "echo user");
+    assert.equal(applied.hooks.Stop[1].hooks[0].command, "mta hook dispatch --host codex");
+    await unapplyProject(project, true);
+    assert.equal(await readFile(hookPath, "utf8"), original);
   } finally {
     await rm(project, { recursive: true, force: true });
   }

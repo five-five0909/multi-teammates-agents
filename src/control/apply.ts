@@ -13,10 +13,10 @@ import {
 import { sha256 } from "./digest.js";
 import { assertSafeApplyRoot, findGitRoot } from "./project-root.js";
 import { writeFileAtomic } from "../platform/atomic-file.js";
+import { projectTemplates } from "../templates/registry.js";
 import { PACKAGE_VERSION } from "../version.js";
 
 const RECEIPT_PATH = ".mta/apply-receipt.json";
-const RUNTIME_PATH = ".mta/runtime.json";
 
 export class ApplyConflictError extends Error {
   public constructor(message: string) {
@@ -67,15 +67,6 @@ async function detectLegacyConflict(projectRoot: string): Promise<string | null>
   return null;
 }
 
-function runtimeContent(projectRoot: string, hosts: readonly ApplyHost[]): string {
-  return `${JSON.stringify({
-    schemaVersion: APPLY_SCHEMA_VERSION,
-    packageVersion: PACKAGE_VERSION,
-    projectRoot,
-    hosts,
-  }, null, 2)}\n`;
-}
-
 export async function planApply(startPath: string, requestedHosts: readonly ApplyHost[]): Promise<ApplyPlan> {
   const projectRoot = await findGitRoot(startPath);
   await assertSafeApplyRoot(projectRoot);
@@ -91,28 +82,57 @@ export async function planApply(startPath: string, requestedHosts: readonly Appl
   if (receipt && receipt.projectRoot !== projectRoot) {
     throw new ApplyConflictError("apply receipt belongs to another project root");
   }
-  const content = runtimeContent(projectRoot, hosts);
-  const absoluteRuntimePath = targetPath(projectRoot, RUNTIME_PATH);
-  const before = await readOptional(absoluteRuntimePath);
-  const owned = receipt?.files.find((file) => file.relativePath === RUNTIME_PATH);
-
-  if (before && !owned) {
-    throw new ApplyConflictError(`${RUNTIME_PATH} exists without an ownership receipt`);
+  const templates = projectTemplates(projectRoot, hosts);
+  const desiredPaths = new Set(templates.map((template) => template.relativePath));
+  const changes: ApplyChange[] = [];
+  for (const template of templates) {
+    const before = await readOptional(targetPath(projectRoot, template.relativePath));
+    const owned = receipt?.files.find((file) => file.relativePath === template.relativePath);
+    if (before && owned && sha256(before) !== owned.appliedHash) {
+      throw new ApplyConflictError(`${template.relativePath} drifted after apply; refusing to overwrite user changes`);
+    }
+    if (template.relativePath === ".mta/runtime.json" && before && !owned) {
+      throw new ApplyConflictError(`${template.relativePath} exists without an ownership receipt`);
+    }
+    const original = owned === undefined
+      ? before
+      : owned.originalBase64 === null ? null : Buffer.from(owned.originalBase64, "base64");
+    let content: string;
+    try {
+      content = template.render(original);
+    } catch (error) {
+      throw new ApplyConflictError(error instanceof Error ? error.message : String(error));
+    }
+    const beforeHash = before === null ? null : sha256(before);
+    const afterHash = sha256(content);
+    changes.push({
+      relativePath: template.relativePath,
+      action: beforeHash === null ? "create" : beforeHash === afterHash ? "unchanged" : "update",
+      beforeHash,
+      afterHash,
+      content,
+      originalBase64: owned?.originalBase64 ?? (before ? before.toString("base64") : null),
+      ownedAfter: true,
+    });
   }
-  if (before && owned && sha256(before) !== owned.appliedHash) {
-    throw new ApplyConflictError(`${RUNTIME_PATH} drifted after apply; refusing to overwrite user changes`);
+  for (const owned of receipt?.files ?? []) {
+    if (desiredPaths.has(owned.relativePath)) continue;
+    const before = await readOptional(targetPath(projectRoot, owned.relativePath));
+    if (!before || sha256(before) !== owned.appliedHash) {
+      throw new ApplyConflictError(`${owned.relativePath} drifted after apply; refusing to restore it`);
+    }
+    const content = owned.originalBase64 === null ? null : Buffer.from(owned.originalBase64, "base64").toString("utf8");
+    const afterHash = content === null ? null : sha256(content);
+    changes.push({
+      relativePath: owned.relativePath,
+      action: content === null ? "remove" : sha256(before) === afterHash ? "unchanged" : "update",
+      beforeHash: sha256(before),
+      afterHash,
+      content,
+      originalBase64: owned.originalBase64,
+      ownedAfter: false,
+    });
   }
-
-  const beforeHash = before ? sha256(before) : null;
-  const afterHash = sha256(content);
-  const change: ApplyChange = {
-    relativePath: RUNTIME_PATH,
-    action: beforeHash === null ? "create" : beforeHash === afterHash ? "unchanged" : "update",
-    beforeHash,
-    afterHash,
-    content,
-    originalBase64: owned?.originalBase64 ?? (before ? before.toString("base64") : null),
-  };
 
   return {
     schemaVersion: APPLY_SCHEMA_VERSION,
@@ -120,7 +140,7 @@ export async function planApply(startPath: string, requestedHosts: readonly Appl
     packageVersion: PACKAGE_VERSION,
     projectRoot,
     hosts,
-    changes: [change],
+    changes,
   };
 }
 
@@ -152,9 +172,14 @@ export async function commitApply(
     for (const change of plan.changes) {
       if (change.action === "unchanged") continue;
       const absolutePath = targetPath(plan.projectRoot, change.relativePath);
-      await mkdir(dirname(absolutePath), { recursive: true });
       rollback.push({ path: absolutePath, bytes: await readOptional(absolutePath) });
-      await writeFileAtomic(absolutePath, change.content, plan.transactionId);
+      if (change.action === "remove") {
+        await rm(absolutePath, { force: true });
+      } else {
+        if (change.content === null) throw new ApplyConflictError(`${change.relativePath} has no rendered content`);
+        await mkdir(dirname(absolutePath), { recursive: true });
+        await writeFileAtomic(absolutePath, change.content, plan.transactionId);
+      }
       writes += 1;
       if (options.failAfterWrites !== undefined && writes >= options.failAfterWrites) {
         throw new Error("injected apply transaction failure");
@@ -168,10 +193,10 @@ export async function commitApply(
       projectRoot: plan.projectRoot,
       hosts: plan.hosts,
       appliedAt: (options.now?.() ?? new Date()).toISOString(),
-      files: plan.changes.map((change) => ({
+      files: plan.changes.filter((change) => change.ownedAfter).map((change) => ({
         relativePath: change.relativePath,
         originalBase64: change.originalBase64,
-        appliedHash: change.afterHash,
+        appliedHash: change.afterHash ?? "",
       })),
     };
     await writeFileAtomic(

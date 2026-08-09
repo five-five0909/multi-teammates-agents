@@ -1,15 +1,16 @@
 export const APPLY_SCHEMA_VERSION = 1;
 
 export type ApplyHost = "codex" | "claude";
-export type ApplyAction = "create" | "update" | "unchanged";
+export type ApplyAction = "create" | "update" | "unchanged" | "remove";
 
 export interface ApplyChange {
   readonly relativePath: string;
   readonly action: ApplyAction;
   readonly beforeHash: string | null;
-  readonly afterHash: string;
-  readonly content: string;
+  readonly afterHash: string | null;
+  readonly content: string | null;
   readonly originalBase64: string | null;
+  readonly ownedAfter: boolean;
 }
 
 export interface ApplyPlan {
