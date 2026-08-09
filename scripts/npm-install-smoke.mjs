@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdtemp, mkdir, readFile, rm, symlink } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, realpath, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join, resolve } from "node:path";
 
@@ -90,9 +90,9 @@ try {
   await npm(["install", "--global", "--prefix", prefix, "--ignore-scripts", "--no-audit", "--no-fund", tarball], { env:npmEnvironment });
 
   const binDirectory = process.platform === "win32" ? prefix : join(prefix, "bin");
-  const installRoot = process.platform === "win32"
+  const installRoot = await realpath(process.platform === "win32"
     ? join(prefix, "node_modules", packageName)
-    : join(prefix, "lib", "node_modules", packageName);
+    : join(prefix, "lib", "node_modules", packageName));
   await mkdir(toolDirectory, { recursive:true });
   if (process.platform !== "win32") await symlink("/bin/sh", join(toolDirectory, "sh"));
   cleanEnvironment = {
