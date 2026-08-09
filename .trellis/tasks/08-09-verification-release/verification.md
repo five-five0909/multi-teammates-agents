@@ -13,10 +13,10 @@
 - Codex CLI 0.147.0 direct read-only Episode 通过。
 - Codex real managed E2E 通过：隔离项目、1 轮、4 个唯一 Episode、Manager → Executor → independent read-only Auditor → completion；verified evidence 确认 `evidence.txt` 为 `ALPHA`。
 - 该 E2E 首轮暴露 `read-token` 被字段脱敏误伤的根因；修复为只对精确敏感字段名做字段级脱敏，并增加自动回归后复跑通过。
-- Claude Code 2.1.220 可启动并产出 stream-json，但真实调用返回 `OAuth session expired and could not be refreshed`。未伪造 beta/stable 通过。
+- Claude Code 2.1.220 可启动并产出 stream-json，但真实调用返回 `OAuth session expired and could not be refreshed`；最终只读 `claude auth status` 进一步确认 `loggedIn: false`、`authMethod: none`。未伪造 beta/stable 通过。
 
 ## CI evidence
 
 - workflow 定义覆盖 `ubuntu-latest`、`windows-latest`、`macos-15-intel`、`macos-15` 与 Node 22/24。
 - 官方 action release 核验后使用 `actions/checkout@v7` 和 `actions/setup-node@v6`；每个矩阵项执行 pack/install smoke。
-- 本会话没有远程 Actions 运行权限或结果，因此 rc gate 保持 false。
+- GitHub CLI 已具备仓库/workflow 权限，但本地分支领先远端；远端默认分支尚无该 workflow，`gh run list --workflow npm-control-plane.yml` 返回 HTTP 404。因此未擅自 push，远程矩阵仍无结果，rc gate 保持 false。

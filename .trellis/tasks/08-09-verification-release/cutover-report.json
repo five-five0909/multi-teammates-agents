@@ -14,11 +14,11 @@
     },
     "beta": {
       "passed": false,
-      "evidence": "real Codex managed E2E passed; Claude Code OAuth session expired and could not be refreshed"
+      "evidence": "real Codex managed E2E passed; Claude auth status reports loggedIn=false and authMethod=none after the OAuth session expired"
     },
     "rc": {
       "passed": false,
-      "evidence": "four-runner Node 22/24 CI is defined but no remote workflow result or clean-machine upgrade/rollback run is available in this session"
+      "evidence": "four-runner Node 22/24 CI is committed locally; the remote default branch has no workflow yet and gh run list returns HTTP 404, so no remote matrix or clean-machine upgrade/rollback result exists"
     },
     "stable": {
       "passed": false,
@@ -38,7 +38,7 @@
   "deleteLegacyRuntimeAllowed": false,
   "blockers": [
     "Re-authenticate Claude Code and pass one real managed Manager-Executor-Auditor E2E.",
-    "Run the committed Windows/Ubuntu/macOS Intel/macOS arm64 Node 22/24 workflow successfully.",
+    "With explicit push authorization, publish the local commits and pass the Windows/Ubuntu/macOS Intel/macOS arm64 Node 22/24 workflow.",
     "Finish or reconcile the user's in-progress .trellis/spec/plugin/expert-team-contract.md migration without overwriting that work."
   ]
 }
