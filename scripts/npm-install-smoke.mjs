@@ -136,7 +136,7 @@ try {
   const claudeSettings = JSON.parse(await readFile(join(project, ".claude", "settings.json"), "utf8"));
   const claudeHook = claudeSettings.hooks.SessionStart[0].hooks[0];
   assert.equal(claudeHook.command, process.execPath);
-  assert.equal(claudeHook.args[0], join(installRoot, "bin", "mta.js"));
+  assert.equal(await realpath(claudeHook.args[0]), join(installRoot, "bin", "mta.js"));
   const status = JSON.parse((await installed("mta", ["status", "--project", project, "--json"])).stdout);
   assert.equal(status.ownershipValid, true);
   assert.equal(status.trellis.bound, false);
@@ -148,7 +148,7 @@ try {
   assert.match(claudeHookResult.hookSpecificOutput.additionalContext, /no active task/u);
   const projectMcp = JSON.parse(await readFile(join(project, ".mcp.json"), "utf8")).mcpServers["expert-team"];
   assert.equal(projectMcp.command, process.execPath);
-  assert.equal(projectMcp.args[0], join(installRoot, "bin", "mta.js"));
+  assert.equal(await realpath(projectMcp.args[0]), join(installRoot, "bin", "mta.js"));
   const mcp = JSON.parse((await runChecked(projectMcp.command, projectMcp.args, { cwd:project, env:cleanEnvironment, stdin:initialize })).stdout.trim());
   assert.equal(mcp.result.serverInfo.name, "expert-team");
   const unapplied = JSON.parse((await installed("mta", ["unapply", "--project", project, "--yes", "--json"])).stdout);
