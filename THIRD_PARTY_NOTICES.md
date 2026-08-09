@@ -23,6 +23,10 @@ and Auditor workspace-integrity concepts. The implementations under
 `runtime/audit_guard.py` are rewritten for the local HostAdapter and Trellis
 contracts rather than copied wholesale.
 
+The TypeScript migration rewrites the same concepts under `src/runtime/` and
+uses frozen JSON fixtures only as behavioral inputs; it does not translate or
+embed the upstream source implementation.
+
 It does not copy the upstream dashboard, computer-use layer, remote environment,
 or permission/sandbox bypass defaults. In particular, this project never adds
 `--dangerously-bypass-approvals-and-sandbox` or
@@ -35,3 +39,9 @@ The Python 3.10 compatibility path vendors the pure-Python parser from
 by Taneli Hukkinen and contributors. The unmodified compatibility modules and
 license are under `runtime/_vendor/tomli/`; Python 3.11+ continues to use the
 standard-library `tomllib` module.
+
+## Zod
+
+The npm runtime uses [Zod 4.4.3](https://github.com/colinhacks/zod) for strict
+runtime validation, TypeScript type inference, and JSON Schema generation.
+Zod is released under the MIT License by Colin McDonnell and contributors.

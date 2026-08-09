@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "number",
+      "const": 1
+    },
+    "host": {
+      "type": "string",
+      "enum": [
+        "codex",
+        "claude"
+      ]
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "manager",
+        "executor",
+        "auditor"
+      ]
+    },
+    "action": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "started",
+        "progress",
+        "completed",
+        "failed",
+        "permission_required",
+        "cancelled"
+      ]
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tool": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "host",
+    "role",
+    "action",
+    "status",
+    "source_id",
+    "references"
+  ],
+  "additionalProperties": false
+}

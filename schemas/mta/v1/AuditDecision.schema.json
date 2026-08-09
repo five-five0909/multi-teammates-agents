@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "number",
+      "const": 1
+    },
+    "work_item_id": {
+      "type": "string"
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "auditor_id": {
+      "type": "string"
+    },
+    "executor_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "accepted",
+        "rework",
+        "blocked",
+        "invalid"
+      ]
+    },
+    "integrity": {
+      "type": "string",
+      "enum": [
+        "clean",
+        "dirty"
+      ]
+    },
+    "contract_alignment": {
+      "type": "string",
+      "enum": [
+        "aligned",
+        "misaligned"
+      ]
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_rework": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "work_item_id",
+    "attempt",
+    "auditor_id",
+    "executor_id",
+    "status",
+    "integrity",
+    "contract_alignment",
+    "evidence",
+    "findings",
+    "required_rework"
+  ],
+  "additionalProperties": false
+}

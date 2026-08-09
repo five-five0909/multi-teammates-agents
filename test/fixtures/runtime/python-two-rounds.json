@@ -1,0 +1,53 @@
+{
+  "oracle": "python-worktree-2026-08-09",
+  "initial": {
+    "schema_version": 1,
+    "run_id": "golden-two-rounds",
+    "state": "initialized",
+    "version": 0,
+    "last_seq": 0,
+    "contract": {"schema_version":1,"goal":"Ship runtime","constraints":["no bypass"],"deliverables":["runtime"],"acceptance_criteria":["two audited rounds"]},
+    "work_items": {
+      "foundation": {"schema_version":1,"id":"foundation","objective":"Build core","role":"developer","mode":"write","required":true,"depends_on":[],"ownership":["src/runtime/core"],"evidence_required":["tests"],"executor_id":null,"attempt":0,"status":"pending"},
+      "verify": {"schema_version":1,"id":"verify","objective":"Verify core","role":"tester","mode":"verify","required":true,"depends_on":["foundation"],"ownership":[],"evidence_required":["audit"],"executor_id":null,"attempt":0,"status":"pending"}
+    },
+    "verified_progress": {},
+    "event_ids": [],
+    "pending_gate": null,
+    "rounds_used": 0,
+    "max_rounds": 3,
+    "retry_limit": 2
+  },
+  "events": [
+    {"schema_version":1,"id":"e1","run_id":"golden-two-rounds","seq":1,"expected_version":0,"kind":"run.managing","timestamp":"2026-08-09T00:00:01+00:00","payload":{}},
+    {"schema_version":1,"id":"e2","run_id":"golden-two-rounds","seq":2,"expected_version":1,"kind":"wave.execution_started","timestamp":"2026-08-09T00:00:02+00:00","payload":{"work_item_ids":["foundation"],"assignments":{"foundation":"executor-foundation"}}},
+    {"schema_version":1,"id":"e3","run_id":"golden-two-rounds","seq":3,"expected_version":2,"kind":"executor.result_submitted","timestamp":"2026-08-09T00:00:03+00:00","payload":{"schema_version":1,"work_item_id":"foundation","attempt":1,"executor_id":"executor-foundation","summary":"core built","artifacts":["src/runtime/core"],"evidence":["core tests pass"],"checks":["unit"],"risks":[],"failure":null}},
+    {"schema_version":1,"id":"e4","run_id":"golden-two-rounds","seq":4,"expected_version":3,"kind":"wave.audit_started","timestamp":"2026-08-09T00:00:04+00:00","payload":{}},
+    {"schema_version":1,"id":"e5","run_id":"golden-two-rounds","seq":5,"expected_version":4,"kind":"audit.recorded","timestamp":"2026-08-09T00:00:05+00:00","payload":{"schema_version":1,"work_item_id":"foundation","attempt":1,"auditor_id":"auditor-foundation","executor_id":"executor-foundation","status":"accepted","integrity":"clean","contract_alignment":"aligned","evidence":["core tests pass"],"findings":[],"required_rework":[]}},
+    {"schema_version":1,"id":"e6","run_id":"golden-two-rounds","seq":6,"expected_version":5,"kind":"run.managing","timestamp":"2026-08-09T00:00:06+00:00","payload":{}},
+    {"schema_version":1,"id":"e7","run_id":"golden-two-rounds","seq":7,"expected_version":6,"kind":"wave.execution_started","timestamp":"2026-08-09T00:00:07+00:00","payload":{"work_item_ids":["verify"],"assignments":{"verify":"executor-verify"}}},
+    {"schema_version":1,"id":"e8","run_id":"golden-two-rounds","seq":8,"expected_version":7,"kind":"executor.result_submitted","timestamp":"2026-08-09T00:00:08+00:00","payload":{"schema_version":1,"work_item_id":"verify","attempt":1,"executor_id":"executor-verify","summary":"verified","artifacts":[],"evidence":["integration passes"],"checks":["integration"],"risks":[],"failure":null}},
+    {"schema_version":1,"id":"e9","run_id":"golden-two-rounds","seq":9,"expected_version":8,"kind":"wave.audit_started","timestamp":"2026-08-09T00:00:09+00:00","payload":{}},
+    {"schema_version":1,"id":"e10","run_id":"golden-two-rounds","seq":10,"expected_version":9,"kind":"audit.recorded","timestamp":"2026-08-09T00:00:10+00:00","payload":{"schema_version":1,"work_item_id":"verify","attempt":1,"auditor_id":"auditor-verify","executor_id":"executor-verify","status":"accepted","integrity":"clean","contract_alignment":"aligned","evidence":["integration passes"],"findings":[],"required_rework":[]}},
+    {"schema_version":1,"id":"e11","run_id":"golden-two-rounds","seq":11,"expected_version":10,"kind":"human.gate_requested","timestamp":"2026-08-09T00:00:11+00:00","payload":{"gate_type":"completion"}},
+    {"schema_version":1,"id":"e12","run_id":"golden-two-rounds","seq":12,"expected_version":11,"kind":"human.decision_recorded","timestamp":"2026-08-09T00:00:12+00:00","payload":{"gate_type":"completion","decision":"approve"}}
+  ],
+  "expected": {
+    "schema_version": 1,
+    "run_id": "golden-two-rounds",
+    "state": "completed",
+    "version": 12,
+    "last_seq": 12,
+    "contract": {"schema_version":1,"goal":"Ship runtime","constraints":["no bypass"],"deliverables":["runtime"],"acceptance_criteria":["two audited rounds"]},
+    "work_items": {
+      "foundation": {"schema_version":1,"id":"foundation","objective":"Build core","role":"developer","mode":"write","required":true,"depends_on":[],"ownership":["src/runtime/core"],"evidence_required":["tests"],"executor_id":"executor-foundation","attempt":1,"status":"accepted"},
+      "verify": {"schema_version":1,"id":"verify","objective":"Verify core","role":"tester","mode":"verify","required":true,"depends_on":["foundation"],"ownership":[],"evidence_required":["audit"],"executor_id":"executor-verify","attempt":1,"status":"accepted"}
+    },
+    "verified_progress": {"foundation":["core tests pass"],"verify":["integration passes"]},
+    "event_ids": ["e1","e2","e3","e4","e5","e6","e7","e8","e9","e10","e11","e12"],
+    "pending_gate": null,
+    "rounds_used": 2,
+    "max_rounds": 3,
+    "retry_limit": 2
+  }
+}

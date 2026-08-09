@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "number",
+      "const": 1
+    },
+    "gate_type": {
+      "type": "string",
+      "enum": [
+        "ask",
+        "blocked",
+        "repeated_failure",
+        "budget",
+        "completion",
+        "permission",
+        "cancellation"
+      ]
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "approve",
+        "reject",
+        "continue",
+        "cancel",
+        "instruct"
+      ]
+    },
+    "actor": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string"
+    },
+    "instruction": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "provenance": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DecisionProvenance"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "gate_type",
+    "decision",
+    "actor",
+    "timestamp"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "DecisionProvenance": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "number",
+          "const": 1
+        },
+        "gate_type": {
+          "type": "string",
+          "enum": [
+            "mode_selection",
+            "task_consent",
+            "planning_review",
+            "completion",
+            "permission",
+            "cancellation",
+            "ask",
+            "blocked",
+            "repeated_failure",
+            "budget"
+          ]
+        },
+        "actor": {
+          "type": "string",
+          "enum": [
+            "user",
+            "policy",
+            "host",
+            "legacy"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "policy",
+            "mcp_elicitation",
+            "host_single_select",
+            "user_prompt",
+            "legacy_unverified"
+          ]
+        },
+        "verification": {
+          "type": "string",
+          "enum": [
+            "verified",
+            "host_reported",
+            "unverified"
+          ]
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "source_event_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "invocation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "gate_type",
+        "actor",
+        "source",
+        "verification",
+        "timestamp"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

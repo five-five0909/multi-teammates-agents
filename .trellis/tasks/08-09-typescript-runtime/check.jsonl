@@ -1,1 +1,4 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file":".trellis/spec/plugin/expert-team-contract.md","reason":"Managed runtime contracts, event rules, independent audit, gates, recovery, and verification levels."}
+{"file":".trellis/spec/plugin/typescript-runtime.md","reason":"TypeScript schema, event-first storage, mta-runs isolation, Supervisor, and crash recovery contracts."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"JSONL event flow and the shared decoder/reducer boundary span contracts, storage, supervisor, and projections."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Keep schemas, event taxonomy, payload decoding, and reducer transitions single-sourced."}

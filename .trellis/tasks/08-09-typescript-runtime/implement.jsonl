@@ -1,1 +1,5 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file":".trellis/spec/plugin/expert-team-contract.md","reason":"Implement the approved managed runtime invariants without host-specific forks."}
+{"file":".trellis/spec/plugin/typescript-runtime.md","reason":"Implement the TypeScript runtime boundaries, persistence order, and recovery behavior."}
+{"file":".trellis/spec/plugin/npm-control-plane.md","reason":"Preserve ESM Node >=22, tarball, shell-free, and migration boundaries established by the npm foundation."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Centralize external decoding and preserve event-log replay as the single source of truth."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Use one schema source and one exhaustive reducer rather than parallel contract interpretations."}
