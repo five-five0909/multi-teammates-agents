@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "episodeId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "roundIndex": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "manager",
+        "executor",
+        "auditor"
+      ]
+    },
+    "profile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "prompt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "workspace": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model": {
+      "type": "string",
+      "minLength": 1
+    },
+    "timeoutSeconds": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "maxOutputChars": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "permissionPosture": {
+      "type": "string",
+      "const": "host-controlled"
+    },
+    "readOnly": {
+      "type": "boolean"
+    },
+    "workItemId": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "episodeId",
+    "runId",
+    "roundIndex",
+    "role",
+    "profile",
+    "prompt",
+    "workspace",
+    "timeoutSeconds",
+    "maxOutputChars",
+    "permissionPosture",
+    "readOnly"
+  ],
+  "additionalProperties": false
+}

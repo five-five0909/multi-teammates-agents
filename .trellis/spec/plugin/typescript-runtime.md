@@ -14,15 +14,24 @@ TrellisRunStore.create(runId, contract, workItems, options) -> Promise<RunSnapsh
 TrellisRunStore.append(event, { owner, leaseSeconds? }) -> Promise<RunSnapshot>
 RuntimeRepository.transition(kind, payload, owner?) -> Promise<RunSnapshot>
 ManagedRunSupervisor.run() -> Promise<{ snapshot, episodeIds }>
+HostAdapter.probe() -> Promise<HostCapabilities>
 HostAdapter.runEpisode(request, signal?) -> Promise<EpisodeResult>
 ```
 
 ## 3. Contracts
 
-- External JSON and JSONL enter only through Zod schemas in
-  `src/runtime/core/contracts.ts` and `codec.ts`.
-- TypeScript types and `schemas/mta/v1/*.schema.json` come from the same schema
-  source and preserve the version 1 snake_case wire format.
+- External JSON and JSONL enter only through Zod schemas in the runtime,
+  apply-control, and host-adapter boundaries. Apply plans/receipts and Episode
+  requests/results are parsed at the real transaction/process boundary, not
+  treated as static TypeScript-only interfaces.
+- `src/contracts/public-schemas.ts` collects all 14 current public schemas:
+  TaskContract, WorkItem, RoleResult, AuditDecision, DecisionProvenance,
+  HumanDecision, BackendEvent, RunEvent, RunSnapshot, ApplyPlan, ApplyReceipt,
+  HostCapabilities, EpisodeRequest, and EpisodeResult. TypeScript types and
+  `schemas/mta/v1/*.schema.json` come from those same Zod sources.
+- The npm package includes only `schemas/mta/`; legacy `schemas/v1` and
+  `schemas/v2` remain in the repository as migration material but never enter
+  the tarball.
 - New runs live under `.trellis/tasks/<task>/mta-runs/<run-id>/`. Legacy
   `runs/` directories remain read-only and are never imported or deleted.
 - A mutation validates and reduces first, appends and fsyncs `events.jsonl`,
@@ -40,6 +49,7 @@ HostAdapter.runEpisode(request, signal?) -> Promise<EpisodeResult>
 | Condition | Required behavior |
 |---|---|
 | Unknown contract field or invalid cross-field invariant | Reject at the Zod boundary. |
+| Tarball contains a schema outside `schemas/mta/` | Fail the pack/install smoke. |
 | Duplicate event ID | Return the current snapshot without another log record. |
 | Stale `expected_version` or non-monotonic sequence | Reject without writing. |
 | Snapshot behind the event log | Replay and atomically repair the projection. |
@@ -61,7 +71,7 @@ HostAdapter.runEpisode(request, signal?) -> Promise<EpisodeResult>
 
 ## 6. Tests Required
 
-- Zod strictness, JSON Schema generation stability, codec corruption, graph
+- Zod strictness across all 14 public schemas, JSON Schema generation stability, codec corruption, graph
   cycles, ownership overlap, event idempotency, stale versions and cancellation
   races.
 - Frozen Python-worktree golden replay without launching Python from Node tests.

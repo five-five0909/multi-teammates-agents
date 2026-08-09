@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "episodeId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "host": {
+      "type": "string",
+      "enum": [
+        "codex",
+        "claude"
+      ]
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "manager",
+        "executor",
+        "auditor"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "done",
+        "error",
+        "timeout",
+        "cancelled",
+        "permission_required"
+      ]
+    },
+    "visibleOutput": {
+      "type": "string"
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/BackendEvent"
+      }
+    },
+    "durationMs": {
+      "type": "number",
+      "minimum": 0
+    },
+    "exitCode": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "error": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rawStdout": {
+      "type": "string"
+    },
+    "rawStderr": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {}
+    }
+  },
+  "required": [
+    "episodeId",
+    "host",
+    "role",
+    "status",
+    "visibleOutput",
+    "events",
+    "durationMs",
+    "exitCode",
+    "rawStdout",
+    "rawStderr",
+    "metadata"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "BackendEvent": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "number",
+          "const": 1
+        },
+        "host": {
+          "type": "string",
+          "enum": [
+            "codex",
+            "claude"
+          ]
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "manager",
+            "executor",
+            "auditor"
+          ]
+        },
+        "action": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "started",
+            "progress",
+            "completed",
+            "failed",
+            "permission_required",
+            "cancelled"
+          ]
+        },
+        "source_id": {
+          "type": "string"
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tool": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "host",
+        "role",
+        "action",
+        "status",
+        "source_id",
+        "references"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

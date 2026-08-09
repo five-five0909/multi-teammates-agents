@@ -1,5 +1,5 @@
-import { resolveCommand, type ResolvedCommand } from "../../platform/probe.js";
-import type { EpisodeRequest, EpisodeResult, HostAdapter, HostName } from "../supervisor/host-adapter.js";
+import { probeCommand, resolveCommand, type ResolvedCommand } from "../../platform/probe.js";
+import { episodeRequestSchema, episodeResultSchema, hostCapabilitiesSchema, type EpisodeRequest, type EpisodeResult, type HostAdapter, type HostCapabilities, type HostName } from "../supervisor/host-adapter.js";
 import { normalizeHostOutput } from "./event-normalizer.js";
 import { ProcessRunner } from "./process-runner.js";
 
@@ -28,7 +28,45 @@ export abstract class CliHostAdapter implements HostAdapter {
 
   protected abstract buildArgs(request: EpisodeRequest): readonly string[];
 
+  public async probe(): Promise<HostCapabilities> {
+    try {
+      const resolved = await (this.resolved ??= resolveCommand(this.command, this.environment));
+      const probe = await probeCommand(
+        resolved.executable,
+        [...resolved.prefixArgs, ...this.prefixArgs, "--version"],
+        5_000,
+        this.environment,
+      );
+      return hostCapabilitiesSchema.parse({
+        schema_version:1,
+        host:this.host,
+        available:probe.available,
+        command:this.command,
+        resolved_command:probe.resolvedCommand ?? resolved.executable,
+        version:probe.version ?? null,
+        stream_json:true,
+        read_only:true,
+        cancellation:true,
+        error:probe.error ?? null,
+      });
+    } catch (error) {
+      return hostCapabilitiesSchema.parse({
+        schema_version:1,
+        host:this.host,
+        available:false,
+        command:this.command,
+        resolved_command:null,
+        version:null,
+        stream_json:true,
+        read_only:true,
+        cancellation:true,
+        error:error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
   public async runEpisode(request: EpisodeRequest, signal?: AbortSignal): Promise<EpisodeResult> {
+    request = episodeRequestSchema.parse(request);
     if (request.permissionPosture !== "host-controlled") throw new Error("unsupported permission posture");
     if (request.role === "auditor" && !request.readOnly) throw new Error("Auditor episodes must be read-only");
     const resolved = await (this.resolved ??= resolveCommand(this.command, this.environment));
@@ -56,7 +94,7 @@ export abstract class CliHostAdapter implements HostAdapter {
     const error = status === "done" ? undefined
       : processResult.cleanupError ?? processResult.spawnError
         ?? (processResult.stderr.trim() || normalized.visibleOutput.trim() || `${this.host} episode ${status}`);
-    return {
+    return episodeResultSchema.parse({
       episodeId:request.episodeId,
       host:this.host,
       role:request.role,
@@ -81,7 +119,7 @@ export abstract class CliHostAdapter implements HostAdapter {
         visible_output_truncated:normalized.visibleOutput.length > request.maxOutputChars,
         ...(processResult.cleanupError === undefined ? {} : { cleanup_error:processResult.cleanupError }),
       },
-    };
+    });
   }
 
   public cancel(episodeId: string): Promise<{ episodeId: string; found: boolean; terminated: boolean }> {

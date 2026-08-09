@@ -11,6 +11,7 @@ they must preserve host permission controls and durable run state.
 
 ```text
 ProcessRunner.run(ProcessRunRequest, signal?) -> Promise<ProcessRunResult>
+HostAdapter.probe() -> Promise<HostCapabilities>
 HostAdapter.runEpisode(EpisodeRequest, signal?) -> Promise<EpisodeResult>
 HostAdapter.cancel(episodeId) -> Promise<{ found, terminated }>
 decodeForegroundConfig(input, workspace, defaults?) -> RuntimeConfig
@@ -32,7 +33,8 @@ expert_team_run({ task_id, run_id, config? }) -> SupervisorOutcome
   mode, and Auditor requests with `readOnly=false` fail before spawn.
 - One Episode means one fresh process. stdout JSONL enters through
   `normalizeHostOutput`; other layers consume only `EpisodeResult` and
-  validated `BackendEvent` objects.
+  validated `BackendEvent` objects. Episode input and output cross strict Zod
+  boundaries, and `probe()` returns the versioned HostCapabilities contract.
 - Timeout, AbortSignal, and `cancel()` share one episode registry. POSIX uses a
   detached process group; Windows terminates by PID tree. A cleanup timeout is
   an explicit `cleanup_error`, never an implicit success.
@@ -44,6 +46,7 @@ expert_team_run({ task_id, run_id, config? }) -> SupervisorOutcome
 | Condition | Required behavior |
 |---|---|
 | Command missing or unsupported Windows batch shim | Fail before Episode spawn with the resolution error. |
+| Host probe command is unavailable or exits nonzero | Return `available:false` HostCapabilities with the bounded error; do not throw or claim support. |
 | Unknown foreground config field or invalid role binding | Reject at the strict Zod boundary. |
 | Explicit host permission error | Return `permission_required`; do not infer it from ordinary assistant prose. |
 | Timeout wins termination race | Kill the process tree, await close, return `timeout`. |
@@ -68,6 +71,7 @@ expert_team_run({ task_id, run_id, config? }) -> SupervisorOutcome
   permission records, ordinary permission-like prose, nonzero exit, bounded
   output, timeout, AbortSignal, explicit cancel, parallel Episodes, and child
   process-tree cleanup.
+- Probe tests assert exact versioned capabilities for both host adapters.
 - Foreground integration must use real child processes for Manager, Executor,
   and independent Auditor, then assert accepted audit evidence in `mta-runs`.
 - CLI and MCP must prove one foreground route while status/resume remain

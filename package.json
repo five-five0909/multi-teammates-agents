@@ -10,8 +10,7 @@
   "files": [
     "bin/",
     "dist/",
-    "templates/",
-    "schemas/",
+    "schemas/mta/",
     "README.md",
     "README_zh.md",
     "LICENSE",

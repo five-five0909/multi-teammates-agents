@@ -74,10 +74,11 @@ export async function probeCommand(
   command: string,
   args: readonly string[] = ["--version"],
   timeoutMs = 5_000,
+  environment: NodeJS.ProcessEnv = process.env,
 ): Promise<CommandProbe> {
   let resolved: ResolvedCommand;
   try {
-    resolved = await resolveCommand(command);
+    resolved = await resolveCommand(command, environment);
   } catch (error) {
     return {
       command,
@@ -88,6 +89,7 @@ export async function probeCommand(
 
   return new Promise((resolveProbe) => {
     const child = spawn(resolved.executable, [...resolved.prefixArgs, ...args], {
+      env: environment,
       shell: false,
       stdio: ["ignore", "pipe", "pipe"],
       windowsHide: true,

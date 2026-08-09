@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "number",
+      "const": 1
+    },
+    "host": {
+      "type": "string",
+      "enum": [
+        "codex",
+        "claude"
+      ]
+    },
+    "available": {
+      "type": "boolean"
+    },
+    "command": {
+      "type": "string",
+      "minLength": 1
+    },
+    "resolved_command": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "version": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "stream_json": {
+      "type": "boolean"
+    },
+    "read_only": {
+      "type": "boolean"
+    },
+    "cancellation": {
+      "type": "boolean"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "host",
+    "available",
+    "command",
+    "resolved_command",
+    "version",
+    "stream_json",
+    "read_only",
+    "cancellation",
+    "error"
+  ],
+  "additionalProperties": false
+}

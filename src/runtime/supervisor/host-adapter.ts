@@ -1,42 +1,69 @@
-import type { BackendEvent } from "../core/contracts.js";
+import { z } from "zod";
 
-export type HostName = "codex" | "claude";
-export type EpisodeRole = "manager" | "executor" | "auditor";
-export type EpisodeStatus = "done" | "error" | "timeout" | "cancelled" | "permission_required";
+import { backendEventSchema } from "../core/contracts.js";
 
-export interface EpisodeRequest {
-  episodeId: string;
-  runId: string;
-  roundIndex: number;
-  role: EpisodeRole;
-  profile: string;
-  prompt: string;
-  workspace: string;
-  model: string | undefined;
-  timeoutSeconds: number;
-  maxOutputChars: number;
-  permissionPosture: "host-controlled";
-  readOnly: boolean;
-  workItemId?: string;
-}
+const nonEmpty = z.string().trim().min(1);
+export const hostNameSchema = z.enum(["codex", "claude"]);
+export const episodeRoleSchema = z.enum(["manager", "executor", "auditor"]);
+export const episodeStatusSchema = z.enum(["done", "error", "timeout", "cancelled", "permission_required"]);
+export const hostCapabilitiesSchema = z.strictObject({
+  schema_version:z.literal(1),
+  host:hostNameSchema,
+  available:z.boolean(),
+  command:nonEmpty,
+  resolved_command:nonEmpty.nullable(),
+  version:nonEmpty.nullable(),
+  stream_json:z.boolean(),
+  read_only:z.boolean(),
+  cancellation:z.boolean(),
+  error:nonEmpty.nullable(),
+}).meta({ id:"HostCapabilities" });
+export const episodeRequestSchema = z.strictObject({
+  episodeId:nonEmpty,
+  runId:nonEmpty,
+  roundIndex:z.int().nonnegative(),
+  role:episodeRoleSchema,
+  profile:nonEmpty,
+  prompt:nonEmpty,
+  workspace:nonEmpty,
+  model:nonEmpty.optional(),
+  timeoutSeconds:z.number().positive().finite(),
+  maxOutputChars:z.int().min(1),
+  permissionPosture:z.literal("host-controlled"),
+  readOnly:z.boolean(),
+  workItemId:nonEmpty.optional(),
+}).superRefine((request, context) => {
+  if (request.role === "auditor" && !request.readOnly) {
+    context.addIssue({ code:"custom", path:["readOnly"], message:"Auditor episodes must be read-only" });
+  }
+}).meta({ id:"EpisodeRequest" });
+export const episodeResultSchema = z.strictObject({
+  episodeId:nonEmpty,
+  host:hostNameSchema,
+  role:episodeRoleSchema,
+  status:episodeStatusSchema,
+  visibleOutput:z.string(),
+  events:z.array(backendEventSchema),
+  durationMs:z.number().nonnegative(),
+  exitCode:z.int().nullable(),
+  error:nonEmpty.optional(),
+  rawStdout:z.string(),
+  rawStderr:z.string(),
+  metadata:z.record(z.string(), z.unknown()),
+}).meta({ id:"EpisodeResult" });
 
-export interface EpisodeResult {
-  episodeId: string;
-  host: HostName;
-  role: EpisodeRole;
-  status: EpisodeStatus;
-  visibleOutput: string;
-  events: BackendEvent[];
-  durationMs: number;
-  exitCode: number | null;
-  error?: string;
-  rawStdout: string;
-  rawStderr: string;
-  metadata: Record<string, unknown>;
-}
+export type HostName = z.infer<typeof hostNameSchema>;
+export type EpisodeRole = z.infer<typeof episodeRoleSchema>;
+export type EpisodeStatus = z.infer<typeof episodeStatusSchema>;
+export type HostCapabilities = z.infer<typeof hostCapabilitiesSchema>;
+export type EpisodeRequest = z.infer<typeof episodeRequestSchema>;
+export type EpisodeResult = z.infer<typeof episodeResultSchema>;
+
+export const hostAdapterSchemas = { HostCapabilities:hostCapabilitiesSchema, EpisodeRequest:episodeRequestSchema, EpisodeResult:episodeResultSchema } as const;
 
 export interface HostAdapter {
   readonly host: HostName;
+  probe(): Promise<HostCapabilities>;
   runEpisode(request: EpisodeRequest, signal?: AbortSignal): Promise<EpisodeResult>;
   cancel(episodeId: string): Promise<{ episodeId: string; found: boolean; terminated: boolean }>;
 }

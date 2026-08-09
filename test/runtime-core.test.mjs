@@ -9,10 +9,10 @@ import {
   decodeContract,
   runEventSchema,
   runSnapshotSchema,
-  runtimeSchemas,
   taskContractSchema,
   workItemSchema,
 } from "../dist/runtime/core/contracts.js";
+import { publicSchemas } from "../dist/contracts/public-schemas.js";
 import { decodeEvent } from "../dist/runtime/core/codec.js";
 import { applyEvent, replay } from "../dist/runtime/core/reducer.js";
 import { scopesOverlap, validateParallelWave, validateWorkGraph } from "../dist/runtime/core/scheduling.js";
@@ -76,8 +76,8 @@ test("graph and parallel ownership checks reject unsafe plans", () => {
   assert.equal(scopesOverlap("src/runtime", "test/runtime"), false);
 });
 
-test("committed JSON Schemas are generated from the runtime Zod source", async () => {
-  for (const [name, schema] of Object.entries(runtimeSchemas)) {
+test("committed JSON Schemas are generated from every public Zod source", async () => {
+  for (const [name, schema] of Object.entries(publicSchemas)) {
     const committed = JSON.parse(await readFile(new URL(`../schemas/mta/v1/${name}.schema.json`, import.meta.url), "utf8"));
     assert.deepEqual(committed, z.toJSONSchema(schema, { target:"draft-2020-12", unrepresentable:"any" }));
     assert.equal(committed.additionalProperties, false);

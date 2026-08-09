@@ -61,10 +61,11 @@ async function installed(alias, args, options = {}) {
 
 function assertPackWhitelist(files) {
   const exact = new Set(["package.json", "README.md", "README_zh.md", "LICENSE", "THIRD_PARTY_NOTICES.md"]);
-  const prefixes = ["bin/", "dist/", "templates/", "schemas/"];
+  const prefixes = ["bin/", "dist/", "schemas/mta/"];
   for (const file of files) {
     assert.ok(exact.has(file) || prefixes.some((prefixPath) => file.startsWith(prefixPath)), `unexpected tarball file: ${file}`);
     assert.doesNotMatch(file, /(?:^|\/)tests?(?:\/|$)|\.py$/u);
+    assert.doesNotMatch(file, /^schemas\/(?!mta\/)/u);
     assert.ok(!file.endsWith(".ts") || file.endsWith(".d.ts"), `source TypeScript entered tarball: ${file}`);
   }
   assert.ok(files.includes("bin/mta.js"));

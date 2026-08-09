@@ -4,6 +4,8 @@ import { dirname, resolve, sep } from "node:path";
 
 import {
   APPLY_SCHEMA_VERSION,
+  applyPlanSchema,
+  applyReceiptSchema,
   decodeApplyReceipt,
   type ApplyChange,
   type ApplyHost,
@@ -134,14 +136,14 @@ export async function planApply(startPath: string, requestedHosts: readonly Appl
     });
   }
 
-  return {
+  return applyPlanSchema.parse({
     schemaVersion: APPLY_SCHEMA_VERSION,
     transactionId: randomUUID(),
     packageVersion: PACKAGE_VERSION,
     projectRoot,
-    hosts,
+    hosts:[...hosts],
     changes,
-  };
+  });
 }
 
 export interface CommitApplyOptions {
@@ -154,6 +156,7 @@ export async function commitApply(
   plan: ApplyPlan,
   options: CommitApplyOptions = {},
 ): Promise<ApplyReceipt> {
+  plan = applyPlanSchema.parse(plan);
   await options.beforeCommit?.();
   for (const change of plan.changes) {
     const current = await readOptional(targetPath(plan.projectRoot, change.relativePath));
@@ -186,7 +189,7 @@ export async function commitApply(
       }
     }
 
-    const receipt: ApplyReceipt = {
+    const receipt = applyReceiptSchema.parse({
       schemaVersion: APPLY_SCHEMA_VERSION,
       transactionId: plan.transactionId,
       packageVersion: plan.packageVersion,
@@ -198,7 +201,7 @@ export async function commitApply(
         originalBase64: change.originalBase64,
         appliedHash: change.afterHash ?? "",
       })),
-    };
+    });
     await writeFileAtomic(
       targetPath(plan.projectRoot, RECEIPT_PATH),
       `${JSON.stringify(receipt, null, 2)}\n`,

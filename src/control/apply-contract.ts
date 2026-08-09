@@ -1,70 +1,54 @@
+import { z } from "zod";
+
 export const APPLY_SCHEMA_VERSION = 1;
 
-export type ApplyHost = "codex" | "claude";
-export type ApplyAction = "create" | "update" | "unchanged" | "remove";
+const nonEmpty = z.string().trim().min(1);
+const hash = z.string().regex(/^[a-f0-9]{64}$/u);
+export const applyHostSchema = z.enum(["codex", "claude"]);
+export const applyActionSchema = z.enum(["create", "update", "unchanged", "remove"]);
+export const applyChangeSchema = z.strictObject({
+  relativePath:nonEmpty,
+  action:applyActionSchema,
+  beforeHash:hash.nullable(),
+  afterHash:hash.nullable(),
+  content:z.string().nullable(),
+  originalBase64:z.string().nullable(),
+  ownedAfter:z.boolean(),
+});
+export const applyPlanSchema = z.strictObject({
+  schemaVersion:z.literal(APPLY_SCHEMA_VERSION),
+  transactionId:nonEmpty,
+  packageVersion:nonEmpty,
+  projectRoot:nonEmpty,
+  hosts:z.array(applyHostSchema),
+  changes:z.array(applyChangeSchema),
+}).meta({ id:"ApplyPlan" });
+export const ownedFileReceiptSchema = z.strictObject({
+  relativePath:nonEmpty,
+  originalBase64:z.string().nullable(),
+  appliedHash:hash,
+});
+export const applyReceiptSchema = z.strictObject({
+  schemaVersion:z.literal(APPLY_SCHEMA_VERSION),
+  transactionId:nonEmpty,
+  packageVersion:nonEmpty,
+  projectRoot:nonEmpty,
+  hosts:z.array(applyHostSchema),
+  appliedAt:z.string().datetime(),
+  files:z.array(ownedFileReceiptSchema),
+}).meta({ id:"ApplyReceipt" });
 
-export interface ApplyChange {
-  readonly relativePath: string;
-  readonly action: ApplyAction;
-  readonly beforeHash: string | null;
-  readonly afterHash: string | null;
-  readonly content: string | null;
-  readonly originalBase64: string | null;
-  readonly ownedAfter: boolean;
-}
+export type ApplyHost = z.infer<typeof applyHostSchema>;
+export type ApplyAction = z.infer<typeof applyActionSchema>;
+export type ApplyChange = z.infer<typeof applyChangeSchema>;
+export type ApplyPlan = z.infer<typeof applyPlanSchema>;
+export type OwnedFileReceipt = z.infer<typeof ownedFileReceiptSchema>;
+export type ApplyReceipt = z.infer<typeof applyReceiptSchema>;
 
-export interface ApplyPlan {
-  readonly schemaVersion: 1;
-  readonly transactionId: string;
-  readonly packageVersion: string;
-  readonly projectRoot: string;
-  readonly hosts: readonly ApplyHost[];
-  readonly changes: readonly ApplyChange[];
-}
-
-export interface OwnedFileReceipt {
-  readonly relativePath: string;
-  readonly originalBase64: string | null;
-  readonly appliedHash: string;
-}
-
-export interface ApplyReceipt {
-  readonly schemaVersion: 1;
-  readonly transactionId: string;
-  readonly packageVersion: string;
-  readonly projectRoot: string;
-  readonly hosts: readonly ApplyHost[];
-  readonly appliedAt: string;
-  readonly files: readonly OwnedFileReceipt[];
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function isHost(value: unknown): value is ApplyHost {
-  return value === "codex" || value === "claude";
-}
-
-function isOwnedFile(value: unknown): value is OwnedFileReceipt {
-  if (!isRecord(value)) return false;
-  return typeof value.relativePath === "string"
-    && (value.originalBase64 === null || typeof value.originalBase64 === "string")
-    && typeof value.appliedHash === "string";
-}
+export const applySchemas = { ApplyPlan:applyPlanSchema, ApplyReceipt:applyReceiptSchema } as const;
 
 export function decodeApplyReceipt(value: unknown): ApplyReceipt {
-  if (!isRecord(value)
-    || value.schemaVersion !== APPLY_SCHEMA_VERSION
-    || typeof value.transactionId !== "string"
-    || typeof value.packageVersion !== "string"
-    || typeof value.projectRoot !== "string"
-    || !Array.isArray(value.hosts)
-    || !value.hosts.every(isHost)
-    || typeof value.appliedAt !== "string"
-    || !Array.isArray(value.files)
-    || !value.files.every(isOwnedFile)) {
-    throw new Error("invalid .mta/apply-receipt.json contract");
-  }
-  return value as unknown as ApplyReceipt;
+  const parsed = applyReceiptSchema.safeParse(value);
+  if (!parsed.success) throw new Error(`invalid .mta/apply-receipt.json contract: ${parsed.error.issues[0]?.message ?? "unknown field"}`);
+  return parsed.data;
 }

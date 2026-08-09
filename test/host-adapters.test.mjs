@@ -15,6 +15,27 @@ function adapter(host) {
   return host === "codex" ? new CodexHostAdapter(options) : new ClaudeHostAdapter(options);
 }
 
+test("host adapters expose versioned capabilities through probe", async () => {
+  for (const host of ["codex", "claude"]) {
+    const instance = host === "codex"
+      ? new CodexHostAdapter({ command:process.execPath })
+      : new ClaudeHostAdapter({ command:process.execPath });
+    const capabilities = await instance.probe();
+    assert.deepEqual(capabilities, {
+      schema_version:1,
+      host,
+      available:true,
+      command:process.execPath,
+      resolved_command:process.execPath,
+      version:process.version,
+      stream_json:true,
+      read_only:true,
+      cancellation:true,
+      error:null,
+    });
+  }
+});
+
 function request(overrides = {}) {
   return {
     episodeId:`episode-${randomUUID()}`,
