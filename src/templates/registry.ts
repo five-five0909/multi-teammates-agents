@@ -36,6 +36,9 @@ const EVENTS = [
   "SubagentStart", "SubagentStop", "PreCompact", "PostCompact", "Stop", "SessionEnd",
 ] as const;
 
+const MTA_EXECUTABLE = process.execPath;
+const MTA_BIN = fileURLToPath(new URL("../../bin/mta.js", import.meta.url));
+
 function parseObject(original: Buffer | null, relativePath: string): Record<string, unknown> {
   if (original === null) return {};
   let value: unknown;
@@ -90,8 +93,8 @@ function claudeConfig(original: Buffer | null): string {
     hooks[event] = [...(hooks[event] ?? []), {
       hooks: [{
         type: "command",
-        command: "mta",
-        args: ["hook", "dispatch", "--host", "claude"],
+        command: MTA_EXECUTABLE,
+        args: [MTA_BIN, "hook", "dispatch", "--host", "claude"],
         timeout: event === "SessionEnd" ? 3 : 10,
         statusMessage: "Applying MTA lifecycle policy",
       }],
@@ -111,7 +114,7 @@ function mcpConfig(original: Buffer | null, projectRoot: string): string {
     ...value,
     mcpServers: {
       ...mcpServers,
-      "expert-team": { command:"mta", args:["mcp", "serve", "--project", projectRoot] },
+      "expert-team": { command:MTA_EXECUTABLE, args:[MTA_BIN, "mcp", "serve", "--project", projectRoot] },
     },
   }, null, 2)}\n`;
 }

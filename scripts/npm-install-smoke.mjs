@@ -133,6 +133,10 @@ try {
   assert.match(await readFile(join(project, ".agents", "skills", "expert-team", "SKILL.md"), "utf8"), /name: expert-team/u);
   assert.match(await readFile(join(project, ".claude", "skills", "expert-team", "SKILL.md"), "utf8"), /name: expert-team/u);
   assert.match(await readFile(join(project, ".claude", "agents", "software-engineer.md"), "utf8"), /name: software-engineer/u);
+  const claudeSettings = JSON.parse(await readFile(join(project, ".claude", "settings.json"), "utf8"));
+  const claudeHook = claudeSettings.hooks.SessionStart[0].hooks[0];
+  assert.equal(claudeHook.command, process.execPath);
+  assert.equal(claudeHook.args[0], join(installRoot, "bin", "mta.js"));
   const status = JSON.parse((await installed("mta", ["status", "--project", project, "--json"])).stdout);
   assert.equal(status.ownershipValid, true);
   assert.equal(status.trellis.bound, false);
@@ -140,7 +144,12 @@ try {
   const hookInput = JSON.stringify({ session_id:"pack-smoke", cwd:project, hook_event_name:"SessionStart" });
   const hook = JSON.parse((await installed("mta", ["hook", "dispatch", "--host", "codex", "--project", project], { stdin:hookInput })).stdout);
   assert.match(hook.hookSpecificOutput.additionalContext, /no active task/u);
-  const mcp = JSON.parse((await installed("mta", ["mcp", "serve", "--project", project], { stdin:initialize })).stdout.trim());
+  const claudeHookResult = JSON.parse((await runChecked(claudeHook.command, claudeHook.args, { cwd:project, env:cleanEnvironment, stdin:hookInput })).stdout);
+  assert.match(claudeHookResult.hookSpecificOutput.additionalContext, /no active task/u);
+  const projectMcp = JSON.parse(await readFile(join(project, ".mcp.json"), "utf8")).mcpServers["expert-team"];
+  assert.equal(projectMcp.command, process.execPath);
+  assert.equal(projectMcp.args[0], join(installRoot, "bin", "mta.js"));
+  const mcp = JSON.parse((await runChecked(projectMcp.command, projectMcp.args, { cwd:project, env:cleanEnvironment, stdin:initialize })).stdout.trim());
   assert.equal(mcp.result.serverInfo.name, "expert-team");
   const unapplied = JSON.parse((await installed("mta", ["unapply", "--project", project, "--yes", "--json"])).stdout);
   assert.equal(unapplied.changed, true);

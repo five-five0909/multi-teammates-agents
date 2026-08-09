@@ -37,7 +37,9 @@ test("apply dry-run is read-only and commit is idempotent", async () => {
     const hooks = JSON.parse(await readFile(join(project, ".codex", "hooks.json"), "utf8"));
     assert.equal(hooks.hooks.PreToolUse[0].hooks[0].command, "mta hook dispatch --host codex");
     const mcp = JSON.parse(await readFile(join(project, ".mcp.json"), "utf8"));
-    assert.deepEqual(mcp.mcpServers["expert-team"].args, ["mcp", "serve", "--project", project]);
+    assert.equal(mcp.mcpServers["expert-team"].command, process.execPath);
+    assert.match(mcp.mcpServers["expert-team"].args[0], /[\\/]bin[\\/]mta\.js$/u);
+    assert.deepEqual(mcp.mcpServers["expert-team"].args.slice(1), ["mcp", "serve", "--project", project]);
     assert.match(await readFile(join(project, "AGENTS.md"), "utf8"), /mta:lifecycle:start/u);
     assert.match(await readFile(join(project, ".agents", "skills", "expert-team", "SKILL.md"), "utf8"), /name: expert-team/u);
     assert.equal((await readProjectStatus(project)).integrations.codex.installed, true);
@@ -71,7 +73,9 @@ test("an owned runtime can be atomically updated", async () => {
     assert.deepEqual(runtime.hosts, ["claude"]);
     await assert.rejects(readFile(join(project, ".codex", "hooks.json")), { code: "ENOENT" });
     const settings = JSON.parse(await readFile(join(project, ".claude", "settings.json"), "utf8"));
-    assert.deepEqual(settings.hooks.PreToolUse[0].hooks[0].args, ["hook", "dispatch", "--host", "claude"]);
+    assert.equal(settings.hooks.PreToolUse[0].hooks[0].command, process.execPath);
+    assert.match(settings.hooks.PreToolUse[0].hooks[0].args[0], /[\\/]bin[\\/]mta\.js$/u);
+    assert.deepEqual(settings.hooks.PreToolUse[0].hooks[0].args.slice(1), ["hook", "dispatch", "--host", "claude"]);
     assert.match(await readFile(join(project, ".claude", "skills", "expert-team", "SKILL.md"), "utf8"), /name: expert-team/u);
     assert.match(await readFile(join(project, ".claude", "agents", "software-engineer.md"), "utf8"), /name: software-engineer/u);
   } finally {
