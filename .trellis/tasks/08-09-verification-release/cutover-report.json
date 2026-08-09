@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-09T05:59:56.2743949Z",
+  "generatedAt": "2026-08-09T06:14:34.5083223Z",
   "packageVersion": "0.5.0-alpha.0",
   "registry": {
     "package": "multi-teammates-agents",
@@ -18,7 +18,7 @@
     },
     "rc": {
       "passed": false,
-      "evidence": "four-runner Node 22/24 CI is committed locally; the remote default branch has no workflow yet and gh run list returns HTTP 404, so no remote matrix or clean-machine upgrade/rollback result exists"
+      "evidence": "GitHub Actions run 31298351583 passed all 8 Windows/Ubuntu/macOS Intel/macOS arm64 Node 22/24 jobs including isolated tarball install; registry E404 leaves no published alpha for a real registry upgrade/failure-rollback rehearsal"
     },
     "stable": {
       "passed": false,
@@ -33,11 +33,11 @@
     "tarballContainsNoPythonRuntime": true,
     "userDocsAndSkillUseMta": true,
     "allActiveSpecsUseMta": true,
-    "remoteFourPlatformMatrixPassed": false
+    "remoteFourPlatformMatrixPassed": true
   },
   "deleteLegacyRuntimeAllowed": false,
   "blockers": [
     "Re-authenticate Claude Code and pass one real managed Manager-Executor-Auditor E2E.",
-    "Push the authorized local commits and pass the Windows/Ubuntu/macOS Intel/macOS arm64 Node 22/24 workflow."
+    "Authorize and publish an alpha before running the real registry install, exact upgrade, failed-update rollback, and rollback-failure RC rehearsal."
   ]
 }

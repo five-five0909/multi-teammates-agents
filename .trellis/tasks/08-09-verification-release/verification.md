@@ -30,4 +30,7 @@
 
 - workflow 定义覆盖 `ubuntu-latest`、`windows-latest`、`macos-15-intel`、`macos-15` 与 Node 22/24。
 - 官方 action release 核验后使用 `actions/checkout@v7` 和 `actions/setup-node@v6`；每个矩阵项执行 pack/install smoke。
-- GitHub CLI 已具备仓库/workflow 权限，但本地分支领先远端；远端默认分支尚无该 workflow，`gh run list --workflow npm-control-plane.yml` 返回 HTTP 404。因此未擅自 push，远程矩阵仍无结果，rc gate 保持 false。
+- 用户明确授权后已推送 `main`。远程运行 [31298351583](https://github.com/five-five0909/multi-teammates-agents/actions/runs/31298351583) 在提交 `71cb57d` 上 8/8 全绿：Ubuntu、Windows、macOS Intel、macOS arm64 的 Node 22/24 均通过 `npm ci --ignore-scripts`、typecheck、lint、80 项 Node 测试、pack 白名单和真实 tarball 隔离安装 smoke。
+- 首轮远程矩阵真实暴露 macOS `/var`→`/private/var` 与 Windows 8.3 短路径→长路径差异；Hook 信任边界和测试现统一以 filesystem `realpath` 比较，同一目录别名可通过，越界/不存在路径仍失败关闭。
+- 后续安装轮次又暴露全局包入口可能保留短路径拼写；smoke 现比较入口文件的规范身份并继续实际启动生成后的 Claude Hook 与项目 MCP。第四轮远程矩阵完整通过。
+- RC 仍保持 false：远程全新 tarball 安装已通过，但 registry 当前 E404，尚无已发布 alpha 可执行真实 registry 升级/失败回滚演练；本任务未获得 `npm publish` 授权。
