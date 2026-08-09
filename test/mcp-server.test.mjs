@@ -56,3 +56,20 @@ test("MCP fails closed without a unique session binding", async () => {
     await rm(project, { recursive:true, force:true });
   }
 });
+
+test("expert_team_run is the MCP foreground entry and forwards the shared bound service", async () => {
+  const project = await preparedProject();
+  try {
+    let received;
+    const server = new McpServer(project, "session-mcp", async (service, runId, config) => {
+      received = { taskId:service.taskId, runId, config };
+      return { snapshot:{ state:"completed" }, episodeIds:["episode-1"] };
+    });
+    const result = await call(server, 1, "expert_team_run", { task_id:"mcp-task", run_id:"run-1", config:{ roles:{} } });
+    assert.equal(result.isError, false);
+    assert.deepEqual(received, { taskId:"mcp-task", runId:"run-1", config:{ roles:{} } });
+    assert.deepEqual(result.structuredContent.episodeIds, ["episode-1"]);
+  } finally {
+    await rm(project, { recursive:true, force:true });
+  }
+});

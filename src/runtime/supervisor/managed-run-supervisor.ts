@@ -59,7 +59,7 @@ export class ManagedRunSupervisor {
       const result = await this.runEpisode(this.adapters[manager.host]!, {
         episodeId, runId:snapshot.run_id, roundIndex:Math.max(1, snapshot.rounds_used + 1), role:"manager", profile:"manager",
         prompt:buildManagerPrompt(snapshot, manager.contextChars), workspace:this.config.workspace, model:manager.model,
-        timeoutSeconds:manager.timeoutSeconds, maxOutputChars:manager.outputChars, permissionPosture:"host-controlled", readOnly:false,
+        timeoutSeconds:manager.timeoutSeconds, maxOutputChars:manager.outputChars, permissionPosture:"host-controlled", readOnly:true,
       });
       if (result.status === "permission_required" || result.status === "cancelled") {
         const current = await this.repository.load();

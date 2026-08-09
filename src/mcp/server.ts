@@ -1,6 +1,7 @@
 import { createInterface } from "node:readline";
 import { BoundRunService } from "../lifecycle/run-service.js";
 import type { AuditDecision, HumanDecision, RoleResult } from "../runtime/core/contracts.js";
+import { runForeground } from "../runtime/foreground.js";
 import { PACKAGE_VERSION } from "../version.js";
 
 const TOOL_NAMES = [
@@ -22,7 +23,11 @@ function textResult(value: unknown, isError = false): JsonObject {
 }
 
 export class McpServer {
-  public constructor(private readonly project?: string, private readonly sessionId?: string) {}
+  public constructor(
+    private readonly project?: string,
+    private readonly sessionId?: string,
+    private readonly foreground: typeof runForeground = runForeground,
+  ) {}
 
   public async dispatch(input: unknown): Promise<JsonObject | null> {
     const request = object(input, "request");
@@ -74,8 +79,8 @@ export class McpServer {
       case "expert_team_prepare":
       case "expert_team_select_mode":
       case "expert_team_qualify":
-      case "expert_team_run":
         throw new Error(`${name} is preserved for compatibility but requires the foreground supervisor command`);
+      case "expert_team_run": return this.foreground(service, repository.runId, args.config);
     }
   }
 

@@ -10,6 +10,7 @@ import { dispatchHook } from "../hooks/dispatcher.js";
 import { normalizeNativeHook, renderHostDecision } from "../hooks/host-adapter.js";
 import { serveMcp } from "../mcp/server.js";
 import { BoundRunService } from "../lifecycle/run-service.js";
+import { runForeground } from "../runtime/foreground.js";
 import { PACKAGE_NAME, PACKAGE_VERSION } from "../version.js";
 
 const HELP = `multi-teammates-agents ${PACKAGE_VERSION}
@@ -35,6 +36,9 @@ Options:
   --yes             Commit a planned mutation
   --json            Emit machine-readable JSON
   --session <id>    Session identity for task binding
+  --host <name>     Default foreground host: codex or claude
+  --config <json>   Explicit foreground role configuration
+  --model <name>    Default model for foreground roles
   -h, --help        Show this help
   -v, --version     Show package version
 `;
@@ -79,6 +83,8 @@ export async function main(argv: readonly string[]): Promise<number> {
         host: { type: "string" },
         contract: { type: "string" },
         workItems: { type: "string" },
+        config: { type: "string" },
+        model: { type: "string" },
       },
     });
     const json = parsed.values.json ?? false;
@@ -147,7 +153,7 @@ export async function main(argv: readonly string[]): Promise<number> {
       case "run": {
         const action = parsed.positionals[1];
         const runId = parsed.positionals[2];
-        if (parsed.positionals.length > 3 || action === undefined || runId === undefined) throw new Error("usage: mta run <start|status|resume|cancel> <run-id>");
+        if (parsed.positionals.length > 3 || action === undefined || runId === undefined) throw new Error("usage: mta run <start|status|resume|cancel|foreground> <run-id>");
         const service = await BoundRunService.open(project, parsed.values.session ?? process.env.MTA_SESSION_ID);
         if (action === "start") {
           if (parsed.values.contract === undefined || parsed.values.workItems === undefined) throw new Error("run start requires --contract <json> and --workItems <json>");
@@ -155,6 +161,25 @@ export async function main(argv: readonly string[]): Promise<number> {
         } else if (action === "status") write(await service.runtime(runId).load(), json);
         else if (action === "resume") write(await service.resume(runId), json);
         else if (action === "cancel") write(await service.runtime(runId).transition("run.cancelled", { reason:"cancelled through CLI" }, "cli-cancel"), json);
+        else if (action === "foreground") {
+          const host = parsed.values.host ?? "codex";
+          if (host !== "codex" && host !== "claude") throw new Error("run foreground --host must be codex or claude");
+          const controller = new AbortController();
+          const abort = (): void => controller.abort();
+          process.once("SIGINT", abort);
+          process.once("SIGTERM", abort);
+          try {
+            const config = parsed.values.config === undefined ? undefined : JSON.parse(parsed.values.config) as unknown;
+            write(await runForeground(service, runId, config, {
+              defaultHost:host,
+              ...(parsed.values.model === undefined ? {} : { model:parsed.values.model }),
+              signal:controller.signal,
+            }), json);
+          } finally {
+            process.removeListener("SIGINT", abort);
+            process.removeListener("SIGTERM", abort);
+          }
+        }
         else throw new Error(`unknown run command: ${action}`);
         return 0;
       }

@@ -83,6 +83,7 @@ test("one foreground call completes two independent Manager-Executor-Auditor rou
   assert.equal(outcome.snapshot.rounds_used, 2);
   assert.deepEqual(Object.keys(outcome.snapshot.verified_progress), ["foundation", "verify"]);
   assert.equal(new Set(outcome.episodeIds).size, 7);
+  assert.equal(adapter.requests.filter((request) => request.role === "manager").every((request) => request.readOnly), true);
   assert.equal(adapter.requests.filter((request) => request.role === "auditor").every((request) => request.readOnly), true);
   assert.equal(adapter.requests.filter((request) => request.role === "executor").every((request) => !request.readOnly), true);
   assert.match(adapter.requests.find((request) => request.role === "executor").prompt, /summary.*artifacts.*evidence.*checks.*risks.*failure/u);

@@ -11,5 +11,6 @@
 | [npm Control Plane](./npm-control-plane.md) | npm product, CLI, apply receipt, atomic takeover, and safe unapply | Active |
 | [TypeScript Managed Runtime](./typescript-runtime.md) | Zod contracts, event replay, mta-runs storage, Supervisor, audit, and recovery | Active |
 | [TypeScript Lifecycle, Hooks, and MCP](./typescript-lifecycle-hooks.md) | Trellis sessions, risk gates, host Hook normalization, takeover templates, and MCP binding | Active |
+| [TypeScript Host Adapters and Foreground Execution](./typescript-host-adapters.md) | Shell-free Codex/Claude processes, JSONL normalization, cancellation, permissions, and foreground wiring | Active |
 
 All documentation in this directory is written in English.

@@ -88,4 +88,7 @@ test("run CLI and MCP-facing service read the same bound mta-runs state", async 
   assert.equal(JSON.parse(status.stdout).state, "initialized");
   const resumed = await run(["run", "resume", "run-1", "--project", project, "--session", "run-session", "--json"]);
   assert.deepEqual(JSON.parse(resumed.stdout).work_items.one, { status:"pending", attempt:0 });
+  const invalidForeground = await run(["run", "foreground", "run-1", "--project", project, "--session", "run-session", "--config", JSON.stringify({ roles:{}, unknown:true }), "--json"]);
+  assert.equal(invalidForeground.code, 2);
+  assert.match(JSON.parse(invalidForeground.stderr).error, /ForegroundConfig/u);
 });
