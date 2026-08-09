@@ -17,7 +17,8 @@
 - Claude 官方 exec-form Hook 在 Windows 不能直接启动 npm `.cmd` shim；项目模板现写入绝对 Node 与已安装 `bin/mta.js`，项目 MCP 使用同一入口。Windows 与 WSL tarball smoke 均直接执行生成后的 Claude SessionStart Hook 和项目 MCP initialize。
 - PostToolUse 只持久化工具名、tool-use ID、响应存在性和有界耗时；SubagentStart/Stop 只持久化 agent ID/type 与权限/停止元数据，并把启动身份绑定到当前 Trellis 任务，不记录原始响应、transcript 或 final message。
 - 活动 `expert-team-contract.md` 已在用户明确授权后收敛为当前 npm/TypeScript 产品契约，不再把 Python runner、Python MCP launcher、CCSwitch 或第二套路由实现写成正式路径。
-- npm registry: `npm view multi-teammates-agents version dist-tags --json` 返回 E404；这说明当前公开 registry 未返回该包或当前账号无读取权限。本任务没有执行 publish，也不把 E404 单独当作最终所有权证明。
+- npm registry: 用户明确授权后，`multi-teammates-agents@0.5.0-alpha.0` 已发布到官方 registry；`npm view` 返回完整 integrity/shasum，隔离全局安装、`mta`、`multi-teammates-agents` 和 `npm exec --package=multi-teammates-agents@alpha` 均返回 `0.5.0-alpha.0`。
+- 首次发布虽然显式使用 `--tag alpha`，registry 仍自动生成了同版本的 `latest`；尝试删除 `latest` 时返回 E403。`alpha` 标签正确指向 `0.5.0-alpha.0`，但在令牌权限或网页端标签管理解决前，必须继续明确说明这是 Alpha，而不是 Stable。
 
 ## Real host evidence
 
@@ -33,4 +34,5 @@
 - 用户明确授权后已推送 `main`。远程运行 [31298351583](https://github.com/five-five0909/multi-teammates-agents/actions/runs/31298351583) 在提交 `71cb57d` 上 8/8 全绿：Ubuntu、Windows、macOS Intel、macOS arm64 的 Node 22/24 均通过 `npm ci --ignore-scripts`、typecheck、lint、80 项 Node 测试、pack 白名单和真实 tarball 隔离安装 smoke。
 - 首轮远程矩阵真实暴露 macOS `/var`→`/private/var` 与 Windows 8.3 短路径→长路径差异；Hook 信任边界和测试现统一以 filesystem `realpath` 比较，同一目录别名可通过，越界/不存在路径仍失败关闭。
 - 后续安装轮次又暴露全局包入口可能保留短路径拼写；smoke 现比较入口文件的规范身份并继续实际启动生成后的 Claude Hook 与项目 MCP。第四轮远程矩阵完整通过。
-- RC 仍保持 false：远程全新 tarball 安装已通过，但 registry 当前 E404，尚无已发布 alpha 可执行真实 registry 升级/失败回滚演练；本任务未获得 `npm publish` 授权。
+- 发布准备提交 `21dcf9a` 的远程运行 [31300391990](https://github.com/five-five0909/multi-teammates-agents/actions/runs/31300391990) 再次 8/8 全绿，且官方 registry 的全新安装与 `@alpha` npx 已通过。
+- RC 仍保持 false：当前只有一个已发布版本，尚无第二个 registry 版本可执行真实精确升级、失败更新回滚和回滚失败演练；`latest` 标签的 E403 管理问题也仍需关闭。

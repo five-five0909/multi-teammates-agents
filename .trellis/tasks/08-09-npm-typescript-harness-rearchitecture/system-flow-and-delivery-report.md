@@ -13,7 +13,7 @@
 但当前只能准确标记为 **Alpha 工程完成**，不能标记为“已正式稳定发布”。剩余两项不是代码流程缺陷，而是需要外部账号或发布授权的门禁：
 
 1. Claude Code 当前未登录，尚未完成 Claude 真实模型的 managed E2E。
-2. npm registry 尚无已发布的 alpha，尚未执行真实 registry 的安装、精确升级、失败回滚演练。
+2. npm Alpha 已发布且真实 registry 安装通过；但尚无第二个版本可执行真实升级/失败回滚演练，首次发布自动生成的 `latest` 标签也尚未成功移除。
 
 因此，当前状态是：
 
@@ -24,8 +24,10 @@
 | Codex 真实 managed E2E | ✅ 完成 | Manager → Executor → Auditor → completion |
 | 四平台远程 CI | ✅ 完成 | 8/8 矩阵通过 |
 | Claude 真实 managed E2E | ⛔ 外部门禁 | `claude auth status` 显示未登录 |
-| npm 真实发布/升级回滚 | ⛔ 外部门禁 | registry 返回 E404，未获得 publish 授权 |
-| Stable 发布 | ⏳ 未达到 | 必须先通过 Claude 与 registry 门禁 |
+| npm Alpha 发布与真实安装 | ✅ 完成 | `0.5.0-alpha.0`、双 bin、`@alpha` npx 均通过 |
+| npm 真实升级/失败回滚 | ⏳ 未完成 | 需要第二个 registry 版本 |
+| npm `latest` 标签治理 | ⚠️ 待处理 | 首次发布自动创建；删除返回 E403 |
+| Stable 发布 | ⏳ 未达到 | 必须先通过 Claude、升级回滚与标签治理门禁 |
 
 ## 2. 系统标识与版本基线
 
@@ -318,7 +320,7 @@ flowchart TD
     A --> B{"Claude 真实 managed E2E"}
     B -->|"未登录，待外部操作"| BB["Beta：未通过"]
     B -->|"通过"| R{"registry 发布、升级、失败回滚演练"}
-    R -->|"未授权 publish"| RR["RC：未通过"]
+    R -->|"缺少第二版本 / 标签治理未闭环"| RR["RC：未通过"]
     R -->|"通过"| ST["Stable 候选"]
 
     classDef passed fill:#d7f5df,stroke:#188038,color:#0d3b1e;
@@ -346,7 +348,10 @@ CI 每个矩阵单元执行同一套安装烟测，并在隔离 PATH 中验证 P
 | Codex 真实模型 | ✅ | 真实 managed E2E 完成并验收 `evidence.txt = ALPHA` |
 | 远程 CI | ✅ | 最新 `main@dedc88e` 的运行 31298502025 成功 |
 | Claude 真实模型 | ⛔ | OAuth 过期；`loggedIn:false`、`authMethod:none` |
-| npm registry 演练 | ⛔ | `npm view` 返回 E404；没有执行 publish |
+| npm Alpha 发布 | ✅ | 官方 registry 已发布 `0.5.0-alpha.0` |
+| registry 安装 | ✅ | 精确全局安装、双 bin、`@alpha` npx 通过 |
+| registry 升级/回滚 | ⏳ | 只有一个已发布版本，无法完成真实升级矩阵 |
+| `latest` 标签治理 | ⚠️ | 自动指向 Alpha；删除操作返回 E403 |
 
 证据原始记录：
 
@@ -370,14 +375,14 @@ CI 每个矩阵单元执行同一套安装烟测，并在隔离 PATH 中验证 P
 
 ### 14.2 npm registry 发布与升级回滚
 
-当前 registry 对包名返回 E404；这只能证明“未找到或当前账号无读取权限”，不能证明包名所有权，也不能自动授权发布。
+`multi-teammates-agents@0.5.0-alpha.0` 已发布到官方 registry，精确安装和 `@alpha` npx 均已通过。当前剩余问题是：只有一个已发布版本，无法完成跨版本升级/回滚演练；首次发布还自动生成了指向 Alpha 的 `latest`，删除操作因 E403 未成功。
 
 关闭条件：
 
-1. 用户明确授权发布 `0.5.0-alpha.0`。
-2. 确认 npm 身份、包名权限和 dist-tag。
-3. 发布 alpha，并从全新环境按精确版本安装。
-4. 演练精确升级、安装失败自动回滚、回滚失败显式报错。
+1. 发布下一个经过验证的 prerelease 版本。
+2. 从 `0.5.0-alpha.0` 演练精确升级到该版本。
+3. 演练安装失败自动回滚和回滚失败显式报错。
+4. 通过具备 dist-tag 管理权限的令牌或 npm 网页端移除/重新指派 `latest`。
 5. 将 RC registry gate 更新为 `true`。
 
 在以上两项完成前：
@@ -444,4 +449,4 @@ flowchart LR
     class HOLD1,HOLD2 wait;
 ```
 
-**最终判断：工程系统和内部流程已经搞定；完整正式发布流程尚差 Claude 登录验收与 npm 发布授权两道外部门禁。** 当前最准确的交付标签是 `0.5.0-alpha.0`，而不是 Stable。
+**最终判断：工程系统、内部流程和 npm Alpha 发布已经搞定；完整正式发布流程尚差 Claude 登录验收、真实跨版本升级/回滚以及 `latest` 标签治理。** 当前最准确的交付标签是 `0.5.0-alpha.0`，而不是 Stable。

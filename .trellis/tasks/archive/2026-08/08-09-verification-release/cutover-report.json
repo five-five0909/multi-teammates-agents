@@ -1,11 +1,16 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-09T06:14:34.5083223Z",
+  "generatedAt": "2026-08-09T07:16:00Z",
   "packageVersion": "0.5.0-alpha.0",
   "registry": {
     "package": "multi-teammates-agents",
-    "status": "not_found_or_no_access",
-    "evidence": "npm view returned E404 on 2026-08-09; no publish was attempted"
+    "status": "alpha_published",
+    "evidence": "0.5.0-alpha.0 was published to the official npm registry; exact global install, both bins, and npm exec through @alpha passed; integrity sha512-fS2hjT2zSU78UlczBebyn2wqISJyT5eYPUTXf5n+9W6RWus0ArrJ83Q8IpzLdkgid6I68FZ5fBu3HHupC8pxeg==",
+    "tags": {
+      "alpha": "0.5.0-alpha.0",
+      "latest": "0.5.0-alpha.0"
+    },
+    "tagCaveat": "The registry created latest on the first publish despite --tag alpha; removing latest returned E403 and remains an open release-governance item."
   },
   "releaseLevels": {
     "alpha": {
@@ -18,7 +23,7 @@
     },
     "rc": {
       "passed": false,
-      "evidence": "GitHub Actions run 31298351583 passed all 8 Windows/Ubuntu/macOS Intel/macOS arm64 Node 22/24 jobs including isolated tarball install; registry E404 leaves no published alpha for a real registry upgrade/failure-rollback rehearsal"
+      "evidence": "GitHub Actions run 31300391990 passed all 8 Windows/Ubuntu/macOS Intel/macOS arm64 Node 22/24 jobs and registry exact install passed; only one registry version exists, so real exact-upgrade/failure-rollback rehearsal is still pending, and latest tag removal returned E403"
     },
     "stable": {
       "passed": false,
@@ -28,6 +33,8 @@
   "cutoverGates": {
     "typescriptGoldenParity": true,
     "npmLifecycleWithoutPythonCargo": true,
+    "npmAlphaPublished": true,
+    "registryExactInstallPassed": true,
     "codexRealManagedE2E": true,
     "claudeRealManagedE2E": false,
     "tarballContainsNoPythonRuntime": true,
@@ -38,6 +45,7 @@
   "deleteLegacyRuntimeAllowed": false,
   "blockers": [
     "Re-authenticate Claude Code and pass one real managed Manager-Executor-Auditor E2E.",
-    "Authorize and publish an alpha before running the real registry install, exact upgrade, failed-update rollback, and rollback-failure RC rehearsal."
+    "Publish a second prerelease version before running the real registry exact-upgrade, failed-update rollback, and rollback-failure RC rehearsal.",
+    "Remove or intentionally reassign the automatically created latest dist-tag; the current token received E403 when removing it."
   ]
 }
