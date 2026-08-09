@@ -9,7 +9,7 @@
 - [x] 7. 实时查询 npm registry 包名/目标版本，记录但不擅自 publish。
 - [x] 8. 运行 Windows、WSL Node 24、pack/install、真实 Codex/Claude smoke，并生成分级 cutover 证据。
 - [x] 9. 仅当 cutover 报告全绿时删除旧 Python/bridge/tests；否则保留并记录认证 blocker。
-- [ ] 10. trellis-check、更新发行 spec、提交并归档；父任务仅在所有 AC 真正满足后归档。
+- [x] 10. trellis-check、更新发行 spec、提交并归档；父任务仅在所有 AC 真正满足后归档。
 
 ## Validation Commands
 
