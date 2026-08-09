@@ -314,3 +314,36 @@ Codex/Claude 配置。
 ### Next Steps
 
 - None - task complete
+
+
+## Session 7: Publish npm-only TUI control plane alpha.1
+
+**Date**: 2026-08-09
+**Task**: Publish npm-only TUI control plane alpha.1
+**Branch**: `main`
+
+### Summary
+
+Removed Git marketplace/plugin MCP surface, added shared five-page TUI, frozen apply/unapply/update/migration plans, exact alpha-channel updates and rollback, published 0.5.0-alpha.1, and migrated Windows plus Ubuntu2204.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `50fe2fd` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
