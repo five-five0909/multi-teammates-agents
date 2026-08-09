@@ -26,6 +26,9 @@ updatePackage({ targetVersion?, commit }) -> UpdateResult
 - Explicit `check-update` and `update` may access npm. TUI startup uses a
   bounded check and a successful-result cache with a 24-hour TTL. Other
   non-interactive commands do not access the network.
+- The registry timeout remains referenced until the request settles. Calling
+  `unref()` on that timer can let Node 22 end the event loop with the update
+  Promise still pending instead of delivering the required abort result.
 - Update uses `npm install --global --ignore-scripts` with one exact
   `package@version`. A failed target install attempts the currently running
   exact version and reports update and rollback outcomes separately.
@@ -39,6 +42,7 @@ updatePackage({ targetVersion?, commit }) -> UpdateResult
 | Cache younger than 24 hours | TUI may use it without network. |
 | Cache expired, corrupt, or from another package | Ignore and perform a bounded check. |
 | Offline, timeout, non-2xx, or malformed registry JSON | Report unavailable; TUI remains usable. |
+| Registry fetch never settles on Node 22 or 24 | The referenced timer aborts it and the command resolves with an error; it must not exit with a pending Promise. |
 | Update without `--yes` | Return an exact preview and make no install call. |
 | Target equals current | Return no-op; do not reinstall. |
 | Target install fails, rollback succeeds | Return update failure plus `rollbackSucceeded=true`. |
@@ -56,7 +60,7 @@ updatePackage({ targetVersion?, commit }) -> UpdateResult
 
 - Semver stable/prerelease ordering and malformed exact versions.
 - Fresh/valid/expired/corrupt cache, offline, timeout, non-2xx, and malformed
-  registry response.
+  registry response, including the stalled-fetch abort on Node 22 and 24.
 - Preview, no-op, success, rollback success, and rollback failure with an
   injected installer; tests never modify the developer's global npm prefix.
 - MCP version and both bin aliases report the package version.

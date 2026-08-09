@@ -29,7 +29,7 @@
 - [x] AC1. update/check-update 通过缓存、离线、超时、精确版本、预览、成功、失败回滚和回滚失败测试。
 - [x] AC2. TUI 与 CLI/MCP 读取相同 project/session/run repository；无 TTY 不挂起，启动更新检查不阻塞离线使用。
 - [x] AC3. `run answer` 与 doctor MCP initialize 有自动化契约测试。
-- [x] AC4. Windows 与 WSL Node 24 全绿，CI 定义覆盖四个 runner 与 Node 22/24，并执行 pack/install smoke。
+- [x] AC4. Windows 与 WSL Node 22/24 全绿，CI 定义覆盖四个 runner 与 Node 22/24，并执行 pack/install smoke。
 - [x] AC5. tarball 白名单和隔离安装证明两个 bin、npx、apply/hook/MCP/run status/unapply 在无 Python/Cargo PATH 下工作。
 - [ ] AC6. 英中 README、skill、manifest、示例、notices 与活动 TypeScript spec 不再指导用户走 Python 产品路径。
 - [x] AC7. registry 包名/版本可用性有实时证据；不执行未经用户明确授权的 `npm publish`。

@@ -147,7 +147,6 @@ export async function checkForUpdate(options: UpdateCheckOptions = {}): Promise<
   }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? 3_000);
-  timeout.unref();
   try {
     const fetcher = options.fetcher ?? fetch;
     const response = await fetcher(`https://registry.npmjs.org/${encodeURIComponent(PACKAGE_NAME)}/latest`, {

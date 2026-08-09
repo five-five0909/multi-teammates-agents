@@ -13,7 +13,11 @@ const bin = resolve(root, "bin", "mta.js");
 
 function run(args, cwd = root) {
   return new Promise((resolveRun, reject) => {
-    const child = spawn(process.execPath, [bin, ...args], { cwd, shell: false });
+    const child = spawn(process.execPath, [bin, ...args], {
+      cwd,
+      env:{ ...process.env, NODE_NO_WARNINGS:"1" },
+      shell:false,
+    });
     let stdout = "";
     let stderr = "";
     child.stdout.setEncoding("utf8");

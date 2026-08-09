@@ -2,8 +2,9 @@
 
 ## Product checks
 
-- Windows: typecheck、lint、77/77 Node 测试通过；真实 tarball 隔离安装通过两个 bin、npx、apply、status、hook、MCP initialize 和 unapply，PATH 不含 Python/Cargo/Rust。
-- WSL Node 24.14.0: typecheck、lint、76 个 Node 测试通过，1 个 Windows-only shim 测试按设计跳过；tarball 隔离安装通过，PATH 不含 Python/Cargo/Rust。
+- Windows Node 24.18.0 与隔离 Node 22.23.2: typecheck、lint、77/77 Node 测试通过；真实 tarball 隔离安装通过两个 bin、npx、apply、status、hook、MCP initialize 和 unapply，PATH 不含 Python/Cargo/Rust。
+- WSL Node 24.14.0 与隔离 Linux Node 22.23.2: typecheck、lint、76 个 Node 测试通过，1 个 Windows-only shim 测试按设计跳过；tarball 隔离安装通过，PATH 不含 Python/Cargo/Rust。
+- Node 22 首轮暴露更新超时计时器被 `unref()` 后可能提前结束事件循环；移除 `unref()` 后 Windows/WSL Node 22 均复跑通过。
 - Python migration-oracle suite: Windows 与 WSL 均为 105/105 通过。
 - WSL 首轮借用 Windows npm CLI 时继承了跨系统 cache 路径；烟测现从第一条 npm 命令起使用临时 cache，复跑后仓库未再生成异常目录。
 - npm registry: `npm view multi-teammates-agents version dist-tags --json` 返回 E404；这说明当前公开 registry 未返回该包或当前账号无读取权限。本任务没有执行 publish，也不把 E404 单独当作最终所有权证明。
