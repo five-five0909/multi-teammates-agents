@@ -1,3 +1,7 @@
+import { readdir, readFile } from "node:fs/promises";
+import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import type { ApplyHost } from "../control/apply-contract.js";
 import { APPLY_SCHEMA_VERSION } from "../control/apply-contract.js";
 import { PACKAGE_VERSION } from "../version.js";
@@ -5,6 +9,26 @@ import { PACKAGE_VERSION } from "../version.js";
 export interface ProjectTemplate {
   readonly relativePath: string;
   readonly render: (original: Buffer | null) => string;
+}
+
+async function assetTemplates(sourceDirectory: URL, targetDirectory: string): Promise<ProjectTemplate[]> {
+  const sourceRoot = fileURLToPath(sourceDirectory);
+  const templates: ProjectTemplate[] = [];
+  const visit = async (directory: string): Promise<void> => {
+    const entries = await readdir(directory, { withFileTypes: true });
+    for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) {
+        await visit(path);
+      } else if (entry.isFile()) {
+        const assetPath = relative(sourceRoot, path).replaceAll("\\", "/");
+        const content = await readFile(path, "utf8");
+        templates.push({ relativePath: `${targetDirectory}/${assetPath}`, render: () => content });
+      }
+    }
+  };
+  await visit(sourceRoot);
+  return templates;
 }
 
 const EVENTS = [
@@ -105,7 +129,7 @@ function instructionFile(original: Buffer | null, host: ApplyHost): string {
   return `${existing.trimEnd()}${existing.trim().length === 0 ? "" : "\n\n"}${block}\n`;
 }
 
-export function projectTemplates(projectRoot: string, hosts: readonly ApplyHost[]): readonly ProjectTemplate[] {
+export async function projectTemplates(projectRoot: string, hosts: readonly ApplyHost[]): Promise<readonly ProjectTemplate[]> {
   const templates: ProjectTemplate[] = [{
     relativePath: ".mta/runtime.json",
     render: () => `${JSON.stringify({
@@ -120,10 +144,22 @@ export function projectTemplates(projectRoot: string, hosts: readonly ApplyHost[
   if (hosts.includes("codex")) {
     templates.push({ relativePath: ".codex/hooks.json", render: codexConfig });
     templates.push({ relativePath:"AGENTS.md", render:(original) => instructionFile(original, "codex") });
+    templates.push(...await assetTemplates(
+      new URL("../../skills/expert-team/", import.meta.url),
+      ".agents/skills/expert-team",
+    ));
   }
   if (hosts.includes("claude")) {
     templates.push({ relativePath: ".claude/settings.json", render: claudeConfig });
     templates.push({ relativePath:"CLAUDE.md", render:(original) => instructionFile(original, "claude") });
+    templates.push(...await assetTemplates(
+      new URL("../../skills/expert-team/", import.meta.url),
+      ".claude/skills/expert-team",
+    ));
+    templates.push(...await assetTemplates(
+      new URL("../../agents/", import.meta.url),
+      ".claude/agents",
+    ));
   }
   return templates;
 }

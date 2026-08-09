@@ -29,9 +29,10 @@ Without `--yes`, apply and unapply are previews. Both npm bin names, `mta` and `
 - Every change binds `relativePath`, action, before/after SHA-256, exact content, and the original base64 value when restoration is allowed.
 - `ApplyReceipt.schemaVersion=1` binds the committed transaction, root, hosts, timestamp, and owned-file after hashes.
 - `.mta/runtime.json` is fully owned only when the receipt proves ownership. Unknown pre-existing files are conflicts, not overwrite candidates.
+- The npm package carries the canonical `skills/expert-team/` and generated `agents/` assets plus both plugin manifests. Project apply copies the same skill tree to `.agents/skills/expert-team/` for Codex and `.claude/skills/expert-team/` for Claude, and copies generated Claude profiles to `.claude/agents/`; every copied file participates in the same receipt transaction and drift checks.
 - The package version and Node engine range are read from `package.json`; code must not duplicate them as constants.
 - Windows PATH resolution prefers executable/shim suffixes explicitly. Supported npm `.cmd` shims are converted to a direct executable or `node + JS entry`; subprocesses keep `shell:false`.
-- The npm tarball whitelist is controlled by `package.json.files`; `temp/`, source tests, caches and Python runtime files must not enter the artifact.
+- The npm tarball whitelist is controlled by `package.json.files`; only executable output, public schemas, canonical skill/agent assets, plugin metadata, and release documents enter it. `temp/`, source tests, caches and Python runtime files must not enter the artifact.
 
 ## 4. Validation & Error Matrix
 
@@ -53,6 +54,7 @@ Without `--yes`, apply and unapply are previews. Both npm bin names, `mta` and `
 
 - Good: dry-run freezes hashes, commit rechecks them, writes an adjacent temporary file, renames it, and writes the receipt last.
 - Good: a second identical apply is `unchanged`; changing host selection is an owned update.
+- Good: npm tarball, Codex project skill, Claude project skill, and Claude agents all derive from the same packaged skill registry; unapply removes or restores them through the receipt.
 - Base: status reads a project with no receipt and returns `applied=false` without creating `.mta`.
 - Bad: unapply sees a changed runtime file and deletes it because the path appears in an old receipt.
 - Bad: doctor launches `npm.cmd` with `shell:true` or treats PATH presence as proof without executing `--version`.
@@ -65,7 +67,7 @@ Without `--yes`, apply and unapply are previews. Both npm bin names, `mta` and `
 - Unapply tests assert preview, successful removal/restoration, missing receipt refusal and drift preservation.
 - Legacy tests assert Python hook/MCP conflicts remain untouched.
 - Windows tests assert `.cmd` shim resolution produces `shell:false` executable/prefix arguments and real doctor probes succeed.
-- Packaging tests assert build/typecheck/lint/test, tarball whitelist, isolated install, both bin aliases and execution with Python/Cargo absent from PATH.
+- Packaging tests assert build/typecheck/lint/test, tarball whitelist, canonical skill/agent and dual-manifest assets, isolated install, both bin aliases, dual-host project discovery paths, and execution with Python/Cargo absent from PATH.
 - CI runs Windows x64, Ubuntu x64, macOS x64 and macOS arm64 on Node 22 and 24.
 
 ## 7. Wrong vs Correct

@@ -60,8 +60,11 @@ async function installed(alias, args, options = {}) {
 }
 
 function assertPackWhitelist(files) {
-  const exact = new Set(["package.json", "README.md", "README_zh.md", "LICENSE", "THIRD_PARTY_NOTICES.md"]);
-  const prefixes = ["bin/", "dist/", "schemas/mta/"];
+  const exact = new Set([
+    "package.json", "README.md", "README_zh.md", "LICENSE", "THIRD_PARTY_NOTICES.md",
+    ".codex-plugin/plugin.json", ".claude-plugin/plugin.json", ".mcp.json",
+  ]);
+  const prefixes = ["bin/", "dist/", "schemas/mta/", "skills/expert-team/", "agents/"];
   for (const file of files) {
     assert.ok(exact.has(file) || prefixes.some((prefixPath) => file.startsWith(prefixPath)), `unexpected tarball file: ${file}`);
     assert.doesNotMatch(file, /(?:^|\/)tests?(?:\/|$)|\.py$/u);
@@ -70,6 +73,10 @@ function assertPackWhitelist(files) {
   }
   assert.ok(files.includes("bin/mta.js"));
   assert.ok(files.includes("bin/mta-plugin-mcp.js"));
+  assert.ok(files.includes("skills/expert-team/SKILL.md"));
+  assert.ok(files.includes("agents/software-engineer.md"));
+  assert.ok(files.includes(".codex-plugin/plugin.json"));
+  assert.ok(files.includes(".claude-plugin/plugin.json"));
   assert.ok(files.some((file) => file === "dist/cli/index.js"));
 }
 
@@ -104,8 +111,11 @@ try {
   assert.equal(oneTime.stdout.trim(), "0.5.0-alpha.0");
 
   await mkdir(join(project, ".git"), { recursive:true });
-  const applied = JSON.parse((await installed("mta", ["apply", "--project", project, "--codex", "--yes", "--json"])).stdout);
-  assert.equal(applied.hosts[0], "codex");
+  const applied = JSON.parse((await installed("mta", ["apply", "--project", project, "--yes", "--json"])).stdout);
+  assert.deepEqual(applied.hosts, ["claude", "codex"]);
+  assert.match(await readFile(join(project, ".agents", "skills", "expert-team", "SKILL.md"), "utf8"), /name: expert-team/u);
+  assert.match(await readFile(join(project, ".claude", "skills", "expert-team", "SKILL.md"), "utf8"), /name: expert-team/u);
+  assert.match(await readFile(join(project, ".claude", "agents", "software-engineer.md"), "utf8"), /name: software-engineer/u);
   const status = JSON.parse((await installed("mta", ["status", "--project", project, "--json"])).stdout);
   assert.equal(status.ownershipValid, true);
   assert.equal(status.trellis.bound, false);
@@ -119,6 +129,9 @@ try {
   const unapplied = JSON.parse((await installed("mta", ["unapply", "--project", project, "--yes", "--json"])).stdout);
   assert.equal(unapplied.changed, true);
   await assert.rejects(readFile(join(project, ".mta", "apply-receipt.json")), { code:"ENOENT" });
+  await assert.rejects(readFile(join(project, ".agents", "skills", "expert-team", "SKILL.md")), { code:"ENOENT" });
+  await assert.rejects(readFile(join(project, ".claude", "skills", "expert-team", "SKILL.md")), { code:"ENOENT" });
+  await assert.rejects(readFile(join(project, ".claude", "agents", "software-engineer.md")), { code:"ENOENT" });
 
   process.stdout.write(`${JSON.stringify({ package:packageName, tarball, files:packed[0].files.length, pythonOnPath:false, cargoOnPath:false, aliases:["mta", "multi-teammates-agents"], lifecycle:"passed" })}\n`);
 } finally {

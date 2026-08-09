@@ -25,7 +25,9 @@ test("apply dry-run is read-only and commit is idempotent", async () => {
 
     const receipt = await commitApply(firstPlan, { now: () => new Date("2026-08-09T00:00:00Z") });
     assert.equal(receipt.hosts[0], "codex");
-    assert.deepEqual(receipt.files.map((file) => file.relativePath), [".mta/runtime.json", ".mcp.json", ".codex/hooks.json", "AGENTS.md"]);
+    const ownedPaths = receipt.files.map((file) => file.relativePath);
+    assert.deepEqual(ownedPaths.slice(0, 4), [".mta/runtime.json", ".mcp.json", ".codex/hooks.json", "AGENTS.md"]);
+    assert.ok(ownedPaths.includes(".agents/skills/expert-team/SKILL.md"));
     const secondPlan = await planApply(project, ["codex"]);
     assert.equal(secondPlan.changes[0].action, "unchanged");
     await commitApply(secondPlan);
@@ -36,6 +38,7 @@ test("apply dry-run is read-only and commit is idempotent", async () => {
     const mcp = JSON.parse(await readFile(join(project, ".mcp.json"), "utf8"));
     assert.deepEqual(mcp.mcpServers["expert-team"].args, ["mcp", "serve", "--project", project]);
     assert.match(await readFile(join(project, "AGENTS.md"), "utf8"), /mta:lifecycle:start/u);
+    assert.match(await readFile(join(project, ".agents", "skills", "expert-team", "SKILL.md"), "utf8"), /name: expert-team/u);
   } finally {
     await rm(project, { recursive: true, force: true });
   }
@@ -53,6 +56,8 @@ test("an owned runtime can be atomically updated", async () => {
     await assert.rejects(readFile(join(project, ".codex", "hooks.json")), { code: "ENOENT" });
     const settings = JSON.parse(await readFile(join(project, ".claude", "settings.json"), "utf8"));
     assert.deepEqual(settings.hooks.PreToolUse[0].hooks[0].args, ["hook", "dispatch", "--host", "claude"]);
+    assert.match(await readFile(join(project, ".claude", "skills", "expert-team", "SKILL.md"), "utf8"), /name: expert-team/u);
+    assert.match(await readFile(join(project, ".claude", "agents", "software-engineer.md"), "utf8"), /name: software-engineer/u);
   } finally {
     await rm(project, { recursive: true, force: true });
   }
@@ -89,7 +94,10 @@ test("unapply removes only unchanged owned files and preserves drift", async () 
     await commitApply(await planApply(project, []));
     const preview = await unapplyProject(project, false);
     assert.equal(preview.changed, false);
-    assert.deepEqual(preview.wouldRemove, [".mta/runtime.json", ".mcp.json", ".codex/hooks.json", "AGENTS.md", ".claude/settings.json", "CLAUDE.md"]);
+    assert.deepEqual(preview.wouldRemove.slice(0, 4), [".mta/runtime.json", ".mcp.json", ".codex/hooks.json", "AGENTS.md"]);
+    assert.ok(preview.wouldRemove.includes(".agents/skills/expert-team/SKILL.md"));
+    assert.ok(preview.wouldRemove.includes(".claude/skills/expert-team/SKILL.md"));
+    assert.ok(preview.wouldRemove.includes(".claude/agents/software-engineer.md"));
 
     const runtimePath = join(project, ".mta", "runtime.json");
     await writeFile(runtimePath, "user changed this");
@@ -126,6 +134,8 @@ test("unapply commit removes an unchanged owned runtime and its receipt", async 
     assert.equal(result.changed, true);
     await assert.rejects(readFile(join(project, ".mta", "runtime.json")), { code: "ENOENT" });
     await assert.rejects(readFile(join(project, ".mta", "apply-receipt.json")), { code: "ENOENT" });
+    await assert.rejects(readFile(join(project, ".agents", "skills", "expert-team", "SKILL.md")), { code: "ENOENT" });
+    await assert.rejects(readFile(join(project, ".claude", "agents", "software-engineer.md")), { code: "ENOENT" });
   } finally {
     await rm(project, { recursive: true, force: true });
   }

@@ -52,9 +52,11 @@ mta unapply
 mta unapply --yes
 ```
 
-`apply` merges MTA-owned hook, MCP, and instruction fields and writes
-`.mta/apply-receipt.json`. It rechecks every planned hash before commit and
-rolls back a partial transaction. `unapply` restores only unchanged content
+`apply` installs the shared Expert Team skill into `.agents/skills` for Codex
+and `.claude/skills` for Claude, installs Claude agent profiles into
+`.claude/agents`, merges MTA-owned hook, MCP, and instruction fields, and
+writes `.mta/apply-receipt.json`. It rechecks every planned hash before commit
+and rolls back a partial transaction. `unapply` restores only unchanged content
 proved by that receipt; user drift is preserved and reported.
 
 If an exact legacy Expert Team hook or MCP entry is present, apply fails closed.

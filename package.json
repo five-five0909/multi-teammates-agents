@@ -11,6 +11,11 @@
     "bin/",
     "dist/",
     "schemas/mta/",
+    "skills/expert-team/",
+    "agents/",
+    ".codex-plugin/plugin.json",
+    ".claude-plugin/plugin.json",
+    ".mcp.json",
     "README.md",
     "README_zh.md",
     "LICENSE",
@@ -35,7 +40,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/fifine/multi-teammates-agents.git"
+    "url": "https://github.com/five-five0909/multi-teammates-agents.git"
   },
   "keywords": [
     "ai-agent",

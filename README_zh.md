@@ -46,9 +46,11 @@ mta unapply
 mta unapply --yes
 ```
 
-`apply` 合并 MTA 拥有的 hook、MCP 和说明字段，并写入
-`.mta/apply-receipt.json`。提交前会复核所有摘要，中途失败会完整回滚。
-`unapply` 只恢复回执能证明且没有漂移的内容；用户后续修改会保留并报告。
+`apply` 会把同一份 Expert Team skill 分别安装到 Codex 的 `.agents/skills`
+和 Claude 的 `.claude/skills`，把 Claude 专家配置安装到 `.claude/agents`，
+再合并 MTA 拥有的 hook、MCP 和说明字段，并写入 `.mta/apply-receipt.json`。
+提交前会复核所有摘要，中途失败会完整回滚。`unapply` 只恢复回执能证明且
+没有漂移的内容；用户后续修改会保留并报告。
 
 若检测到精确的旧 Expert Team Python hook/MCP 入口，apply 会拒绝接管。先查看
 `mta legacy status`，确认后才执行 `mta legacy detach --yes`。detach 只停用入口，

@@ -84,7 +84,7 @@ export async function planApply(startPath: string, requestedHosts: readonly Appl
   if (receipt && receipt.projectRoot !== projectRoot) {
     throw new ApplyConflictError("apply receipt belongs to another project root");
   }
-  const templates = projectTemplates(projectRoot, hosts);
+  const templates = await projectTemplates(projectRoot, hosts);
   const desiredPaths = new Set(templates.map((template) => template.relativePath));
   const changes: ApplyChange[] = [];
   for (const template of templates) {
