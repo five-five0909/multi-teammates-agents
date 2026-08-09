@@ -5,6 +5,7 @@ import type { ApplyHost } from "../control/apply-contract.js";
 import { runDoctor } from "../control/doctor.js";
 import { readControlStatus } from "../control/status.js";
 import { legacyDetach, planLegacyDetach } from "../control/legacy.js";
+import { commitMarketplaceMigration, planMarketplaceMigration, probeMarketplaceMigration } from "../control/marketplace-migration.js";
 import { checkForUpdate, updatePackage } from "../control/update.js";
 import { TaskRepository } from "../lifecycle/task-repository.js";
 import { dispatchHook } from "../hooks/dispatcher.js";
@@ -28,6 +29,7 @@ Commands:
   unapply      Plan removal of owned files; pass --yes to commit
   check-update Check the npm registry for a newer version
   update       Plan an exact npm update; pass --yes to commit
+  migrate      Plan removal of the retired Git plugin/marketplace; pass --yes to commit
   task         Create, start, inspect, finish, or archive Trellis tasks
   hook         Dispatch one Codex or Claude lifecycle event from stdin
   legacy       Inspect or detach exact legacy Python integration entries
@@ -103,12 +105,12 @@ export async function main(argv: readonly string[]): Promise<number> {
     const json = parsed.values.json ?? false;
     const command = parsed.positionals[0];
     if (parsed.values.help) {
-      write(json ? { name: PACKAGE_NAME, version: PACKAGE_VERSION, commands: ["apply", "status", "doctor", "check-update", "update", "unapply", "task", "hook", "legacy", "mcp", "run"] } : HELP.trimEnd(), json);
+      write(json ? { name: PACKAGE_NAME, version: PACKAGE_VERSION, commands: ["apply", "status", "doctor", "check-update", "update", "migrate", "unapply", "task", "hook", "legacy", "mcp", "run"] } : HELP.trimEnd(), json);
       return 0;
     }
     if (command === undefined) {
       if (!json && process.stdin.isTTY && process.stdout.isTTY) return runTui(parsed.values.project ?? process.cwd(), parsed.values.session ?? process.env.MTA_SESSION_ID);
-      write(json ? { name: PACKAGE_NAME, version: PACKAGE_VERSION, commands: ["apply", "status", "doctor", "check-update", "update", "unapply", "task", "hook", "legacy", "mcp", "run"] } : HELP.trimEnd(), json);
+      write(json ? { name: PACKAGE_NAME, version: PACKAGE_VERSION, commands: ["apply", "status", "doctor", "check-update", "update", "migrate", "unapply", "task", "hook", "legacy", "mcp", "run"] } : HELP.trimEnd(), json);
       return 0;
     }
     if (command !== "task" && command !== "hook" && command !== "legacy" && command !== "mcp" && command !== "run" && parsed.positionals.length > 1) {
@@ -140,7 +142,17 @@ export async function main(argv: readonly string[]): Promise<number> {
           commit:parsed.values.yes ?? false,
         });
         write(result, json);
-        return result.committed && result.updateRequired && !result.updated ? 1 : 0;
+        return (parsed.values.yes ?? false) && result.updateRequired && !result.updated ? 1 : 0;
+      }
+      case "migrate": {
+        const plan = planMarketplaceMigration(await probeMarketplaceMigration({ cwd:project }));
+        if (!(parsed.values.yes ?? false)) {
+          write(plan, json);
+          return 0;
+        }
+        const result = await commitMarketplaceMigration(plan, { cwd:project });
+        write(result, json);
+        return result.succeeded ? 0 : 1;
       }
       case "unapply":
         write(await unapplyProject(project, parsed.values.yes ?? false), json);

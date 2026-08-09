@@ -5,7 +5,7 @@ Claude Code. It combines Trellis task lifecycle controls with a durable
 Manager → Executor → Auditor runtime, independent audit, resumable JSONL state,
 and human gates.
 
-The npm product is currently `0.5.0-alpha.0`. Alpha means the TypeScript
+The npm product is currently `0.5.0-alpha.1`. Alpha means the TypeScript
 contracts, control plane, fake-host runtime, and local packaging gates are in
 place; it is not a claim that the stable, model-driven acceptance matrix has
 passed.
@@ -22,20 +22,18 @@ scripts.
 ## Install
 
 ```bash
-npm install --global --ignore-scripts multi-teammates-agents@0.5.0-alpha.0
+npm install --global --ignore-scripts multi-teammates-agents@0.5.0-alpha.1
 mta --version
 multi-teammates-agents --version
 ```
 
-The public registry did not yet return this package during the recorded alpha
-verification. Until a separately authorized publish occurs, build a local
-tarball with `npm pack` and install that exact `.tgz` path instead of claiming
-the registry command already succeeds.
+The alpha is published on the official npm registry. npm is the only product
+installation and version source; Git marketplace installation is retired.
 
 One-time use is also supported:
 
 ```bash
-npx --yes --package multi-teammates-agents@0.5.0-alpha.0 -- mta --help
+npx --yes --package multi-teammates-agents@0.5.0-alpha.1 -- mta --help
 ```
 
 ## Project takeover
@@ -48,6 +46,8 @@ mta apply --codex --claude
 mta apply --codex --claude --yes
 mta status --json
 mta doctor --json
+mta migrate
+mta migrate --yes
 mta unapply
 mta unapply --yes
 ```
@@ -58,6 +58,11 @@ and `.claude/skills` for Claude, installs Claude agent profiles into
 writes `.mta/apply-receipt.json`. It rechecks every planned hash before commit
 and rolls back a partial transaction. `unapply` restores only unchanged content
 proved by that receipt; user drift is preserved and reported.
+
+`migrate` detects only the retired
+`multi-teammates-agents@multi-teammates-agents` Codex plugin and its exact
+`multi-teammates-agents` marketplace. It previews official removal commands
+unless `--yes` is present; unrelated plugins and marketplaces are untouched.
 
 If an exact legacy Expert Team hook or MCP entry is present, apply fails closed.
 Use `mta legacy status` and review `mta legacy detach`; only
@@ -113,7 +118,8 @@ mta run foreground run-1 --session session-1 --config '{
 
 ## MCP and hooks
 
-`mta apply` installs a project-bound MCP entry that runs:
+`mta apply` installs a project-bound TypeScript MCP entry using the absolute
+Node executable and installed `bin/mta.js` path. Conceptually it runs:
 
 ```bash
 mta mcp serve --project <absolute-project-root>
@@ -137,8 +143,10 @@ hook, an active task, and an unchanged apply receipt.
 
 ## TUI and updates
 
-Run `mta` in a terminal to open the control TUI. It can inspect project/run
-state, explicitly start foreground execution, run doctor, and check updates.
+Run `mta` in a terminal to open the control TUI. Overview, Integrations,
+Update, Doctor, and Runs use the same control services as the CLI. Apply,
+unapply, migration, and update always show a preview and require explicit
+confirmation. Overview is rendered immediately before the first menu prompt.
 Its startup update check is bounded and caches successful results for 24 hours;
 offline failure never blocks use. Other commands do not access the network
 except:
@@ -149,9 +157,15 @@ mta update --version <exact-version>
 mta update --version <exact-version> --yes
 ```
 
-Update installs an exact npm version with `--ignore-scripts`. If installation
-fails, MTA attempts to restore the currently running exact version and reports
-update and rollback failures separately.
+Prereleases check their matching npm dist-tag (`alpha`, `beta`, or `rc`), while
+stable versions check `latest`. Update uses the official registry, an isolated cache, and an exact npm version
+with `--ignore-scripts`. Self-update is enabled only for a verified global npm
+installation; npx and unknown sources receive an exact manual command. If
+installation or health verification fails, MTA attempts to restore the
+currently running exact version and reports both failures separately.
+
+The complete npm-only architecture and operational sequence are documented in
+[docs/npm-only-control-plane.md](docs/npm-only-control-plane.md).
 
 ## Development and verification
 

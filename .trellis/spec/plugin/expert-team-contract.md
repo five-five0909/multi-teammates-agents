@@ -2,9 +2,9 @@
 
 ## 1. Scope / Trigger
 
-Apply this specification when changing either plugin manifest, the canonical
-`skills/expert-team/` payload, generated expert profiles, the MCP compatibility
-surface, or the TypeScript managed runtime.
+Apply this specification when changing the npm product surface, the canonical
+`skills/expert-team/` payload, generated expert profiles, the project MCP
+compatibility surface, or the TypeScript managed runtime.
 
 The product has exactly two execution tiers:
 
@@ -101,7 +101,7 @@ ManagedRunSupervisor.run() -> Promise<RunSnapshot>
   reasoning, and full transcripts remain outside public state and are redacted
   before diagnostic trace persistence.
 
-### Schemas and package surface
+### Schemas and npm package surface
 
 - Zod is the runtime authority for TaskContract, WorkItem, RoleResult,
   AuditDecision, HumanDecision, BackendEvent, RunSnapshot, ApplyPlan,
@@ -110,13 +110,12 @@ ManagedRunSupervisor.run() -> Promise<RunSnapshot>
 - The shared role registry contains exactly 20 unique profile IDs and paths.
   Coordinator profiles are lead playbooks and are never dispatched as nested
   coordinators. Generated Claude profiles must match this registry.
-- Codex manifest `name` equals `multi-teammates-agents`, `skills` is
-  `./skills/`, and `mcpServers` points to `./.mcp.json`. Claude uses the same
-  root MCP file and skill tree.
-- The root MCP entry launches `bin/mta-plugin-mcp.js` with Node and resolves the
-  package root from `PLUGIN_ROOT` / `CLAUDE_PLUGIN_ROOT`. Project `mta apply`
-  writes absolute Node + `bin/mta.js` commands for Claude Hooks and project MCP
-  so Windows direct spawn never depends on an npm `.cmd` shim.
+- npm is the only installation and version source. The tarball contains
+  `dist/`, both bin aliases, schemas, the canonical skill, and generated agents;
+  it contains no host plugin manifest, root `.mcp.json`, or plugin launcher.
+- Project `mta apply` writes absolute Node + `bin/mta.js` commands for Codex and
+  Claude Hooks and the project MCP, so direct spawn never depends on an npm
+  `.cmd` shim or Git marketplace cache.
 - `mta apply` installs the same canonical skill for Codex and Claude and the
   generated profiles for Claude. Every installed asset belongs to the same
   ownership receipt, drift check, rollback, and unapply transaction.
@@ -143,7 +142,7 @@ ManagedRunSupervisor.run() -> Promise<RunSnapshot>
 
 ## 5. Required Tests
 
-- Manifest, skill, 20-profile registry, generated-agent, and MCP root validation.
+- npm tarball, skill, 20-profile registry, generated-agent, and project MCP validation.
 - Strict schema generation and unknown-field rejection at every durable/public
   boundary.
 - Dependency waves, overlapping ownership, reducer transition legality, golden
@@ -160,8 +159,8 @@ ManagedRunSupervisor.run() -> Promise<RunSnapshot>
   exact unapply, legacy conflict/detach, installed skill/profile discovery, and
   direct execution of installed Claude Hook and project MCP commands.
 - Isolated npm tarball install on Windows and POSIX with Python/Rust/Cargo absent
-  from PATH; both bin aliases, npx, plugin manifests, apply/hook/MCP/run status,
-  and unapply must pass.
+  from PATH; both bin aliases, npm exec, apply/hook/project-MCP/run status,
+  Doctor, and unapply must pass. Old plugin manifests and launcher must be absent.
 - Opt-in model-backed managed E2E for both Codex and Claude. Reports must label
   fixture, fake, real local host, remote CI, and model-backed evidence
   separately.
@@ -182,11 +181,12 @@ separate command/argument fields and execute with `shell:false`.
 
 ## 7. Design Decisions
 
-- One npm package and one TypeScript runtime serve both hosts.
+- One npm package and one TypeScript runtime serve both hosts; Git marketplace
+  is not a product installation path.
 - The skill is the human-facing entry gate; Trellis and strict runtime schemas
   are the durable authorities.
-- The canonical role registry, skill tree, MCP server, and managed runtime are
-  shared. Only host manifests, Hook rendering, and process arguments differ.
+- The canonical role registry, skill tree, project MCP server, and managed
+  runtime are shared. Only Hook rendering and installed host assets differ.
 - Lightweight remains available for small bounded work; managed mode is not
   weakened to simulate unsupported native delegation or independent audit.
 - Old Python code remains only as a migration oracle until every cutover gate

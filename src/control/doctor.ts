@@ -1,3 +1,4 @@
+import { realpath } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import { findGitRoot } from "./project-root.js";
@@ -14,15 +15,18 @@ export interface DoctorReport {
 }
 
 export async function runDoctor(startPath: string): Promise<DoctorReport> {
+  const projectRootPromise = findGitRoot(startPath).catch(() => null);
   const [node, npm, git, codex, claude, mcp] = await Promise.all([
     probeCommand(process.execPath),
     probeCommand("npm"),
     probeCommand("git"),
     probeCommand("codex"),
     probeCommand("claude"),
-    probeMcpInitialize(),
+    projectRootPromise.then((projectRoot) => projectRoot === null
+      ? { command:"mta mcp initialize", available:false, error:"no Git project found" }
+      : probeMcpInitialize(projectRoot)),
   ]);
-  const projectRoot = await findGitRoot(startPath).catch(() => null);
+  const projectRoot = await projectRootPromise;
   const requiredAvailable = node.available && npm.available && git.available && mcp.available;
 
   return {
@@ -34,13 +38,19 @@ export async function runDoctor(startPath: string): Promise<DoctorReport> {
   };
 }
 
-export async function probeMcpInitialize(timeoutMs = 5_000): Promise<CommandProbe> {
-  const launcher = fileURLToPath(new URL("../../bin/mta-plugin-mcp.js", import.meta.url));
+export async function probeMcpInitialize(projectRoot: string, timeoutMs = 5_000): Promise<CommandProbe> {
+  const launcher = fileURLToPath(new URL("../../bin/mta.js", import.meta.url));
+  let canonicalRoot: string;
+  try {
+    canonicalRoot = await realpath(projectRoot);
+  } catch (error) {
+    return { command:"mta mcp initialize", resolvedCommand:process.execPath, available:false, error:message(error, {}) };
+  }
   const result = await new ProcessRunner().run({
     episodeId:`doctor-mcp-${process.pid}-${Date.now()}`,
     executable:process.execPath,
-    args:[launcher],
-    cwd:process.cwd(),
+    args:[launcher, "mcp", "serve", "--project", canonicalRoot],
+    cwd:canonicalRoot,
     stdin:`${JSON.stringify({ jsonrpc:"2.0", id:1, method:"initialize", params:{} })}\n`,
     timeoutMs,
     maxStdoutChars:16_384,
@@ -51,9 +61,9 @@ export async function probeMcpInitialize(timeoutMs = 5_000): Promise<CommandProb
     if (result.exitCode !== 0 || response.result?.serverInfo?.name !== "expert-team" || typeof response.result.serverInfo.version !== "string") {
       throw new Error(result.stderr.trim() || "invalid MCP initialize response");
     }
-    return { command:"mta mcp initialize", resolvedCommand:launcher, available:true, version:response.result.serverInfo.version };
+    return { command:"mta mcp initialize", resolvedCommand:process.execPath, available:true, version:response.result.serverInfo.version };
   } catch (error) {
-    return { command:"mta mcp initialize", resolvedCommand:launcher, available:false, error:message(error, result) };
+    return { command:"mta mcp initialize", resolvedCommand:process.execPath, available:false, error:message(error, result) };
   }
 }
 

@@ -1,0 +1,5 @@
+{"file":".trellis/spec/plugin/npm-control-plane.md","reason":"核验 npm-only 发布物、冻结事务、所有权与漂移保护"}
+{"file":".trellis/spec/plugin/release-and-tui.md","reason":"核验 TUI/Doctor/Update/CI/registry 证据和失败语义"}
+{"file":".trellis/spec/plugin/typescript-host-adapters.md","reason":"核验项目 MCP 启动后真实宿主权限、取消和进程清理未回退"}
+{"file":".trellis/spec/plugin/expert-team-contract.md","reason":"核验删除 Git plugin 后 Managed 项目 MCP 仍完整可用"}
+{"file":".trellis/tasks/08-09-npm-tui-control-plane-cutover/prd.md","reason":"逐项追踪双宿主 npm-only TUI 验收标准"}

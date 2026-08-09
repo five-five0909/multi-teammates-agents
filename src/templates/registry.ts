@@ -73,8 +73,9 @@ function codexConfig(original: Buffer | null): string {
   for (const event of EVENTS) {
     const handler: Record<string, unknown> = {
       type: "command",
-      command: `mta hook dispatch --host codex`,
-      commandWindows: `mta hook dispatch --host codex`,
+      command: MTA_EXECUTABLE,
+      commandWindows: MTA_EXECUTABLE,
+      args: [MTA_BIN, "hook", "dispatch", "--host", "codex"],
       timeout: event === "SessionEnd" ? 3 : 10,
       statusMessage: "Applying MTA lifecycle policy",
     };
@@ -140,7 +141,7 @@ export async function projectTemplates(projectRoot: string, hosts: readonly Appl
       packageVersion: PACKAGE_VERSION,
       projectRoot,
       hosts,
-      hookCommand: "mta hook dispatch",
+      hookCommand: `${MTA_EXECUTABLE} ${MTA_BIN} hook dispatch`,
     }, null, 2)}\n`,
   }];
   templates.push({ relativePath:".mcp.json", render:(original) => mcpConfig(original, projectRoot) });

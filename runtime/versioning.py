@@ -26,8 +26,8 @@ TOOLSET_VERSIONS: dict[str, int] = {
 }
 
 UPGRADE_COMMANDS: tuple[str, ...] = (
-    "codex plugin marketplace upgrade multi-teammates-agents",
-    "codex plugin add multi-teammates-agents@multi-teammates-agents",
+    "mta update --yes",
+    "mta migrate --yes",
 )
 
 _SEMVER = re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$")
@@ -143,7 +143,7 @@ class VersionReport:
             "checks": self.checks,
             "mismatches": list(self.mismatches),
             "upgrade_commands": list(UPGRADE_COMMANDS),
-            "next_action": "upgrade_plugin_then_restart_host_session" if self.mismatches else "continue_or_send_host_versions",
+            "next_action": "update_npm_then_restart_host_session" if self.mismatches else "continue_or_send_host_versions",
         }
 
 

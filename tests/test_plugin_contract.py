@@ -2,11 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
-import os
-import subprocess
-import tempfile
 import unittest
-from urllib.parse import parse_qs, urlparse
 from pathlib import Path
 
 
@@ -20,126 +16,7 @@ validator = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(validator)
 
 
-def _base_package_version(value: str) -> str:
-    """Return the release version without a host-specific cachebuster."""
-
-    return value.split("+", 1)[0]
-
-
-class PluginContractTests(unittest.TestCase):
-    def test_manifest_matches_plugin_root(self) -> None:
-        manifest = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
-        self.assertEqual(ROOT.name, manifest["name"])
-        self.assertEqual("./skills/", manifest["skills"])
-        self.assertEqual("./.mcp.json", manifest["mcpServers"])
-        server = json.loads((ROOT / ".mcp.json").read_text(encoding="utf-8"))["mcpServers"]["expert-team"]
-        self.assertEqual("node", server["command"])
-        self.assertIn("PLUGIN_ROOT", server["args"][1])
-        self.assertIn("CLAUDE_PLUGIN_ROOT", server["args"][1])
-        self.assertNotIn("shell", server)
-        self.assertNotIn("C:\\", json.dumps(server))
-        for unsupported in ("hooks", "apps"):
-            self.assertNotIn(unsupported, manifest)
-
-    def test_claude_manifest_matches_shared_package(self) -> None:
-        codex = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
-        claude = json.loads((ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
-        self.assertEqual(codex["name"], claude["name"])
-        self.assertRegex(codex["version"], r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$")
-        self.assertEqual(codex["version"], claude["version"])
-        self.assertEqual("./skills/", claude["skills"])
-        self.assertNotIn("agents", claude)
-        self.assertNotIn("mcpServers", claude)
-
-    def test_claude_mcp_config_uses_compatible_plugin_root(self) -> None:
-        config = json.loads((ROOT / ".mcp.json").read_text(encoding="utf-8"))
-        self.assertEqual("node", config["mcpServers"]["expert-team"]["command"])
-        launcher = config["mcpServers"]["expert-team"]["args"][1]
-        self.assertIn("PLUGIN_ROOT", launcher)
-        self.assertIn("CLAUDE_PLUGIN_ROOT", launcher)
-        self.assertNotIn("shell", config["mcpServers"]["expert-team"])
-        self.assertTrue((ROOT / "scripts" / "expert_team_mcp.py").is_file())
-        self.assertTrue((ROOT / "scripts" / "expert_team_mcp_launcher.js").is_file())
-        self.assertTrue((ROOT / "scripts" / "expert_team_ccswitch_config.js").is_file())
-
-        codex_manifest = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
-        self.assertEqual("./.mcp.json", codex_manifest["mcpServers"])
-        self.assertEqual(".", config["mcpServers"]["expert-team"]["cwd"])
-
-    def test_ccswitch_config_is_generated_from_the_current_checkout(self) -> None:
-        generator = ROOT / "scripts" / "expert_team_ccswitch_config.js"
-        with tempfile.TemporaryDirectory() as cwd:
-            completed = subprocess.run(
-                ["node", str(generator), "--json"],
-                cwd=cwd,
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=10,
-            )
-        config = json.loads(completed.stdout)
-        server = config["mcpServers"]["expert-team"]
-        self.assertTrue(Path(server["command"]).is_file(), server["command"])
-        self.assertEqual(str(ROOT / "scripts" / "expert_team_mcp_launcher.js"), server["args"][0])
-        self.assertNotIn("PLUGIN_ROOT", json.dumps(server))
-        request = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}) + "\n"
-        handshake = subprocess.run(
-            [server["command"], *server["args"]],
-            input=request,
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=10,
-        )
-        self.assertEqual("expert-team", json.loads(handshake.stdout)["result"]["serverInfo"]["name"])
-
-        server_only = subprocess.run(
-            ["node", str(generator), "--server-json"],
-            cwd=ROOT.parent,
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=10,
-        )
-        self.assertEqual(server, json.loads(server_only.stdout))
-
-        deep_link = subprocess.run(
-            ["node", str(generator), "--deeplink", "--apps", "claude,codex"],
-            cwd=ROOT.parent,
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=10,
-        ).stdout.strip()
-        parsed = urlparse(deep_link)
-        self.assertEqual("ccswitch:", parsed.scheme + ":")
-        query = parse_qs(parsed.query)
-        self.assertEqual(["mcp"], query["resource"])
-        self.assertEqual(["claude,codex"], query["apps"])
-        self.assertEqual(server["command"], json.loads(query["config"][0])["command"])
-
-    def test_shared_mcp_launcher_starts_from_both_host_environments(self) -> None:
-        config = json.loads((ROOT / ".mcp.json").read_text(encoding="utf-8"))["mcpServers"]["expert-team"]
-        codex_manifest = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
-        expected_server_version = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["version"]
-        request = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}) + "\n"
-        for variable in ("PLUGIN_ROOT", "CLAUDE_PLUGIN_ROOT"):
-            with self.subTest(variable=variable):
-                environment = os.environ.copy()
-                environment.pop("PLUGIN_ROOT", None)
-                environment.pop("CLAUDE_PLUGIN_ROOT", None)
-                environment[variable] = str(ROOT)
-                completed = subprocess.run([config["command"], *config["args"]], input=request, capture_output=True, text=True, env=environment, timeout=10, check=True)
-                response = json.loads(completed.stdout.strip())
-                self.assertEqual("expert-team", response["result"]["serverInfo"]["name"])
-                self.assertEqual(expected_server_version, response["result"]["serverInfo"]["version"])
-        environment = os.environ.copy()
-        environment.pop("PLUGIN_ROOT", None)
-        environment.pop("CLAUDE_PLUGIN_ROOT", None)
-        completed = subprocess.run([config["command"], *config["args"]], input=request, capture_output=True, text=True, env=environment, cwd=ROOT, timeout=10, check=True)
-        response = json.loads(completed.stdout.strip())
-        self.assertEqual("expert-team", response["result"]["serverInfo"]["name"])
-
+class ProductContractTests(unittest.TestCase):
     def test_skill_metadata_and_references(self) -> None:
         text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
         self.assertTrue(text.startswith("---\nname: expert-team\n"))

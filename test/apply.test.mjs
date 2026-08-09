@@ -6,7 +6,9 @@ import test from "node:test";
 
 import {
   commitApply,
+  commitUnapply,
   planApply,
+  planUnapply,
   unapplyProject,
 } from "../dist/control/apply.js";
 import { readProjectStatus } from "../dist/control/status.js";
@@ -35,7 +37,9 @@ test("apply dry-run is read-only and commit is idempotent", async () => {
     const runtime = JSON.parse(await readFile(join(project, ".mta", "runtime.json"), "utf8"));
     assert.deepEqual(runtime.hosts, ["codex"]);
     const hooks = JSON.parse(await readFile(join(project, ".codex", "hooks.json"), "utf8"));
-    assert.equal(hooks.hooks.PreToolUse[0].hooks[0].command, "mta hook dispatch --host codex");
+    assert.equal(hooks.hooks.PreToolUse[0].hooks[0].command, process.execPath);
+    assert.match(hooks.hooks.PreToolUse[0].hooks[0].args[0], /[\\/]bin[\\/]mta\.js$/u);
+    assert.deepEqual(hooks.hooks.PreToolUse[0].hooks[0].args.slice(1), ["hook", "dispatch", "--host", "codex"]);
     const mcp = JSON.parse(await readFile(join(project, ".mcp.json"), "utf8"));
     assert.equal(mcp.mcpServers["expert-team"].command, process.execPath);
     assert.match(mcp.mcpServers["expert-team"].args[0], /[\\/]bin[\\/]mta\.js$/u);
@@ -138,7 +142,9 @@ test("apply preserves unrelated host settings and unapply restores exact origina
     await commitApply(await planApply(project, ["codex"]));
     const applied = JSON.parse(await readFile(hookPath, "utf8"));
     assert.equal(applied.hooks.Stop[0].hooks[0].command, "echo user");
-    assert.equal(applied.hooks.Stop[1].hooks[0].command, "mta hook dispatch --host codex");
+    assert.equal(applied.hooks.Stop[1].hooks[0].command, process.execPath);
+    assert.match(applied.hooks.Stop[1].hooks[0].args[0], /[\\/]bin[\\/]mta\.js$/u);
+    assert.deepEqual(applied.hooks.Stop[1].hooks[0].args.slice(1), ["hook", "dispatch", "--host", "codex"]);
     await unapplyProject(project, true);
     assert.equal(await readFile(hookPath, "utf8"), original);
   } finally {
@@ -158,6 +164,25 @@ test("unapply commit removes an unchanged owned runtime and its receipt", async 
     await assert.rejects(readFile(join(project, ".claude", "agents", "software-engineer.md")), { code: "ENOENT" });
   } finally {
     await rm(project, { recursive: true, force: true });
+  }
+});
+
+test("unapply commits the frozen plan and rolls back a partial failure", async () => {
+  const project = await makeProject();
+  try {
+    await commitApply(await planApply(project, []));
+    const plan = await planUnapply(project);
+    const runtimePath = join(project, ".mta", "runtime.json");
+    const runtimeBefore = await readFile(runtimePath);
+    await assert.rejects(commitUnapply(plan, { failAfterWrites:1 }), /injected unapply/u);
+    assert.deepEqual(await readFile(runtimePath), runtimeBefore);
+    assert.ok((await readFile(join(project, ".mta", "apply-receipt.json"))).length > 0);
+
+    await writeFile(runtimePath, "drift after preview");
+    await assert.rejects(commitUnapply(plan), /changed after unapply planning/u);
+    assert.equal(await readFile(runtimePath, "utf8"), "drift after preview");
+  } finally {
+    await rm(project, { recursive:true, force:true });
   }
 });
 

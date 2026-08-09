@@ -23,7 +23,8 @@
     "08-09-typescript-runtime",
     "08-09-lifecycle-hooks",
     "08-09-host-adapters",
-    "08-09-verification-release"
+    "08-09-verification-release",
+    "08-09-npm-tui-control-plane-cutover"
   ],
   "parent": null,
   "relatedFiles": [],

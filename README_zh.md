@@ -4,7 +4,7 @@ Multi Teammates Agents（MTA）是面向 Codex CLI 与 Claude Code 的项目级 
 Harness。它把 Trellis 任务生命周期、Manager → Executor → Auditor 长任务闭环、
 独立审计、可恢复 JSONL 状态和人工门禁放进同一个 npm 包。
 
-当前 npm 产品版本是 `0.5.0-alpha.0`。alpha 表示 TypeScript 契约、控制面、
+当前 npm 产品版本是 `0.5.0-alpha.1`。alpha 表示 TypeScript 契约、控制面、
 fake-host 运行时和本地打包门禁已经建立，不代表 stable 的真实模型验收矩阵已经通过。
 
 ## 环境要求
@@ -18,19 +18,18 @@ npm 运行时不需要 Python、Rust、Cargo，也没有安装生命周期脚本
 ## 安装
 
 ```bash
-npm install --global --ignore-scripts multi-teammates-agents@0.5.0-alpha.0
+npm install --global --ignore-scripts multi-teammates-agents@0.5.0-alpha.1
 mta --version
 multi-teammates-agents --version
 ```
 
-本次 alpha 验证时，公开 registry 尚未返回该包。在另行明确授权并完成 publish 前，
-应先用 `npm pack` 生成本地 tarball，再安装该精确 `.tgz` 路径；不能声称上面的
-registry 安装现在已经成功。
+该 alpha 已发布到 npm 官方 registry。npm 是唯一产品安装和版本来源；Git
+marketplace 安装路径已经退役。
 
 也支持一次性运行：
 
 ```bash
-npx --yes --package multi-teammates-agents@0.5.0-alpha.0 -- mta --help
+npx --yes --package multi-teammates-agents@0.5.0-alpha.1 -- mta --help
 ```
 
 ## 接管项目
@@ -42,6 +41,8 @@ mta apply --codex --claude
 mta apply --codex --claude --yes
 mta status --json
 mta doctor --json
+mta migrate
+mta migrate --yes
 mta unapply
 mta unapply --yes
 ```
@@ -51,6 +52,10 @@ mta unapply --yes
 再合并 MTA 拥有的 hook、MCP 和说明字段，并写入 `.mta/apply-receipt.json`。
 提交前会复核所有摘要，中途失败会完整回滚。`unapply` 只恢复回执能证明且
 没有漂移的内容；用户后续修改会保留并报告。
+
+`migrate` 只检测旧的 `multi-teammates-agents@multi-teammates-agents`
+Codex 插件和同名 marketplace。默认展示官方删除命令，只有 `--yes` 才执行；
+其他插件、marketplace 和用户配置不会被猜测删除。
 
 若检测到精确的旧 Expert Team Python hook/MCP 入口，apply 会拒绝接管。先查看
 `mta legacy status`，确认后才执行 `mta legacy detach --yes`。detach 只停用入口，
@@ -103,7 +108,8 @@ mta run foreground run-1 --session session-1 --config '{
 
 ## MCP 与 Hook
 
-`mta apply` 安装项目绑定的 MCP：
+`mta apply` 使用绝对 Node 路径和 npm 包内 `bin/mta.js` 安装项目绑定的
+TypeScript MCP。其逻辑命令为：
 
 ```bash
 mta mcp serve --project <项目绝对路径>
@@ -126,8 +132,9 @@ enforced；managed 写入必须同时具有可信前置 hook、活动任务和�
 
 ## TUI 与更新
 
-在终端直接运行 `mta` 会打开控制 TUI，可查看项目/run 状态、显式启动 foreground、
-运行 doctor 和检查更新。启动检查有超时，成功结果缓存 24 小时；离线不会阻塞使用。
+在终端直接运行 `mta` 会打开唯一控制 TUI。Overview、Integrations、Update、
+Doctor 和 Runs 与 CLI 共用同一套服务；Apply、Unapply、迁移和更新都先预览，
+再要求显式确认。首次菜单出现前会直接展示 Overview。启动检查有超时，成功结果缓存 24 小时；离线不会阻塞使用。
 除以下命令外，非交互命令不主动联网：
 
 ```bash
@@ -136,8 +143,13 @@ mta update --version <精确版本>
 mta update --version <精确版本> --yes
 ```
 
-更新使用 `--ignore-scripts` 安装精确 npm 版本。安装失败时会尝试恢复当前精确版本，
-并分别报告更新失败和回滚失败。
+预发布版本检查对应的 npm dist-tag（`alpha`、`beta` 或 `rc`），稳定版本检查
+`latest`。更新固定使用 npm 官方 registry、隔离 cache 和带 `--ignore-scripts` 的精确版本。
+只有确认来自全局 npm 安装时才允许自更新；npx 或未知来源只显示精确人工命令。
+安装或健康验证失败时会恢复当前精确版本，并分别报告更新失败和回滚失败。
+
+完整架构、数据流和迁移时序见
+[docs/npm-only-control-plane.md](docs/npm-only-control-plane.md)。
 
 ## 开发与验证
 

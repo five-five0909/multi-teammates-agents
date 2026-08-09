@@ -61,8 +61,7 @@ async function installed(alias, args, options = {}) {
 
 function assertPackWhitelist(files) {
   const exact = new Set([
-    "package.json", "README.md", "README_zh.md", "LICENSE", "THIRD_PARTY_NOTICES.md",
-    ".codex-plugin/plugin.json", ".claude-plugin/plugin.json", ".mcp.json",
+    "package.json", "README.md", "README_zh.md", "docs/npm-only-control-plane.md", "LICENSE", "THIRD_PARTY_NOTICES.md",
   ]);
   const prefixes = ["bin/", "dist/", "schemas/mta/", "skills/expert-team/", "agents/"];
   for (const file of files) {
@@ -72,11 +71,13 @@ function assertPackWhitelist(files) {
     assert.ok(!file.endsWith(".ts") || file.endsWith(".d.ts"), `source TypeScript entered tarball: ${file}`);
   }
   assert.ok(files.includes("bin/mta.js"));
-  assert.ok(files.includes("bin/mta-plugin-mcp.js"));
   assert.ok(files.includes("skills/expert-team/SKILL.md"));
   assert.ok(files.includes("agents/software-engineer.md"));
-  assert.ok(files.includes(".codex-plugin/plugin.json"));
-  assert.ok(files.includes(".claude-plugin/plugin.json"));
+  assert.ok(files.includes("docs/npm-only-control-plane.md"));
+  assert.ok(!files.includes("bin/mta-plugin-mcp.js"));
+  assert.ok(!files.includes(".codex-plugin/plugin.json"));
+  assert.ok(!files.includes(".claude-plugin/plugin.json"));
+  assert.ok(!files.includes(".mcp.json"));
   assert.ok(files.some((file) => file === "dist/cli/index.js"));
 }
 
@@ -105,27 +106,14 @@ try {
   for (const excluded of ["python", "python3", "py", "cargo", "rustc"]) {
     await assert.rejects(resolveCommand(excluded, cleanEnvironment), /not found on PATH/u);
   }
-  assert.equal((await installed("mta", ["--version"])).stdout.trim(), "0.5.0-alpha.0");
-  assert.equal((await installed("multi-teammates-agents", ["--version"])).stdout.trim(), "0.5.0-alpha.0");
-  for (const manifestPath of [".codex-plugin/plugin.json", ".claude-plugin/plugin.json"]) {
-    const manifest = JSON.parse(await readFile(join(installRoot, manifestPath), "utf8"));
-    assert.equal(manifest.name, packageName);
-    assert.equal(manifest.version, "0.5.0-alpha.0");
-    assert.equal(manifest.skills, "./skills/");
-  }
-  const pluginMcp = JSON.parse(await readFile(join(installRoot, ".mcp.json"), "utf8")).mcpServers["expert-team"];
+  assert.equal((await installed("mta", ["--version"])).stdout.trim(), "0.5.0-alpha.1");
+  assert.equal((await installed("multi-teammates-agents", ["--version"])).stdout.trim(), "0.5.0-alpha.1");
   const initialize = `${JSON.stringify({ jsonrpc:"2.0", id:1, method:"initialize", params:{} })}\n`;
-  const pluginInitialize = JSON.parse((await runChecked(pluginMcp.command, pluginMcp.args, {
-    cwd:installRoot,
-    env:{ ...cleanEnvironment, PLUGIN_ROOT:installRoot, CLAUDE_PLUGIN_ROOT:installRoot },
-    stdin:initialize,
-  })).stdout.trim());
-  assert.equal(pluginInitialize.result.serverInfo.name, "expert-team");
 
   const oneTimeNpm = await npmCommand(npmEnvironment);
   const npxEnvironment = { ...cleanEnvironment, PATH:[dirname(process.execPath), toolDirectory].join(delimiter), Path:undefined };
   const oneTime = await runChecked(oneTimeNpm.executable, [...oneTimeNpm.prefixArgs, "exec", "--yes", "--ignore-scripts", "--package", tarball, "--", "mta", "--version"], { env:npxEnvironment });
-  assert.equal(oneTime.stdout.trim(), "0.5.0-alpha.0");
+  assert.equal(oneTime.stdout.trim(), "0.5.0-alpha.1");
 
   await mkdir(join(project, ".git"), { recursive:true });
   const applied = JSON.parse((await installed("mta", ["apply", "--project", project, "--yes", "--json"])).stdout);

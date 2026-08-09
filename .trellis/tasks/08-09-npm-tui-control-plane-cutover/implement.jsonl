@@ -1,0 +1,5 @@
+{"file":".trellis/spec/plugin/npm-control-plane.md","reason":"npm-only manifest、Apply/Unapply、receipt、tarball 与安全接管契约"}
+{"file":".trellis/spec/plugin/release-and-tui.md","reason":"TUI 共享状态、更新、Doctor、registry 与跨平台发布门禁"}
+{"file":".trellis/spec/plugin/typescript-lifecycle-hooks.md","reason":"双宿主项目级 Hook/MCP 与 Trellis 绑定边界"}
+{"file":".trellis/spec/plugin/expert-team-contract.md","reason":"Lightweight/Managed 两层入口和项目 MCP 公共工具契约"}
+{"file":"temp/fastctx/README.md","reason":"只读研究源：控制 TUI、Apply receipt、exact update 与回滚行为"}

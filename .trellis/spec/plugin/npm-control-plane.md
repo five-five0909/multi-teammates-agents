@@ -16,6 +16,8 @@ mta unapply [--project <path>] [--yes] [--json]
 planApply(startPath, hosts) -> ApplyPlan
 commitApply(plan) -> ApplyReceipt
 unapplyProject(startPath, commit) -> UnapplyResult
+planUnapply(startPath) -> UnapplyPlan
+commitUnapply(plan) -> UnapplyResult
 resolveCommand(command) -> { executable, prefixArgs }
 ```
 
@@ -27,13 +29,14 @@ Without `--yes`, apply and unapply are previews. Both npm bin names, `mta` and `
 - During migration, the existing `scripts/*.js` bridges remain CommonJS behind `scripts/package.json`; remove that scoped compatibility marker together with the old bridges at cutover.
 - `ApplyPlan.schemaVersion=1` binds a UUID transaction, package version, canonical Git root, normalized hosts and changes.
 - Every change binds `relativePath`, action, before/after SHA-256, exact content, and the original base64 value when restoration is allowed.
+- Unapply freezes the receipt hash, every owned-file applied hash, and original bytes in one plan. TUI confirmation commits that same plan; pre-commit drift rejects before writes and partial failure restores all earlier bytes.
 - `ApplyReceipt.schemaVersion=1` binds the committed transaction, root, hosts, timestamp, and owned-file after hashes.
 - `.mta/runtime.json` is fully owned only when the receipt proves ownership. Unknown pre-existing files are conflicts, not overwrite candidates.
-- The npm package carries the canonical `skills/expert-team/` and generated `agents/` assets plus both plugin manifests. Project apply copies the same skill tree to `.agents/skills/expert-team/` for Codex and `.claude/skills/expert-team/` for Claude, and copies generated Claude profiles to `.claude/agents/`; every copied file participates in the same receipt transaction and drift checks.
+- The npm package carries the canonical `skills/expert-team/` and generated `agents/` assets, with no host plugin manifest, root `.mcp.json`, or plugin-only launcher. Project apply copies the same skill tree to `.agents/skills/expert-team/` for Codex and `.claude/skills/expert-team/` for Claude, and copies generated Claude profiles to `.claude/agents/`; every copied file participates in the same receipt transaction and drift checks.
 - `status.integrations.<host>.installed` requires both that host's hook/settings entry and its receipt-owned `expert-team/SKILL.md`; a pre-asset receipt must not be reported as a complete host installation.
 - The package version and Node engine range are read from `package.json`; code must not duplicate them as constants.
 - Windows PATH resolution prefers executable/shim suffixes explicitly. Supported npm `.cmd` shims are converted to a direct executable or `node + JS entry`; subprocesses keep `shell:false`.
-- The npm tarball whitelist is controlled by `package.json.files`; only executable output, public schemas, canonical skill/agent assets, plugin metadata, and release documents enter it. `temp/`, source tests, caches and Python runtime files must not enter the artifact.
+- The npm tarball whitelist is controlled by `package.json.files`; only executable output, public schemas, canonical skill/agent assets, and explicitly named release documents enter it. `temp/`, source tests, caches, host plugin metadata, root MCP configuration, and Python runtime files must not enter the artifact.
 - npm `bin` targets use canonical package-relative paths such as `bin/mta.js` without a leading `./`; npm 11 publish normalization must not rewrite the manifest or emit an auto-correction warning.
 
 ## 4. Validation & Error Matrix
@@ -69,7 +72,7 @@ Without `--yes`, apply and unapply are previews. Both npm bin names, `mta` and `
 - Unapply tests assert preview, successful removal/restoration, missing receipt refusal and drift preservation.
 - Legacy tests assert Python hook/MCP conflicts remain untouched.
 - Windows tests assert `.cmd` shim resolution produces `shell:false` executable/prefix arguments and real doctor probes succeed.
-- Packaging tests assert build/typecheck/lint/test, tarball whitelist, canonical skill/agent and dual-manifest assets, isolated install, both bin aliases, dual-host project discovery paths, and execution with Python/Cargo absent from PATH.
+- Packaging tests assert build/typecheck/lint/test, the exact tarball whitelist, canonical skill/agent assets, absence of plugin manifests/launcher/root MCP, isolated install, both bin aliases, dual-host project discovery paths, and execution with Python/Cargo absent from PATH.
 - CI runs Windows x64, Ubuntu x64, macOS x64 and macOS arm64 on Node 22 and 24.
 
 ## 7. Wrong vs Correct

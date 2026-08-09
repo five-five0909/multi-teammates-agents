@@ -7,10 +7,12 @@ import {
   applyPlanSchema,
   applyReceiptSchema,
   decodeApplyReceipt,
+  unapplyPlanSchema,
   type ApplyChange,
   type ApplyHost,
   type ApplyPlan,
   type ApplyReceipt,
+  type UnapplyPlan,
 } from "./apply-contract.js";
 import { sha256 } from "./digest.js";
 import { assertSafeApplyRoot, findGitRoot } from "./project-root.js";
@@ -235,12 +237,14 @@ export interface UnapplyResult {
   readonly wouldRemove: readonly string[];
 }
 
-export async function unapplyProject(startPath: string, commit: boolean): Promise<UnapplyResult> {
+export async function planUnapply(startPath: string): Promise<UnapplyPlan> {
   const projectRoot = await findGitRoot(startPath);
-  const receipt = await readReceipt(projectRoot);
-  if (!receipt) {
+  const receiptBytes = await readOptional(targetPath(projectRoot, RECEIPT_PATH));
+  if (!receiptBytes) {
     throw new ApplyConflictError("no valid apply receipt; refusing to guess what to remove");
   }
+  const receipt = decodeApplyReceipt(JSON.parse(receiptBytes.toString("utf8")) as unknown);
+  if (receipt.projectRoot !== projectRoot) throw new ApplyConflictError("apply receipt belongs to another project root");
 
   for (const file of receipt.files) {
     const current = await readOptional(targetPath(projectRoot, file.relativePath));
@@ -248,22 +252,71 @@ export async function unapplyProject(startPath: string, commit: boolean): Promis
       throw new ApplyConflictError(`${file.relativePath} drifted after apply; preserving user changes`);
     }
   }
-  const wouldRemove = receipt.files.map((file) => file.relativePath);
-  if (!commit) return { projectRoot, changed: false, wouldRemove };
+  return unapplyPlanSchema.parse({
+    schemaVersion:APPLY_SCHEMA_VERSION,
+    transactionId:randomUUID(),
+    packageVersion:receipt.packageVersion,
+    projectRoot,
+    receiptHash:sha256(receiptBytes),
+    changes:receipt.files.map((file) => ({
+      relativePath:file.relativePath,
+      beforeHash:file.appliedHash,
+      originalBase64:file.originalBase64,
+    })),
+  });
+}
 
-  for (const file of [...receipt.files].reverse()) {
-    const absolutePath = targetPath(projectRoot, file.relativePath);
-    if (file.originalBase64 === null) {
-      await rm(absolutePath, { force: true });
-    } else {
-      await writeFileAtomic(
-        absolutePath,
-        Buffer.from(file.originalBase64, "base64"),
-        `${receipt.transactionId}.unapply`,
-      );
+export interface CommitUnapplyOptions {
+  readonly beforeCommit?: () => void | Promise<void>;
+  readonly failAfterWrites?: number;
+}
+
+export async function commitUnapply(plan: UnapplyPlan, options: CommitUnapplyOptions = {}): Promise<UnapplyResult> {
+  plan = unapplyPlanSchema.parse(plan);
+  await options.beforeCommit?.();
+  const receiptPath = targetPath(plan.projectRoot, RECEIPT_PATH);
+  const receiptBytes = await readOptional(receiptPath);
+  if (receiptBytes === null || sha256(receiptBytes) !== plan.receiptHash) {
+    throw new ApplyConflictError("apply receipt changed after unapply planning");
+  }
+  for (const change of plan.changes) {
+    const current = await readOptional(targetPath(plan.projectRoot, change.relativePath));
+    if (current === null || sha256(current) !== change.beforeHash) {
+      throw new ApplyConflictError(`${change.relativePath} changed after unapply planning; preserving user changes`);
     }
   }
-  await rm(targetPath(projectRoot, RECEIPT_PATH), { force: true });
-  await rm(targetPath(projectRoot, ".mta"), { recursive: false }).catch(() => undefined);
-  return { projectRoot, changed: true, wouldRemove };
+
+  const rollback: Array<{ path: string; bytes: Buffer }> = [];
+  let writes = 0;
+  try {
+    for (const change of [...plan.changes].reverse()) {
+      const absolutePath = targetPath(plan.projectRoot, change.relativePath);
+      const current = await readFile(absolutePath);
+      rollback.push({ path:absolutePath, bytes:current });
+      if (change.originalBase64 === null) {
+        await rm(absolutePath, { force:true });
+      } else {
+        await writeFileAtomic(absolutePath, Buffer.from(change.originalBase64, "base64"), `${plan.transactionId}.unapply`);
+      }
+      writes += 1;
+      if (options.failAfterWrites !== undefined && writes >= options.failAfterWrites) {
+        throw new Error("injected unapply transaction failure");
+      }
+    }
+    await rm(receiptPath, { force:true });
+  } catch (error) {
+    for (const entry of rollback.reverse()) {
+      await mkdir(dirname(entry.path), { recursive:true }).catch(() => undefined);
+      await writeFileAtomic(entry.path, entry.bytes, `${plan.transactionId}.rollback`).catch(() => undefined);
+    }
+    throw error;
+  }
+  await rm(targetPath(plan.projectRoot, ".mta"), { recursive:false }).catch(() => undefined);
+  return { projectRoot:plan.projectRoot, changed:true, wouldRemove:plan.changes.map((change) => change.relativePath) };
+}
+
+export async function unapplyProject(startPath: string, commit: boolean): Promise<UnapplyResult> {
+  const plan = await planUnapply(startPath);
+  if (!commit) return { projectRoot:plan.projectRoot, changed:false, wouldRemove:plan.changes.map((change) => change.relativePath) };
+  return commitUnapply(plan);
 }

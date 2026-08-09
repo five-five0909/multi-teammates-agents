@@ -35,13 +35,14 @@ test("help and version expose the npm product contract", async () => {
   assert.match(help.stdout, /mta \[command\]/u);
   assert.match(help.stdout, /status/u);
   assert.match(help.stdout, /doctor/u);
+  assert.match(help.stdout, /migrate/u);
 
   const version = await run(["--version"]);
   assert.equal(version.code, 0);
-  assert.equal(version.stdout.trim(), "0.5.0-alpha.0");
+  assert.equal(version.stdout.trim(), "0.5.0-alpha.1");
   const jsonVersion = await run(["--json", "--version"]);
   assert.equal(jsonVersion.code, 0);
-  assert.equal(JSON.parse(jsonVersion.stdout), "0.5.0-alpha.0");
+  assert.equal(JSON.parse(jsonVersion.stdout), "0.5.0-alpha.1");
 });
 
 test("status resolves the Git root from a nested Unicode path", async () => {

@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-import subprocess
-import sys
 import tempfile
 import unittest
 
@@ -40,7 +38,7 @@ class VersionGateTests(unittest.TestCase):
         report = compare_versions(host_package_version="0.4.0")
         self.assertFalse(report.compatible)
         self.assertEqual("upgrade_required", report.status)
-        self.assertIn("codex plugin marketplace upgrade multi-teammates-agents", report.to_dict()["upgrade_commands"])
+        self.assertEqual(["mta update --yes", "mta migrate --yes"], report.to_dict()["upgrade_commands"])
         with tempfile.TemporaryDirectory() as temporary:
             service = ExpertTeamService(Path(temporary))
             with self.assertRaisesRegex(ContractError, r"stale_session:.*upgrade_required=true.*restart"):
@@ -69,20 +67,6 @@ class VersionGateTests(unittest.TestCase):
             content = response["result"]["structuredContent"]
             self.assertTrue(content["compatible"])
             self.assertEqual("compatible", content["status"])
-
-    def test_cli_check_is_read_only_and_deterministic(self) -> None:
-        completed = subprocess.run(
-            [sys.executable, str(ROOT / "scripts" / "expert_team_upgrade.py"), "--check"],
-            cwd=ROOT,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        self.assertEqual(0, completed.returncode, completed.stderr)
-        payload = json.loads(completed.stdout)
-        self.assertEqual(PACKAGE_VERSION, payload["expected"]["package_version"])
-        self.assertIn("codex plugin add multi-teammates-agents@multi-teammates-agents", payload["upgrade_commands"])
-
 
 if __name__ == "__main__":
     unittest.main()

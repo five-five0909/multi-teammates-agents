@@ -1,6 +1,6 @@
 {
   "name": "multi-teammates-agents",
-  "version": "0.5.0-alpha.0",
+  "version": "0.5.0-alpha.1",
   "description": "Project-scoped AI harness for Trellis-governed, audited long-horizon work",
   "type": "module",
   "bin": {
@@ -13,11 +13,9 @@
     "schemas/mta/",
     "skills/expert-team/",
     "agents/",
-    ".codex-plugin/plugin.json",
-    ".claude-plugin/plugin.json",
-    ".mcp.json",
     "README.md",
     "README_zh.md",
+    "docs/npm-only-control-plane.md",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md"
   ],
