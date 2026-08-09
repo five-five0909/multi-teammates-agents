@@ -1,4 +1,4 @@
-import { open, mkdir } from "node:fs/promises";
+import { open, mkdir, readFile, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { z } from "zod";
 
@@ -6,6 +6,7 @@ import { redactValue } from "../runtime/security.js";
 import { gateToolUse, type GateDecision } from "../lifecycle/risk-gate.js";
 import { LifecycleError, type TaskRepository } from "../lifecycle/task-repository.js";
 import { readProjectStatus } from "../control/status.js";
+import { writeFileAtomic } from "../platform/atomic-file.js";
 
 export const hookEventSchema = z.enum([
   "SessionStart", "UserPromptSubmit", "PreToolUse", "PermissionRequest", "PostToolUse",
@@ -25,13 +26,23 @@ export type HookEnvelope = z.infer<typeof hookEnvelopeSchema>;
 export interface HookDecision {
   schema_version: 1;
   event: HookEnvelope["event"];
-  action: "allow" | "deny" | "ask" | "inject" | "record";
+  action: "allow" | "deny" | "ask" | "inject" | "record" | "continue" | "stop";
   enforcement: "enforced" | "partial";
   reason: string;
   task_id: string | null;
   context?: string;
   gate?: GateDecision;
 }
+
+const compactContextSchema = z.strictObject({
+  schema_version:z.literal(1),
+  session_id:z.string(),
+  task_id:z.string(),
+  task_status:z.enum(["planning", "in_progress", "completed"]),
+  task_path:z.string(),
+  trigger:z.enum(["manual", "auto", "unknown"]),
+  saved_at:z.string(),
+});
 
 export async function dispatchHook(repository: TaskRepository, input: unknown): Promise<HookDecision> {
   const parsed = hookEnvelopeSchema.safeParse(input);
@@ -45,13 +56,17 @@ export async function dispatchHook(repository: TaskRepository, input: unknown): 
 
   switch (envelope.event) {
     case "SessionStart":
+      {
+        const compact = await readCompactContext(repository.projectRoot, envelope.session_id);
+        const base = current === null ? "MTA: no active task." : `MTA task ${current.task.id}: ${current.task.status}. Path: ${current.pointer.task_path}`;
       decision = {
         schema_version:1, event:envelope.event, action:"inject", enforcement,
         reason:current === null ? "no active task bound to this session" : "active Trellis task restored",
         task_id:taskId,
-        context:current === null ? "MTA: no active task." : `MTA task ${current.task.id}: ${current.task.status}. Path: ${current.pointer.task_path}`,
+        context:compact === null ? base : `${base}. Compact recovery saved ${compact.saved_at}; trigger: ${compact.trigger}.`,
       };
       break;
+      }
     case "UserPromptSubmit":
       decision = { schema_version:1, event:envelope.event, action:"inject", enforcement, reason:"compact lifecycle breadcrumb", task_id:taskId, context:current === null ? "MTA: classify work before mutation." : `MTA: active task ${current.task.id} is ${current.task.status}.` };
       break;
@@ -67,13 +82,23 @@ export async function dispatchHook(repository: TaskRepository, input: unknown): 
     case "PostToolUse":
     case "SubagentStart":
     case "SubagentStop":
-    case "PreCompact":
-    case "PostCompact":
       decision = { schema_version:1, event:envelope.event, action:"record", enforcement, reason:"bounded lifecycle evidence recorded", task_id:taskId };
       break;
-    case "Stop":
-      decision = { schema_version:1, event:envelope.event, action:"inject", enforcement, reason:"foreground execution is never started by Stop", task_id:taskId, context:current === null ? "MTA: no bounded continuation." : `MTA: verify required work for ${current.task.id}; use foreground explicitly if needed.` };
+    case "PreCompact":
+    case "PostCompact":
+      if (current !== null) await persistCompactContext(repository.projectRoot, envelope, current);
+      decision = { schema_version:1, event:envelope.event, action:"record", enforcement, reason:"compact recovery context persisted without transcript data", task_id:taskId };
       break;
+    case "Stop": {
+      if (current === null) {
+        decision = { schema_version:1, event:envelope.event, action:"record", enforcement, reason:"no active task requires continuation", task_id:null };
+      } else if (envelope.payload.stop_hook_active === true) {
+        decision = { schema_version:1, event:envelope.event, action:"stop", enforcement, reason:`MTA bounded continuation exhausted for ${current.task.id}; human input is required.`, task_id:taskId };
+      } else {
+        decision = { schema_version:1, event:envelope.event, action:"continue", enforcement, reason:`Verify the remaining acceptance criteria for active MTA task ${current.task.id} before stopping. Do not start model Episodes except through explicit foreground execution.`, task_id:taskId };
+      }
+      break;
+    }
     case "SessionEnd":
       decision = { schema_version:1, event:envelope.event, action:"record", enforcement, reason:"session boundary recorded and pointer released", task_id:taskId };
       break;
@@ -85,8 +110,43 @@ export async function dispatchHook(repository: TaskRepository, input: unknown): 
   }
 
   await recordDecision(repository.projectRoot, envelope, decision);
-  if (envelope.event === "SessionEnd") await repository.finish(envelope.session_id);
+  if (envelope.event === "SessionEnd") {
+    await repository.finish(envelope.session_id);
+    await rm(compactContextPath(repository.projectRoot, envelope.session_id), { force:true });
+  }
   return decision;
+}
+
+function compactContextPath(projectRoot: string, sessionId: string): string {
+  return resolve(projectRoot, ".mta", "sessions", `${sessionId}.compact.json`);
+}
+
+async function persistCompactContext(
+  projectRoot: string,
+  envelope: HookEnvelope,
+  current: NonNullable<Awaited<ReturnType<TaskRepository["current"]>>>,
+): Promise<void> {
+  const trigger = envelope.payload.trigger === "manual" || envelope.payload.trigger === "auto"
+    ? envelope.payload.trigger
+    : "unknown";
+  const context = compactContextSchema.parse({
+    schema_version:1,
+    session_id:envelope.session_id,
+    task_id:current.task.id,
+    task_status:current.task.status,
+    task_path:current.pointer.task_path,
+    trigger,
+    saved_at:new Date().toISOString(),
+  });
+  await writeFileAtomic(compactContextPath(projectRoot, envelope.session_id), `${JSON.stringify(context, null, 2)}\n`, `compact-${envelope.session_id}`);
+}
+
+async function readCompactContext(projectRoot: string, sessionId: string): Promise<z.infer<typeof compactContextSchema> | null> {
+  try {
+    return compactContextSchema.parse(JSON.parse(await readFile(compactContextPath(projectRoot, sessionId), "utf8")) as unknown);
+  } catch {
+    return null;
+  }
 }
 
 async function recordDecision(projectRoot: string, envelope: HookEnvelope, decision: HookDecision): Promise<void> {

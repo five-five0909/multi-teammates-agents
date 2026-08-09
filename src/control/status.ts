@@ -3,7 +3,9 @@ import { resolve } from "node:path";
 
 import { decodeApplyReceipt, type ApplyHost } from "./apply-contract.js";
 import { sha256 } from "./digest.js";
+import { runDoctor, type DoctorReport } from "./doctor.js";
 import { findGitRoot } from "./project-root.js";
+import { TaskRepository } from "../lifecycle/task-repository.js";
 import { PACKAGE_VERSION } from "../version.js";
 
 export interface ProjectStatus {
@@ -17,6 +19,20 @@ export interface ProjectStatus {
   readonly driftedPaths: readonly string[];
   readonly ownershipValid: boolean;
   readonly integrations: Readonly<Record<ApplyHost, { installed: boolean; trusted: boolean | null; enforced: boolean }>>;
+}
+
+export interface TrellisStatus {
+  readonly bound: boolean;
+  readonly sessionId: string | null;
+  readonly taskId: string | null;
+  readonly taskPath: string | null;
+  readonly taskStatus: "planning" | "in_progress" | "completed" | null;
+  readonly error: string | null;
+}
+
+export interface ControlStatus extends ProjectStatus {
+  readonly trellis: TrellisStatus;
+  readonly diagnostics: DoctorReport;
 }
 
 async function exists(path: string): Promise<boolean> {
@@ -79,4 +95,37 @@ export async function readProjectStatus(startPath: string): Promise<ProjectStatu
 
   const ownershipValid = applied && receiptValid === true && driftedPaths.length === 0;
   return { packageVersion: PACKAGE_VERSION, projectRoot, applied, receiptPath, receiptValid, hosts, ownedPaths, driftedPaths, ownershipValid, integrations };
+}
+
+export async function readControlStatus(startPath: string, sessionId?: string): Promise<ControlStatus> {
+  const project = await readProjectStatus(startPath);
+  const [diagnostics, trellis] = await Promise.all([
+    runDoctor(project.projectRoot),
+    readTrellisStatus(project.projectRoot, sessionId),
+  ]);
+  return { ...project, trellis, diagnostics };
+}
+
+async function readTrellisStatus(projectRoot: string, sessionId?: string): Promise<TrellisStatus> {
+  try {
+    const repository = await TaskRepository.open(projectRoot);
+    const binding = await repository.resolveBinding(sessionId);
+    return {
+      bound:true,
+      sessionId:binding.pointer.session_id,
+      taskId:binding.task.id,
+      taskPath:binding.pointer.task_path,
+      taskStatus:binding.task.status,
+      error:null,
+    };
+  } catch (error) {
+    return {
+      bound:false,
+      sessionId:sessionId ?? null,
+      taskId:null,
+      taskPath:null,
+      taskStatus:null,
+      error:error instanceof Error ? error.message : String(error),
+    };
+  }
 }

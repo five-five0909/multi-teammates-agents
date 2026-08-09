@@ -19,6 +19,7 @@ mta run start|status|resume|cancel <run-id>
 dispatchHook(TaskRepository, HookEnvelope) -> Promise<HookDecision>
 gateToolUse(TaskRepository, sessionId, ToolIntent, evidence) -> Promise<GateDecision>
 BoundRunService.open(project, sessionId?) -> Promise<BoundRunService>
+readControlStatus(project, sessionId?) -> Promise<ControlStatus>
 ```
 
 ## 3. Contracts
@@ -39,6 +40,18 @@ BoundRunService.open(project, sessionId?) -> Promise<BoundRunService>
 - Status reports installed, trusted, and enforced separately. Executed Hook
   evidence proves trust; only an enforced `PreToolUse` event proves write
   enforcement.
+- CLI status extends the lightweight ownership status with the same real
+  Node/npm/Git/host/MCP probes as doctor and an explicit Trellis binding
+  projection. PreToolUse and TUI continue using the lightweight local status so
+  policy evaluation never launches diagnostic subprocesses.
+- PreCompact and PostCompact atomically persist only session ID, task ID/status,
+  task path, trigger, and timestamp. Transcript paths, compact summaries, raw
+  messages, and secrets never enter the recovery record; SessionStart injects
+  the bounded record and SessionEnd removes it.
+- A Stop event for an active task returns `decision: "block"` once. When the
+  host reports `stop_hook_active=true`, MTA returns `continue:false` with a
+  human-input reason instead of creating a continuation loop. Stop never starts
+  a model Episode itself.
 - MCP receives an explicit project root from the applied configuration and
   resolves an explicit or unique `.mta/sessions` binding. An unbound MCP may
   initialize and list tools but cannot access run state.
@@ -54,6 +67,9 @@ BoundRunService.open(project, sessionId?) -> Promise<BoundRunService>
 | Untrusted Hook, missing task, invalid receipt, or receipt drift | Deny managed write. |
 | Destructive, permission, cancellation, or completion intent | Return a human gate; never auto-approve. |
 | Codex human gate from `PreToolUse` | Render `deny` with the reason because Codex does not support `ask` there. |
+| Active-task Stop with `stop_hook_active=false` | Return `decision: "block"` and one bounded verification prompt. |
+| Active-task Stop with `stop_hook_active=true` | Return `continue:false`; surface the human gate and do not continue again. |
+| PreCompact/PostCompact payload contains transcript or model summary | Ignore those fields and persist only the bounded recovery schema. |
 | Shared config changed after apply | Refuse apply/unapply and preserve current bytes. |
 | Legacy detach partial write failure | Restore every earlier shared config and omit the receipt. |
 | MCP has zero or multiple active bindings | Return `workspace_unbound`; never fall back to cwd. |
@@ -73,13 +89,14 @@ BoundRunService.open(project, sessionId?) -> Promise<BoundRunService>
 - Task lifecycle tests cover placeholders, state transitions, path escape,
   cross-workspace pointers, archive, and per-session release.
 - Hook tests cover all lifecycle events, host rendering, redaction, receipt
-  enforcement, destructive gates, and installed/trusted/enforced status.
+  enforcement, destructive gates, installed/trusted/enforced status, bounded
+  Stop continuation, and compact context persistence/cleanup.
 - Apply tests cover JSON merging, marker insertion, host switching, exact
   restoration, drift, concurrent changes, rollback, and absolute MCP binding.
 - Legacy tests inject partial failure and assert byte-for-byte rollback.
 - MCP tests assert all tool names, explicit/unique binding, shared status and
   resume projections, and unbound failure.
-- Windows and POSIX Node 24 run typecheck, lint, tests, pack inspection, and an
+- Windows and POSIX Node 22/24 run typecheck, lint, tests, pack inspection, and an
   isolated no-Python/no-Cargo install smoke.
 
 ## 7. Wrong vs Correct

@@ -10,6 +10,9 @@ const nativeHookSchema = z.object({
   hook_event_name: hookEventSchema,
   tool_name: z.string().optional(),
   tool_input: z.unknown().optional(),
+  source: z.string().optional(),
+  trigger: z.enum(["manual", "auto"]).optional(),
+  stop_hook_active: z.boolean().optional(),
 }).loose();
 
 function record(value: unknown): Record<string, unknown> {
@@ -61,7 +64,13 @@ export function normalizeNativeHook(host: ApplyHost, input: unknown, projectRoot
   const parsed = nativeHookSchema.parse(input);
   const payload = parsed.hook_event_name === "PreToolUse"
     ? inferToolIntent(parsed.tool_name ?? "unknown", parsed.tool_input)
-    : {};
+    : parsed.hook_event_name === "Stop" || parsed.hook_event_name === "SubagentStop"
+      ? { stop_hook_active:parsed.stop_hook_active ?? false }
+      : parsed.hook_event_name === "PreCompact" || parsed.hook_event_name === "PostCompact"
+        ? { trigger:parsed.trigger ?? "unknown" }
+        : parsed.hook_event_name === "SessionStart"
+          ? { source:parsed.source ?? "unknown" }
+          : {};
   return {
     schema_version: 1,
     event: parsed.hook_event_name,
@@ -74,6 +83,12 @@ export function normalizeNativeHook(host: ApplyHost, input: unknown, projectRoot
 }
 
 export function renderHostDecision(host: ApplyHost, decision: HookDecision): Record<string, unknown> | null {
+  if (decision.event === "Stop" && decision.action === "continue") {
+    return { decision:"block", reason:decision.reason };
+  }
+  if (decision.event === "Stop" && decision.action === "stop") {
+    return { continue:false, stopReason:decision.reason, systemMessage:decision.reason };
+  }
   if (decision.action === "inject" && decision.context !== undefined) {
     return { hookSpecificOutput: { hookEventName: decision.event, additionalContext: decision.context } };
   }

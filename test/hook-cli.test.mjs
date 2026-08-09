@@ -38,6 +38,10 @@ test("hook CLI normalizes native host input and renders host-specific decisions"
     const record = await invoke(project, "codex", { ...base, hook_event_name: "PostToolUse" });
     assert.equal(record.code, 0, record.stderr);
     assert.equal(record.stdout, "");
+
+    const stop = await invoke(project, "codex", { ...base, hook_event_name:"Stop", stop_hook_active:false });
+    assert.equal(stop.code, 0, stop.stderr);
+    assert.equal(stop.stdout, "");
   } finally {
     await rm(project, { recursive: true, force: true });
   }

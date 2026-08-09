@@ -7,6 +7,8 @@
 - Node 22 首轮暴露更新超时计时器被 `unref()` 后可能提前结束事件循环；移除 `unref()` 后 Windows/WSL Node 22 均复跑通过。
 - Python migration-oracle suite: Windows 与 WSL 均为 105/105 通过。
 - WSL 首轮借用 Windows npm CLI 时继承了跨系统 cache 路径；烟测现从第一条 npm 命令起使用临时 cache，复跑后仓库未再生成异常目录。
+- 原始方案复核发现 status 只报告本地回执；现已扩展为真实 doctor/MCP 探针和 Trellis session/task 绑定，同时保留轻量状态供 PreToolUse/TUI 使用。
+- Codex/Claude 官方 hook 契约复核发现 Stop 输出形态与 compact 恢复缺口；现按 `decision:block` 做一次有界续跑，`stop_hook_active` 后转人工输入，并用不含 transcript/summary 的原子 compact 记录恢复。
 - npm registry: `npm view multi-teammates-agents version dist-tags --json` 返回 E404；这说明当前公开 registry 未返回该包或当前账号无读取权限。本任务没有执行 publish，也不把 E404 单独当作最终所有权证明。
 
 ## Real host evidence

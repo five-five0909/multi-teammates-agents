@@ -107,6 +107,8 @@ try {
   assert.equal(applied.hosts[0], "codex");
   const status = JSON.parse((await installed("mta", ["status", "--project", project, "--json"])).stdout);
   assert.equal(status.ownershipValid, true);
+  assert.equal(status.trellis.bound, false);
+  assert.equal(status.diagnostics.probes.some((probe) => probe.command === "mta mcp initialize" && probe.available), true);
   const hookInput = JSON.stringify({ session_id:"pack-smoke", cwd:project, hook_event_name:"SessionStart" });
   const hook = JSON.parse((await installed("mta", ["hook", "dispatch", "--host", "codex", "--project", project], { stdin:hookInput })).stdout);
   assert.match(hook.hookSpecificOutput.additionalContext, /no active task/u);

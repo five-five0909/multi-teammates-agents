@@ -3,7 +3,7 @@ import { parseArgs } from "node:util";
 import { applyProject, unapplyProject } from "../control/apply.js";
 import type { ApplyHost } from "../control/apply-contract.js";
 import { runDoctor } from "../control/doctor.js";
-import { readProjectStatus } from "../control/status.js";
+import { readControlStatus } from "../control/status.js";
 import { legacyDetach, planLegacyDetach } from "../control/legacy.js";
 import { checkForUpdate, updatePackage } from "../control/update.js";
 import { TaskRepository } from "../lifecycle/task-repository.js";
@@ -124,7 +124,7 @@ export async function main(argv: readonly string[]): Promise<number> {
         write(await applyProject(project, hosts, parsed.values.yes ?? false), json);
         return 0;
       case "status":
-        write(await readProjectStatus(project), json);
+        write(await readControlStatus(project, parsed.values.session ?? process.env.MTA_SESSION_ID), json);
         return 0;
       case "doctor": {
         const report = await runDoctor(project);

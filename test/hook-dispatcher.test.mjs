@@ -5,6 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 
 import { dispatchHook } from "../dist/hooks/dispatcher.js";
+import { renderHostDecision } from "../dist/hooks/host-adapter.js";
 import { TaskRepository } from "../dist/lifecycle/task-repository.js";
 import { commitApply, planApply } from "../dist/control/apply.js";
 import { readProjectStatus } from "../dist/control/status.js";
@@ -53,13 +54,29 @@ test("permission is never auto-approved and PostToolUse cannot claim pre-action 
 
 test("all lifecycle events share one dispatcher and SessionEnd releases only its pointer", async (t) => {
   const { root, repository } = await setup(t);
-  for (const event of ["UserPromptSubmit","SubagentStart","SubagentStop","PreCompact","PostCompact","Stop"]) {
+  for (const event of ["UserPromptSubmit","SubagentStart","SubagentStop"]) {
     const decision = await dispatchHook(repository, envelope(root, event));
     assert.equal(decision.event, event);
   }
+  const preCompact = await dispatchHook(repository, envelope(root, "PreCompact", { trigger:"auto", compact_summary:"must-not-persist" }));
+  assert.equal(preCompact.action, "record");
+  const compactPath = join(root, ".mta", "sessions", "session-1.compact.json");
+  const compact = await readFile(compactPath, "utf8");
+  assert.match(compact, /"trigger": "auto"/u);
+  assert.doesNotMatch(compact, /must-not-persist/u);
+  assert.equal((await dispatchHook(repository, envelope(root, "PostCompact", { trigger:"auto", compact_summary:"also-private" }))).action, "record");
+  const restored = await dispatchHook(repository, envelope(root, "SessionStart"));
+  assert.match(restored.context, /Compact recovery.*auto/u);
+  const continued = await dispatchHook(repository, envelope(root, "Stop", { stop_hook_active:false }));
+  assert.equal(continued.action, "continue");
+  assert.deepEqual(renderHostDecision("codex", continued), { decision:"block", reason:continued.reason });
+  const gated = await dispatchHook(repository, envelope(root, "Stop", { stop_hook_active:true }));
+  assert.equal(gated.action, "stop");
+  assert.deepEqual(renderHostDecision("claude", gated), { continue:false, stopReason:gated.reason, systemMessage:gated.reason });
   const ended = await dispatchHook(repository, envelope(root, "SessionEnd"));
   assert.equal(ended.action, "record");
   assert.equal(await repository.current("session-1"), null);
+  await assert.rejects(readFile(compactPath), { code:"ENOENT" });
 });
 
 test("hook workspace mismatch fails closed", async (t) => {

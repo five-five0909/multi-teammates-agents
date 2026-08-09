@@ -56,6 +56,8 @@ test("status resolves the Git root from a nested Unicode path", async () => {
     assert.equal(status.projectRoot, project);
     assert.equal(status.applied, false);
     assert.equal(status.receiptValid, null);
+    assert.equal(status.trellis.bound, false);
+    assert.equal(status.diagnostics.probes.some((probe) => probe.command === "mta mcp initialize" && probe.available), true);
   } finally {
     await rm(project, { recursive: true, force: true });
   }
@@ -94,6 +96,16 @@ test("run CLI and MCP-facing service read the same bound mta-runs state", async 
   assert.equal(started.code, 0, started.stderr);
   const status = await run(["run", "status", "run-1", "--project", project, "--session", "run-session", "--json"]);
   assert.equal(JSON.parse(status.stdout).state, "initialized");
+  const projectStatus = await run(["status", "--project", project, "--session", "run-session", "--json"]);
+  assert.equal(projectStatus.code, 0, projectStatus.stderr);
+  assert.deepEqual(JSON.parse(projectStatus.stdout).trellis, {
+    bound:true,
+    sessionId:"run-session",
+    taskId:"run-cli",
+    taskPath:created.path,
+    taskStatus:"in_progress",
+    error:null,
+  });
   const resumed = await run(["run", "resume", "run-1", "--project", project, "--session", "run-session", "--json"]);
   assert.deepEqual(JSON.parse(resumed.stdout).work_items.one, { status:"pending", attempt:0 });
   const invalidForeground = await run(["run", "foreground", "run-1", "--project", project, "--session", "run-session", "--config", JSON.stringify({ roles:{}, unknown:true }), "--json"]);
