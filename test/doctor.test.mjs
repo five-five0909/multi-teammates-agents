@@ -11,5 +11,5 @@ test("doctor performs a real MCP initialize handshake", async () => {
   assert.equal(probe.available, true, probe.error);
   assert.equal(probe.command, "mta mcp initialize");
   assert.equal(probe.resolvedCommand, process.execPath);
-  assert.equal(probe.version, "0.5.0-alpha.1");
+  assert.equal(probe.version, "0.5.0-alpha.2");
 });

@@ -38,6 +38,11 @@ readControlStatus(project, sessionId?) -> Promise<ControlStatus>
   Host-specific output rendering is the only place that differs: Claude may
   return `ask` from `PreToolUse`; Codex must deny because its current
   `PreToolUse` contract does not support `ask`.
+- Codex apply templates set `additionalContextLimit` only on events that can
+  emit model-visible `additionalContext`: SessionStart, UserPromptSubmit,
+  PreToolUse, PostToolUse, and SubagentStart. Events such as PreCompact,
+  PostCompact, SubagentStop, Stop, PermissionRequest, and SessionEnd must omit
+  the field so Codex starts without ignored-configuration warnings.
 - Apply templates merge MTA Hook/MCP fields and marker blocks onto the original
   files. The receipt records original bytes and applied hashes. Unapply restores
   only unchanged owned files.
@@ -108,7 +113,8 @@ readControlStatus(project, sessionId?) -> Promise<ControlStatus>
   Stop continuation, compact context persistence/cleanup, bounded tool outcome
   metadata, subagent identity binding without transcript leakage, and equivalent
   macOS/Windows path aliases at the canonical workspace boundary.
-- Apply tests cover JSON merging, marker insertion, host switching, exact
+- Apply tests cover JSON merging, the complete Codex additional-context event
+  capability matrix, marker insertion, host switching, exact
   restoration, drift, concurrent changes, rollback, absolute MCP binding, and
   direct execution of the installed Claude Hook and project MCP commands.
 - Legacy tests inject partial failure and assert byte-for-byte rollback.

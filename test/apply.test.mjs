@@ -40,6 +40,15 @@ test("apply dry-run is read-only and commit is idempotent", async () => {
     assert.equal(hooks.hooks.PreToolUse[0].hooks[0].command, process.execPath);
     assert.match(hooks.hooks.PreToolUse[0].hooks[0].args[0], /[\\/]bin[\\/]mta\.js$/u);
     assert.deepEqual(hooks.hooks.PreToolUse[0].hooks[0].args.slice(1), ["hook", "dispatch", "--host", "codex"]);
+    const contextEvents = new Set(["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "SubagentStart"]);
+    for (const [event, groups] of Object.entries(hooks.hooks)) {
+      const handler = groups.at(-1).hooks[0];
+      if (contextEvents.has(event)) {
+        assert.equal(handler.additionalContextLimit, 1200, `${event} should bound additionalContext`);
+      } else {
+        assert.equal(Object.hasOwn(handler, "additionalContextLimit"), false, `${event} cannot emit additionalContext`);
+      }
+    }
     const mcp = JSON.parse(await readFile(join(project, ".mcp.json"), "utf8"));
     assert.equal(mcp.mcpServers["expert-team"].command, process.execPath);
     assert.match(mcp.mcpServers["expert-team"].args[0], /[\\/]bin[\\/]mta\.js$/u);

@@ -36,6 +36,14 @@ const EVENTS = [
   "SubagentStart", "SubagentStop", "PreCompact", "PostCompact", "Stop", "SessionEnd",
 ] as const;
 
+const ADDITIONAL_CONTEXT_EVENTS = new Set<(typeof EVENTS)[number]>([
+  "SessionStart",
+  "UserPromptSubmit",
+  "PreToolUse",
+  "PostToolUse",
+  "SubagentStart",
+]);
+
 const MTA_EXECUTABLE = process.execPath;
 const MTA_BIN = fileURLToPath(new URL("../../bin/mta.js", import.meta.url));
 
@@ -79,7 +87,7 @@ function codexConfig(original: Buffer | null): string {
       timeout: event === "SessionEnd" ? 3 : 10,
       statusMessage: "Applying MTA lifecycle policy",
     };
-    if (["SessionStart", "UserPromptSubmit", "PreCompact", "PostCompact", "SubagentStart", "SubagentStop", "Stop"].includes(event)) {
+    if (ADDITIONAL_CONTEXT_EVENTS.has(event)) {
       handler.additionalContextLimit = 1200;
     }
     hooks[event] = [...(hooks[event] ?? []), { hooks: [handler] }];

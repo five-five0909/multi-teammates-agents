@@ -39,10 +39,10 @@ test("help and version expose the npm product contract", async () => {
 
   const version = await run(["--version"]);
   assert.equal(version.code, 0);
-  assert.equal(version.stdout.trim(), "0.5.0-alpha.1");
+  assert.equal(version.stdout.trim(), "0.5.0-alpha.2");
   const jsonVersion = await run(["--json", "--version"]);
   assert.equal(jsonVersion.code, 0);
-  assert.equal(JSON.parse(jsonVersion.stdout), "0.5.0-alpha.1");
+  assert.equal(JSON.parse(jsonVersion.stdout), "0.5.0-alpha.2");
 });
 
 test("status resolves the Git root from a nested Unicode path", async () => {

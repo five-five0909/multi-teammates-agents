@@ -118,7 +118,7 @@ test("implicit prerelease updates never downgrade when the channel is behind", a
       return { ok:true, status:200, json:async () => ({ version:"0.5.0-alpha.0" }) };
     },
   });
-  assert.equal(plan.targetVersion, "0.5.0-alpha.1");
+  assert.equal(plan.targetVersion, "0.5.0-alpha.2");
   assert.equal(plan.updateRequired, false);
 });
 
@@ -129,7 +129,7 @@ test("failed updates restore the current exact version and expose rollback failu
     install:async (version) => { restored.push(version); if (version === "0.6.0") throw new Error("install failed"); },
   });
   assert.equal(rolledBack.rollbackSucceeded, true);
-  assert.deepEqual(restored, ["0.6.0", "0.5.0-alpha.1"]);
+  assert.deepEqual(restored, ["0.6.0", "0.5.0-alpha.2"]);
   let calls = 0;
   const failedRollback = await updatePackage({
     targetVersion:"0.6.0", commit:true,

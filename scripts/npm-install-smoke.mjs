@@ -106,14 +106,14 @@ try {
   for (const excluded of ["python", "python3", "py", "cargo", "rustc"]) {
     await assert.rejects(resolveCommand(excluded, cleanEnvironment), /not found on PATH/u);
   }
-  assert.equal((await installed("mta", ["--version"])).stdout.trim(), "0.5.0-alpha.1");
-  assert.equal((await installed("multi-teammates-agents", ["--version"])).stdout.trim(), "0.5.0-alpha.1");
+  assert.equal((await installed("mta", ["--version"])).stdout.trim(), "0.5.0-alpha.2");
+  assert.equal((await installed("multi-teammates-agents", ["--version"])).stdout.trim(), "0.5.0-alpha.2");
   const initialize = `${JSON.stringify({ jsonrpc:"2.0", id:1, method:"initialize", params:{} })}\n`;
 
   const oneTimeNpm = await npmCommand(npmEnvironment);
   const npxEnvironment = { ...cleanEnvironment, PATH:[dirname(process.execPath), toolDirectory].join(delimiter), Path:undefined };
   const oneTime = await runChecked(oneTimeNpm.executable, [...oneTimeNpm.prefixArgs, "exec", "--yes", "--ignore-scripts", "--package", tarball, "--", "mta", "--version"], { env:npxEnvironment });
-  assert.equal(oneTime.stdout.trim(), "0.5.0-alpha.1");
+  assert.equal(oneTime.stdout.trim(), "0.5.0-alpha.2");
 
   await mkdir(join(project, ".git"), { recursive:true });
   const applied = JSON.parse((await installed("mta", ["apply", "--project", project, "--yes", "--json"])).stdout);
@@ -121,6 +121,12 @@ try {
   assert.match(await readFile(join(project, ".agents", "skills", "expert-team", "SKILL.md"), "utf8"), /name: expert-team/u);
   assert.match(await readFile(join(project, ".claude", "skills", "expert-team", "SKILL.md"), "utf8"), /name: expert-team/u);
   assert.match(await readFile(join(project, ".claude", "agents", "software-engineer.md"), "utf8"), /name: software-engineer/u);
+  const codexHooks = JSON.parse(await readFile(join(project, ".codex", "hooks.json"), "utf8")).hooks;
+  const contextEvents = new Set(["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "SubagentStart"]);
+  for (const [event, groups] of Object.entries(codexHooks)) {
+    const handler = groups.at(-1).hooks[0];
+    assert.equal(Object.hasOwn(handler, "additionalContextLimit"), contextEvents.has(event));
+  }
   const claudeSettings = JSON.parse(await readFile(join(project, ".claude", "settings.json"), "utf8"));
   const claudeHook = claudeSettings.hooks.SessionStart[0].hooks[0];
   assert.equal(claudeHook.command, process.execPath);

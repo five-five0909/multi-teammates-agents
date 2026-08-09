@@ -5,7 +5,7 @@ Claude Code. It combines Trellis task lifecycle controls with a durable
 Manager → Executor → Auditor runtime, independent audit, resumable JSONL state,
 and human gates.
 
-The npm product is currently `0.5.0-alpha.1`. Alpha means the TypeScript
+The npm product is currently `0.5.0-alpha.2`. Alpha means the TypeScript
 contracts, control plane, fake-host runtime, and local packaging gates are in
 place; it is not a claim that the stable, model-driven acceptance matrix has
 passed.
@@ -22,7 +22,7 @@ scripts.
 ## Install
 
 ```bash
-npm install --global --ignore-scripts multi-teammates-agents@0.5.0-alpha.1
+npm install --global --ignore-scripts multi-teammates-agents@0.5.0-alpha.2
 mta --version
 multi-teammates-agents --version
 ```
@@ -33,7 +33,7 @@ installation and version source; Git marketplace installation is retired.
 One-time use is also supported:
 
 ```bash
-npx --yes --package multi-teammates-agents@0.5.0-alpha.1 -- mta --help
+npx --yes --package multi-teammates-agents@0.5.0-alpha.2 -- mta --help
 ```
 
 ## Project takeover

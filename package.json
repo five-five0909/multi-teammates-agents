@@ -1,6 +1,6 @@
 {
   "name": "multi-teammates-agents",
-  "version": "0.5.0-alpha.1",
+  "version": "0.5.0-alpha.2",
   "description": "Project-scoped AI harness for Trellis-governed, audited long-horizon work",
   "type": "module",
   "bin": {

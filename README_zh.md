@@ -4,7 +4,7 @@ Multi Teammates Agents（MTA）是面向 Codex CLI 与 Claude Code 的项目级 
 Harness。它把 Trellis 任务生命周期、Manager → Executor → Auditor 长任务闭环、
 独立审计、可恢复 JSONL 状态和人工门禁放进同一个 npm 包。
 
-当前 npm 产品版本是 `0.5.0-alpha.1`。alpha 表示 TypeScript 契约、控制面、
+当前 npm 产品版本是 `0.5.0-alpha.2`。alpha 表示 TypeScript 契约、控制面、
 fake-host 运行时和本地打包门禁已经建立，不代表 stable 的真实模型验收矩阵已经通过。
 
 ## 环境要求
@@ -18,7 +18,7 @@ npm 运行时不需要 Python、Rust、Cargo，也没有安装生命周期脚本
 ## 安装
 
 ```bash
-npm install --global --ignore-scripts multi-teammates-agents@0.5.0-alpha.1
+npm install --global --ignore-scripts multi-teammates-agents@0.5.0-alpha.2
 mta --version
 multi-teammates-agents --version
 ```
@@ -29,7 +29,7 @@ marketplace 安装路径已经退役。
 也支持一次性运行：
 
 ```bash
-npx --yes --package multi-teammates-agents@0.5.0-alpha.1 -- mta --help
+npx --yes --package multi-teammates-agents@0.5.0-alpha.2 -- mta --help
 ```
 
 ## 接管项目
