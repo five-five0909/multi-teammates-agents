@@ -13,6 +13,7 @@
 - npm 发布白名单已从整个 `schemas/` 收紧到 `schemas/mta/`，旧 v1/v2 迁移 schema 不进入 tarball。
 - 发行面复核发现 npm tarball 原先缺少插件 skill/agent/manifest 资产，导致全局安装后的 `apply` 不能建立宿主发现路径；现由同一 tarball 把共享 skill 纳入 Codex `.agents/skills` 与 Claude `.claude/skills`，把生成的 Claude profiles 纳入 `.claude/agents`，并全部进入同一 ownership receipt、漂移保护和 unapply 回滚。隔离安装 smoke 已覆盖双宿主写入与撤销。
 - `status.integrations.<host>.installed` 现同时要求该宿主 hook/settings 与 receipt-owned skill，旧回执缺少 skill 时不再误报完整安装。
+- Windows 与 Linux tarball smoke 现从全局安装目录严格读取 Codex/Claude manifest，并通过已安装根 `.mcp.json` 启动 TypeScript MCP initialize；Claude `plugin validate --strict`、marketplace strict validation、skill validator 和 20 个生成 agent 的 registry drift check 均通过。
 - npm registry: `npm view multi-teammates-agents version dist-tags --json` 返回 E404；这说明当前公开 registry 未返回该包或当前账号无读取权限。本任务没有执行 publish，也不把 E404 单独当作最终所有权证明。
 
 ## Real host evidence

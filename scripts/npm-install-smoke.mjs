@@ -90,6 +90,9 @@ try {
   await npm(["install", "--global", "--prefix", prefix, "--ignore-scripts", "--no-audit", "--no-fund", tarball], { env:npmEnvironment });
 
   const binDirectory = process.platform === "win32" ? prefix : join(prefix, "bin");
+  const installRoot = process.platform === "win32"
+    ? join(prefix, "node_modules", packageName)
+    : join(prefix, "lib", "node_modules", packageName);
   await mkdir(toolDirectory, { recursive:true });
   if (process.platform !== "win32") await symlink("/bin/sh", join(toolDirectory, "sh"));
   cleanEnvironment = {
@@ -104,6 +107,20 @@ try {
   }
   assert.equal((await installed("mta", ["--version"])).stdout.trim(), "0.5.0-alpha.0");
   assert.equal((await installed("multi-teammates-agents", ["--version"])).stdout.trim(), "0.5.0-alpha.0");
+  for (const manifestPath of [".codex-plugin/plugin.json", ".claude-plugin/plugin.json"]) {
+    const manifest = JSON.parse(await readFile(join(installRoot, manifestPath), "utf8"));
+    assert.equal(manifest.name, packageName);
+    assert.equal(manifest.version, "0.5.0-alpha.0");
+    assert.equal(manifest.skills, "./skills/");
+  }
+  const pluginMcp = JSON.parse(await readFile(join(installRoot, ".mcp.json"), "utf8")).mcpServers["expert-team"];
+  const initialize = `${JSON.stringify({ jsonrpc:"2.0", id:1, method:"initialize", params:{} })}\n`;
+  const pluginInitialize = JSON.parse((await runChecked(pluginMcp.command, pluginMcp.args, {
+    cwd:installRoot,
+    env:{ ...cleanEnvironment, PLUGIN_ROOT:installRoot, CLAUDE_PLUGIN_ROOT:installRoot },
+    stdin:initialize,
+  })).stdout.trim());
+  assert.equal(pluginInitialize.result.serverInfo.name, "expert-team");
 
   const oneTimeNpm = await npmCommand(npmEnvironment);
   const npxEnvironment = { ...cleanEnvironment, PATH:[dirname(process.execPath), toolDirectory].join(delimiter), Path:undefined };
@@ -123,7 +140,6 @@ try {
   const hookInput = JSON.stringify({ session_id:"pack-smoke", cwd:project, hook_event_name:"SessionStart" });
   const hook = JSON.parse((await installed("mta", ["hook", "dispatch", "--host", "codex", "--project", project], { stdin:hookInput })).stdout);
   assert.match(hook.hookSpecificOutput.additionalContext, /no active task/u);
-  const initialize = `${JSON.stringify({ jsonrpc:"2.0", id:1, method:"initialize", params:{} })}\n`;
   const mcp = JSON.parse((await installed("mta", ["mcp", "serve", "--project", project], { stdin:initialize })).stdout.trim());
   assert.equal(mcp.result.serverInfo.name, "expert-team");
   const unapplied = JSON.parse((await installed("mta", ["unapply", "--project", project, "--yes", "--json"])).stdout);

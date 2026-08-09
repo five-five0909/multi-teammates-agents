@@ -31,8 +31,9 @@ node scripts/npm-install-smoke.mjs
 - The install smoke packs the real whitelist, installs to an isolated prefix,
   sets its isolated npm cache before the first `npm pack` invocation, proves
   `python`, `python3`, `py`, `cargo`, and `rustc` cannot resolve, then
-  checks both bins, npm exec/npx semantics, apply, status, hook, MCP initialize,
-  and unapply.
+  checks both bins, npm exec/npx semantics, both installed plugin manifests,
+  the plugin-root `.mcp.json` TypeScript server, dual-host apply, status, hook,
+  package MCP initialize, and unapply.
 - CI covers Windows x64, Ubuntu x64, macOS Intel, macOS arm64 and Node 22/24.
   Every matrix cell runs the same install smoke.
 - A cutover report separates fixture/fake, local real-host, remote CI, and
@@ -67,7 +68,8 @@ node scripts/npm-install-smoke.mjs
 - TUI shared-state and offline startup tests; CLI non-TTY test.
 - `run answer` with verified provenance and invalid-decision rejection.
 - Real MCP initialize doctor probe.
-- Windows and POSIX tarball smoke with excluded Python/Rust commands.
+- Windows and POSIX tarball smoke with excluded Python/Rust commands, installed
+  dual-host manifests, and plugin-root plus package-command MCP initialize.
 - CI syntax/matrix review against current official checkout/setup-node major
   releases.
 - Cutover report must name each false gate and may not be overridden by a fake
