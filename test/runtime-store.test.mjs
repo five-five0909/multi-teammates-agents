@@ -6,6 +6,7 @@ import test from "node:test";
 import { setImmediate } from "node:timers";
 
 import { decodeContract, runEventSchema } from "../dist/runtime/core/contracts.js";
+import { redactValue } from "../dist/runtime/security.js";
 import { LeaseConflict, TrellisRunStore } from "../dist/runtime/storage/trellis-run-store.js";
 
 const contract = {schema_version:1,goal:"Store safely",constraints:[],deliverables:["state"],acceptance_criteria:["replay"]};
@@ -79,4 +80,11 @@ test("durable role records redact labelled and bearer secrets", async (t) => {
   const text = await readFile(join(taskDir, "mta-runs", "run-1", "work-items", "build", "attempt-1.json"), "utf8");
   assert.doesNotMatch(text, /topsecret|abcdef123456/u);
   assert.match(text, /REDACTED/u);
+});
+
+test("redaction preserves record identifiers that merely contain secret words", () => {
+  assert.deepEqual(redactValue({ assignments:{ "read-token":"executor-read-token-1" }, authorization:"private" }), {
+    assignments:{ "read-token":"executor-read-token-1" },
+    authorization:"***REDACTED***",
+  });
 });

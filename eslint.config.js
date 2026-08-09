@@ -25,7 +25,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["test/**/*.mjs", "bin/**/*.js", "eslint.config.js"],
+    files: ["test/**/*.mjs", "scripts/**/*.mjs", "bin/**/*.js", "eslint.config.js"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",

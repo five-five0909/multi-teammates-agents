@@ -6,6 +6,7 @@ import { spawn } from "node:child_process";
 import test from "node:test";
 
 import { TaskRepository } from "../dist/lifecycle/task-repository.js";
+import { BoundRunService } from "../dist/lifecycle/run-service.js";
 
 const root = resolve(import.meta.dirname, "..");
 const bin = resolve(root, "bin", "mta.js");
@@ -34,6 +35,9 @@ test("help and version expose the npm product contract", async () => {
   const version = await run(["--version"]);
   assert.equal(version.code, 0);
   assert.equal(version.stdout.trim(), "0.5.0-alpha.0");
+  const jsonVersion = await run(["--json", "--version"]);
+  assert.equal(jsonVersion.code, 0);
+  assert.equal(JSON.parse(jsonVersion.stdout), "0.5.0-alpha.0");
 });
 
 test("status resolves the Git root from a nested Unicode path", async () => {
@@ -91,4 +95,14 @@ test("run CLI and MCP-facing service read the same bound mta-runs state", async 
   const invalidForeground = await run(["run", "foreground", "run-1", "--project", project, "--session", "run-session", "--config", JSON.stringify({ roles:{}, unknown:true }), "--json"]);
   assert.equal(invalidForeground.code, 2);
   assert.match(JSON.parse(invalidForeground.stderr).error, /ForegroundConfig/u);
+  const service = await BoundRunService.open(project, "run-session", "test");
+  await service.runtime("run-1").transition("run.managing", {});
+  await service.runtime("run-1").transition("human.gate_requested", { gate_type:"ask" });
+  const decision = {
+    schema_version:1, gate_type:"ask", decision:"continue", actor:"user", timestamp:new Date().toISOString(),
+    provenance:{ schema_version:1, gate_type:"ask", actor:"user", source:"user_prompt", verification:"verified", timestamp:new Date().toISOString(), source_event_id:"cli-decision-1", invocation_id:null },
+  };
+  const answered = await run(["run", "answer", "run-1", "--project", project, "--session", "run-session", "--decision", JSON.stringify(decision), "--json"]);
+  assert.equal(answered.code, 0, answered.stderr);
+  assert.equal(JSON.parse(answered.stdout).state, "managing");
 });

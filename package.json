@@ -21,10 +21,11 @@
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "build": "npm run clean && tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint src test bin",
+    "lint": "eslint src test bin scripts/npm-install-smoke.mjs",
     "test": "npm run build && node --test \"test/**/*.test.mjs\"",
     "schemas:generate": "npm run build && node dist/runtime/core/generate-schemas.js",
-    "pack:check": "npm pack --dry-run --json"
+    "pack:check": "npm pack --dry-run --json",
+    "smoke:install": "npm run build && node scripts/npm-install-smoke.mjs"
   },
   "engines": {
     "node": ">=22"

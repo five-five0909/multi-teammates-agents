@@ -5,12 +5,15 @@ import type { ApplyHost } from "../control/apply-contract.js";
 import { runDoctor } from "../control/doctor.js";
 import { readProjectStatus } from "../control/status.js";
 import { legacyDetach, planLegacyDetach } from "../control/legacy.js";
+import { checkForUpdate, updatePackage } from "../control/update.js";
 import { TaskRepository } from "../lifecycle/task-repository.js";
 import { dispatchHook } from "../hooks/dispatcher.js";
 import { normalizeNativeHook, renderHostDecision } from "../hooks/host-adapter.js";
 import { serveMcp } from "../mcp/server.js";
 import { BoundRunService } from "../lifecycle/run-service.js";
 import { runForeground } from "../runtime/foreground.js";
+import { decodeContract, humanDecisionSchema } from "../runtime/core/contracts.js";
+import { runTui } from "../tui/index.js";
 import { PACKAGE_NAME, PACKAGE_VERSION } from "../version.js";
 
 const HELP = `multi-teammates-agents ${PACKAGE_VERSION}
@@ -23,6 +26,8 @@ Commands:
   status       Inspect project ownership and applied state
   doctor       Probe Node, npm, Git, Codex, Claude, and the project root
   unapply      Plan removal of owned files; pass --yes to commit
+  check-update Check the npm registry for a newer version
+  update       Plan an exact npm update; pass --yes to commit
   task         Create, start, inspect, finish, or archive Trellis tasks
   hook         Dispatch one Codex or Claude lifecycle event from stdin
   legacy       Inspect or detach exact legacy Python integration entries
@@ -39,6 +44,7 @@ Options:
   --host <name>     Default foreground host: codex or claude
   --config <json>   Explicit foreground role configuration
   --model <name>    Default model for foreground roles
+  --version <exact> Exact target for the update command
   -h, --help        Show this help
   -v, --version     Show package version
 `;
@@ -66,13 +72,19 @@ function writeError(error: unknown, json: boolean): void {
 
 export async function main(argv: readonly string[]): Promise<number> {
   try {
+    const versionOnly = argv.some((argument) => argument === "--version" || argument === "-v")
+      && argv.every((argument) => argument === "--version" || argument === "-v" || argument === "--json");
+    if (versionOnly) {
+      write(PACKAGE_VERSION, argv.includes("--json"));
+      return 0;
+    }
     const parsed = parseArgs({
       args: [...argv],
       allowPositionals: true,
       strict: true,
       options: {
         help: { type: "boolean", short: "h" },
-        version: { type: "boolean", short: "v" },
+        version: { type: "string" },
         json: { type: "boolean" },
         project: { type: "string" },
         codex: { type: "boolean" },
@@ -85,16 +97,18 @@ export async function main(argv: readonly string[]): Promise<number> {
         workItems: { type: "string" },
         config: { type: "string" },
         model: { type: "string" },
+        decision: { type: "string" },
       },
     });
     const json = parsed.values.json ?? false;
-    if (parsed.values.version) {
-      write(PACKAGE_VERSION, json);
+    const command = parsed.positionals[0];
+    if (parsed.values.help) {
+      write(json ? { name: PACKAGE_NAME, version: PACKAGE_VERSION, commands: ["apply", "status", "doctor", "check-update", "update", "unapply", "task", "hook", "legacy", "mcp", "run"] } : HELP.trimEnd(), json);
       return 0;
     }
-    const command = parsed.positionals[0];
-    if (parsed.values.help || command === undefined) {
-      write(json ? { name: PACKAGE_NAME, version: PACKAGE_VERSION, commands: ["apply", "status", "doctor", "unapply", "task", "hook", "legacy", "mcp", "run"] } : HELP.trimEnd(), json);
+    if (command === undefined) {
+      if (!json && process.stdin.isTTY && process.stdout.isTTY) return runTui(parsed.values.project ?? process.cwd(), parsed.values.session ?? process.env.MTA_SESSION_ID);
+      write(json ? { name: PACKAGE_NAME, version: PACKAGE_VERSION, commands: ["apply", "status", "doctor", "check-update", "update", "unapply", "task", "hook", "legacy", "mcp", "run"] } : HELP.trimEnd(), json);
       return 0;
     }
     if (command !== "task" && command !== "hook" && command !== "legacy" && command !== "mcp" && command !== "run" && parsed.positionals.length > 1) {
@@ -116,6 +130,17 @@ export async function main(argv: readonly string[]): Promise<number> {
         const report = await runDoctor(project);
         write(report, json);
         return report.healthy ? 0 : 1;
+      }
+      case "check-update":
+        write(await checkForUpdate({ useCache:false }), json);
+        return 0;
+      case "update": {
+        const result = await updatePackage({
+          ...(parsed.values.version === undefined ? {} : { targetVersion:parsed.values.version }),
+          commit:parsed.values.yes ?? false,
+        });
+        write(result, json);
+        return result.committed && result.updateRequired && !result.updated ? 1 : 0;
       }
       case "unapply":
         write(await unapplyProject(project, parsed.values.yes ?? false), json);
@@ -153,13 +178,17 @@ export async function main(argv: readonly string[]): Promise<number> {
       case "run": {
         const action = parsed.positionals[1];
         const runId = parsed.positionals[2];
-        if (parsed.positionals.length > 3 || action === undefined || runId === undefined) throw new Error("usage: mta run <start|status|resume|cancel|foreground> <run-id>");
+        if (parsed.positionals.length > 3 || action === undefined || runId === undefined) throw new Error("usage: mta run <start|status|resume|answer|cancel|foreground> <run-id>");
         const service = await BoundRunService.open(project, parsed.values.session ?? process.env.MTA_SESSION_ID);
         if (action === "start") {
           if (parsed.values.contract === undefined || parsed.values.workItems === undefined) throw new Error("run start requires --contract <json> and --workItems <json>");
           write(await service.start(runId, JSON.parse(parsed.values.contract) as unknown, JSON.parse(parsed.values.workItems) as unknown), json);
         } else if (action === "status") write(await service.runtime(runId).load(), json);
         else if (action === "resume") write(await service.resume(runId), json);
+        else if (action === "answer") {
+          if (parsed.values.decision === undefined) throw new Error("run answer requires --decision <json>");
+          write(await service.runtime(runId).answer(decodeContract(humanDecisionSchema, JSON.parse(parsed.values.decision) as unknown, "HumanDecision")), json);
+        }
         else if (action === "cancel") write(await service.runtime(runId).transition("run.cancelled", { reason:"cancelled through CLI" }, "cli-cancel"), json);
         else if (action === "foreground") {
           const host = parsed.values.host ?? "codex";

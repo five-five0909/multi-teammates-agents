@@ -1,4 +1,4 @@
-const secretKey = /(?:api[_ -]?key|auth(?:orization)?|access[_ -]?token|token|password|secret)/iu;
+const secretKey = /^(?:api[_ -]?key|auth(?:orization)?|access[_ -]?token|token|password|secret)$/iu;
 const labelledSecret = /(api[_-]?key|auth(?:orization)?|access[_-]?token|password|secret)(\s*[=:]\s*)([^\s,;]+)/giu;
 const bearer = /\bbearer\s+[a-z0-9._~+/=-]+/giu;
 const openAiKey = /\bsk-[a-zA-Z0-9_-]{8,}\b/gu;

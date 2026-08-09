@@ -58,6 +58,7 @@ for (const host of ["codex", "claude"]) {
     const args = result.metadata.arguments.join(" ");
     assert.doesNotMatch(args, /dangerously|bypass|skip-permissions/iu);
     assert.match(args, host === "codex" ? /--sandbox read-only/u : /--permission-mode plan/u);
+    if (host === "codex") assert.match(args, /--ephemeral/u);
   });
 
   test(`${host} adapter maps permission, error, timeout, and bounded output`, async () => {

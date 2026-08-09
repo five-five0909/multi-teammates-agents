@@ -8,7 +8,7 @@ export class CodexHostAdapter extends CliHostAdapter {
 
   protected override buildArgs(request: EpisodeRequest): readonly string[] {
     return [
-      "exec", "--json", "--color", "never", "--cd", request.workspace,
+      "exec", "--json", "--ephemeral", "--color", "never", "--cd", request.workspace,
       "--sandbox", request.readOnly ? "read-only" : "workspace-write",
       ...(request.model === undefined ? [] : ["--model", request.model]),
       "-",
