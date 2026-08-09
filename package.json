@@ -4,8 +4,8 @@
   "description": "Project-scoped AI harness for Trellis-governed, audited long-horizon work",
   "type": "module",
   "bin": {
-    "mta": "./bin/mta.js",
-    "multi-teammates-agents": "./bin/mta.js"
+    "mta": "bin/mta.js",
+    "multi-teammates-agents": "bin/mta.js"
   },
   "files": [
     "bin/",
@@ -40,7 +40,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/five-five0909/multi-teammates-agents.git"
+    "url": "git+https://github.com/five-five0909/multi-teammates-agents.git"
   },
   "keywords": [
     "ai-agent",

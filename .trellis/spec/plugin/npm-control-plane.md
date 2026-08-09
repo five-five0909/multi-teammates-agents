@@ -34,6 +34,7 @@ Without `--yes`, apply and unapply are previews. Both npm bin names, `mta` and `
 - The package version and Node engine range are read from `package.json`; code must not duplicate them as constants.
 - Windows PATH resolution prefers executable/shim suffixes explicitly. Supported npm `.cmd` shims are converted to a direct executable or `node + JS entry`; subprocesses keep `shell:false`.
 - The npm tarball whitelist is controlled by `package.json.files`; only executable output, public schemas, canonical skill/agent assets, plugin metadata, and release documents enter it. `temp/`, source tests, caches and Python runtime files must not enter the artifact.
+- npm `bin` targets use canonical package-relative paths such as `bin/mta.js` without a leading `./`; npm 11 publish normalization must not rewrite the manifest or emit an auto-correction warning.
 
 ## 4. Validation & Error Matrix
 
