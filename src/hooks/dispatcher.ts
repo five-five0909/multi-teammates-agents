@@ -23,6 +23,19 @@ export const hookEnvelopeSchema = z.strictObject({
 });
 
 export type HookEnvelope = z.infer<typeof hookEnvelopeSchema>;
+const postToolEvidenceSchema = z.strictObject({
+  tool_name:z.string().min(1).max(256),
+  tool_use_id:z.string().min(1).max(256),
+  response_present:z.boolean(),
+  duration_ms:z.number().nonnegative().finite().optional(),
+});
+const subagentEvidenceSchema = z.strictObject({
+  agent_id:z.string().min(1).max(256),
+  agent_type:z.string().min(1).max(256),
+  permission_mode:z.string().min(1).max(128).optional(),
+  stop_hook_active:z.boolean().optional(),
+});
+type HookEvidence = z.infer<typeof postToolEvidenceSchema> | z.infer<typeof subagentEvidenceSchema>;
 export interface HookDecision {
   schema_version: 1;
   event: HookEnvelope["event"];
@@ -32,6 +45,7 @@ export interface HookDecision {
   task_id: string | null;
   context?: string;
   gate?: GateDecision;
+  evidence?: HookEvidence;
 }
 
 const compactContextSchema = z.strictObject({
@@ -79,11 +93,24 @@ export async function dispatchHook(repository: TaskRepository, input: unknown): 
     case "PermissionRequest":
       decision = { schema_version:1, event:envelope.event, action:"ask", enforcement, reason:"permission remains controlled by the host and user", task_id:taskId };
       break;
-    case "PostToolUse":
-    case "SubagentStart":
-    case "SubagentStop":
-      decision = { schema_version:1, event:envelope.event, action:"record", enforcement, reason:"bounded lifecycle evidence recorded", task_id:taskId };
+    case "PostToolUse": {
+      const evidence = postToolEvidenceSchema.parse(envelope.payload);
+      decision = { schema_version:1, event:envelope.event, action:"record", enforcement, reason:"bounded tool outcome metadata recorded", task_id:taskId, evidence };
       break;
+    }
+    case "SubagentStart": {
+      const evidence = subagentEvidenceSchema.parse(envelope.payload);
+      const binding = current === null
+        ? `MTA subagent ${evidence.agent_id} (${evidence.agent_type}) has no active Trellis task binding.`
+        : `MTA subagent ${evidence.agent_id} (${evidence.agent_type}) is bound to task ${current.task.id}. Managed role, work item, ownership, and audit identity remain authoritative in the MTA Episode contract.`;
+      decision = { schema_version:1, event:envelope.event, action:"inject", enforcement, reason:"subagent identity bound to lifecycle evidence", task_id:taskId, context:binding, evidence };
+      break;
+    }
+    case "SubagentStop": {
+      const evidence = subagentEvidenceSchema.parse(envelope.payload);
+      decision = { schema_version:1, event:envelope.event, action:"record", enforcement, reason:"bounded subagent completion metadata recorded", task_id:taskId, evidence };
+      break;
+    }
     case "PreCompact":
     case "PostCompact":
       if (current !== null) await persistCompactContext(repository.projectRoot, envelope, current);
@@ -153,7 +180,7 @@ async function recordDecision(projectRoot: string, envelope: HookEnvelope, decis
   const directory = resolve(projectRoot, ".mta", "sessions");
   await mkdir(directory, { recursive:true });
   const path = resolve(directory, `${envelope.session_id}.events.jsonl`);
-  const record = redactValue({ schema_version:1, event:envelope.event, host:envelope.host, session_id:envelope.session_id, action:decision.action, enforcement:decision.enforcement, reason:decision.reason, task_id:decision.task_id, timestamp:new Date().toISOString() });
+  const record = redactValue({ schema_version:1, event:envelope.event, host:envelope.host, session_id:envelope.session_id, action:decision.action, enforcement:decision.enforcement, reason:decision.reason, task_id:decision.task_id, ...(decision.evidence === undefined ? {} : { evidence:decision.evidence }), timestamp:new Date().toISOString() });
   const handle = await open(path, "a", 0o600);
   try { await handle.writeFile(`${JSON.stringify(record)}\n`); await handle.sync(); }
   finally { await handle.close(); }

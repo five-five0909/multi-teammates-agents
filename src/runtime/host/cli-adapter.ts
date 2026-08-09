@@ -1,5 +1,5 @@
 import { probeCommand, resolveCommand, type ResolvedCommand } from "../../platform/probe.js";
-import { episodeRequestSchema, episodeResultSchema, hostCapabilitiesSchema, type EpisodeRequest, type EpisodeResult, type HostAdapter, type HostCapabilities, type HostName } from "../supervisor/host-adapter.js";
+import { cancellationResultSchema, episodeRequestSchema, episodeResultSchema, hostCapabilitiesSchema, type CancellationResult, type EpisodeRequest, type EpisodeResult, type HostAdapter, type HostCapabilities, type HostName } from "../supervisor/host-adapter.js";
 import { normalizeHostOutput } from "./event-normalizer.js";
 import { ProcessRunner } from "./process-runner.js";
 
@@ -122,7 +122,7 @@ export abstract class CliHostAdapter implements HostAdapter {
     });
   }
 
-  public cancel(episodeId: string): Promise<{ episodeId: string; found: boolean; terminated: boolean }> {
-    return this.runner.cancel(episodeId);
+  public async cancel(episodeId: string): Promise<CancellationResult> {
+    return cancellationResultSchema.parse(await this.runner.cancel(episodeId));
   }
 }

@@ -35,7 +35,9 @@ test("hook CLI normalizes native host input and renders host-specific decisions"
     assert.equal(claude.code, 0, claude.stderr);
     assert.equal(JSON.parse(claude.stdout).hookSpecificOutput.permissionDecision, "ask");
 
-    const record = await invoke(project, "codex", { ...base, hook_event_name: "PostToolUse" });
+    const record = await invoke(project, "codex", {
+      ...base, hook_event_name: "PostToolUse", tool_name:"Write", tool_use_id:"tool-1", tool_response:{ success:true },
+    });
     assert.equal(record.code, 0, record.stderr);
     assert.equal(record.stdout, "");
 

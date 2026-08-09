@@ -5,7 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 
 import { dispatchHook } from "../dist/hooks/dispatcher.js";
-import { renderHostDecision } from "../dist/hooks/host-adapter.js";
+import { normalizeNativeHook, renderHostDecision } from "../dist/hooks/host-adapter.js";
 import { TaskRepository } from "../dist/lifecycle/task-repository.js";
 import { commitApply, planApply } from "../dist/control/apply.js";
 import { readProjectStatus } from "../dist/control/status.js";
@@ -46,18 +46,36 @@ test("SessionStart restores bounded context and PreToolUse enforces the shared g
 test("permission is never auto-approved and PostToolUse cannot claim pre-action enforcement", async (t) => {
   const { root, repository } = await setup(t);
   assert.equal((await dispatchHook(repository, envelope(root, "PermissionRequest", {request:"elevate"}))).action, "ask");
-  const post = await dispatchHook(repository, envelope(root, "PostToolUse", {authorization:"topsecret"}));
+  const normalized = normalizeNativeHook("codex", {
+    session_id:"session-1", cwd:root, hook_event_name:"PostToolUse",
+    tool_name:"Write", tool_use_id:"tool-1", tool_response:{ authorization:"topsecret" }, duration_ms:12,
+  }, root);
+  const post = await dispatchHook(repository, normalized);
   assert.equal(post.action, "record");
   const log = await readFile(join(root, ".mta", "sessions", "session-1.events.jsonl"), "utf8");
+  assert.match(log, /"tool_use_id":"tool-1"/u);
+  assert.match(log, /"response_present":true/u);
   assert.doesNotMatch(log, /topsecret/u);
 });
 
 test("all lifecycle events share one dispatcher and SessionEnd releases only its pointer", async (t) => {
   const { root, repository } = await setup(t);
-  for (const event of ["UserPromptSubmit","SubagentStart","SubagentStop"]) {
-    const decision = await dispatchHook(repository, envelope(root, event));
-    assert.equal(decision.event, event);
-  }
+  assert.equal((await dispatchHook(repository, envelope(root, "UserPromptSubmit"))).event, "UserPromptSubmit");
+  const started = await dispatchHook(repository, envelope(root, "SubagentStart", {
+    agent_id:"agent-1", agent_type:"software-engineer", permission_mode:"default",
+  }));
+  assert.equal(started.action, "inject");
+  assert.match(started.context, /agent-1.*software-engineer.*task hook/u);
+  assert.deepEqual(renderHostDecision("codex", started), {
+    hookSpecificOutput:{ hookEventName:"SubagentStart", additionalContext:started.context },
+  });
+  const stopped = await dispatchHook(repository, envelope(root, "SubagentStop", {
+    agent_id:"agent-1", agent_type:"software-engineer", permission_mode:"default", stop_hook_active:false,
+  }));
+  assert.equal(stopped.action, "record");
+  const subagentLog = await readFile(join(root, ".mta", "sessions", "session-1.events.jsonl"), "utf8");
+  assert.match(subagentLog, /"agent_id":"agent-1"/u);
+  assert.match(subagentLog, /"agent_type":"software-engineer"/u);
   const preCompact = await dispatchHook(repository, envelope(root, "PreCompact", { trigger:"auto", compact_summary:"must-not-persist" }));
   assert.equal(preCompact.action, "record");
   const compactPath = join(root, ".mta", "sessions", "session-1.compact.json");

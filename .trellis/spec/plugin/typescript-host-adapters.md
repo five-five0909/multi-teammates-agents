@@ -13,7 +13,7 @@ they must preserve host permission controls and durable run state.
 ProcessRunner.run(ProcessRunRequest, signal?) -> Promise<ProcessRunResult>
 HostAdapter.probe() -> Promise<HostCapabilities>
 HostAdapter.runEpisode(EpisodeRequest, signal?) -> Promise<EpisodeResult>
-HostAdapter.cancel(episodeId) -> Promise<{ found, terminated }>
+HostAdapter.cancel(episodeId) -> Promise<CancellationResult>
 decodeForegroundConfig(input, workspace, defaults?) -> RuntimeConfig
 runForeground(BoundRunService, runId, config?, options?) -> Promise<SupervisorOutcome>
 mta run foreground <run-id> [--host codex|claude] [--model <name>] [--config <json>]
@@ -35,6 +35,8 @@ expert_team_run({ task_id, run_id, config? }) -> SupervisorOutcome
   `normalizeHostOutput`; other layers consume only `EpisodeResult` and
   validated `BackendEvent` objects. Episode input and output cross strict Zod
   boundaries, and `probe()` returns the versioned HostCapabilities contract.
+- Explicit cancellation returns the strict, versioned `CancellationResult`
+  contract; `terminated:true` is invalid when no matching episode was found.
 - Timeout, AbortSignal, and `cancel()` share one episode registry. POSIX uses a
   detached process group; Windows terminates by PID tree. A cleanup timeout is
   an explicit `cleanup_error`, never an implicit success.
@@ -51,6 +53,7 @@ expert_team_run({ task_id, run_id, config? }) -> SupervisorOutcome
 | Explicit host permission error | Return `permission_required`; do not infer it from ordinary assistant prose. |
 | Timeout wins termination race | Kill the process tree, await close, return `timeout`. |
 | AbortSignal or explicit cancel wins | Kill the process tree, await close, return `cancelled`. |
+| Cancellation result is malformed or claims termination without a found episode | Reject at the adapter Zod boundary. |
 | Tree is still alive after forced termination | Record `cleanup_error` and `terminated:false`. |
 | Host exits nonzero without permission evidence | Return `error` with bounded stderr or structured result text. |
 | Host emits more than the visible output budget | Keep bounded raw data and truncate visible output deterministically. |
@@ -72,6 +75,7 @@ expert_team_run({ task_id, run_id, config? }) -> SupervisorOutcome
   output, timeout, AbortSignal, explicit cancel, parallel Episodes, and child
   process-tree cleanup.
 - Probe tests assert exact versioned capabilities for both host adapters.
+- Cancellation tests assert the real adapter boundary and cross-field result invariant.
 - Foreground integration must use real child processes for Manager, Executor,
   and independent Auditor, then assert accepted audit evidence in `mta-runs`.
 - CLI and MCP must prove one foreground route while status/resume remain

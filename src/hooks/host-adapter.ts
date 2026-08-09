@@ -10,6 +10,12 @@ const nativeHookSchema = z.object({
   hook_event_name: hookEventSchema,
   tool_name: z.string().optional(),
   tool_input: z.unknown().optional(),
+  tool_response: z.unknown().optional(),
+  tool_use_id: z.string().min(1).max(256).optional(),
+  duration_ms:z.number().nonnegative().finite().optional(),
+  agent_id:z.string().min(1).max(256).optional(),
+  agent_type:z.string().min(1).max(256).optional(),
+  permission_mode:z.string().min(1).max(128).optional(),
   source: z.string().optional(),
   trigger: z.enum(["manual", "auto"]).optional(),
   stop_hook_active: z.boolean().optional(),
@@ -64,7 +70,21 @@ export function normalizeNativeHook(host: ApplyHost, input: unknown, projectRoot
   const parsed = nativeHookSchema.parse(input);
   const payload = parsed.hook_event_name === "PreToolUse"
     ? inferToolIntent(parsed.tool_name ?? "unknown", parsed.tool_input)
-    : parsed.hook_event_name === "Stop" || parsed.hook_event_name === "SubagentStop"
+    : parsed.hook_event_name === "PostToolUse"
+      ? {
+          tool_name:z.string().min(1).parse(parsed.tool_name),
+          tool_use_id:z.string().min(1).parse(parsed.tool_use_id),
+          response_present:parsed.tool_response !== undefined,
+          ...(parsed.duration_ms === undefined ? {} : { duration_ms:parsed.duration_ms }),
+        }
+      : parsed.hook_event_name === "SubagentStart" || parsed.hook_event_name === "SubagentStop"
+        ? {
+            agent_id:z.string().min(1).parse(parsed.agent_id),
+            agent_type:z.string().min(1).parse(parsed.agent_type),
+            ...(parsed.permission_mode === undefined ? {} : { permission_mode:parsed.permission_mode }),
+            ...(parsed.hook_event_name === "SubagentStop" ? { stop_hook_active:parsed.stop_hook_active ?? false } : {}),
+          }
+    : parsed.hook_event_name === "Stop"
       ? { stop_hook_active:parsed.stop_hook_active ?? false }
       : parsed.hook_event_name === "PreCompact" || parsed.hook_event_name === "PostCompact"
         ? { trigger:parsed.trigger ?? "unknown" }

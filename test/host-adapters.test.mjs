@@ -113,6 +113,14 @@ test("explicit cancellation and AbortSignal share the active process registry", 
   assert.equal((await abortedRun).status, "cancelled");
 });
 
+test("cancellation results are parsed at the host adapter boundary", async () => {
+  const hostAdapter = new CodexHostAdapter({
+    command:process.execPath,
+    runner:{ cancel:async (episodeId) => ({ episodeId, found:false, terminated:true }) },
+  });
+  await assert.rejects(hostAdapter.cancel("missing-episode"), /terminated episode must have been found/u);
+});
+
 test("timeout removes the fake host child process tree", async () => {
   const result = await adapter("codex").runEpisode(request({
     prompt:JSON.stringify({ scenario:"child" }),

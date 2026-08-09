@@ -5,7 +5,7 @@ import { decodeContract } from "./core/contracts.js";
 import { ClaudeHostAdapter } from "./host/claude-adapter.js";
 import { CodexHostAdapter } from "./host/codex-adapter.js";
 import { ManagedRunSupervisor, type SupervisorOutcome } from "./supervisor/managed-run-supervisor.js";
-import type { EpisodeRequest, EpisodeResult, HostAdapter, HostCapabilities, HostName, RuntimeConfig } from "./supervisor/host-adapter.js";
+import type { CancellationResult, EpisodeRequest, EpisodeResult, HostAdapter, HostCapabilities, HostName, RuntimeConfig } from "./supervisor/host-adapter.js";
 
 const roleInputSchema = z.strictObject({
   host:z.enum(["codex", "claude"]),
@@ -70,7 +70,7 @@ class SignalledAdapter implements HostAdapter {
     return this.delegate.probe();
   }
 
-  public cancel(episodeId: string): Promise<{ episodeId: string; found: boolean; terminated: boolean }> {
+  public cancel(episodeId: string): Promise<CancellationResult> {
     return this.delegate.cancel(episodeId);
   }
 }

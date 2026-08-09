@@ -37,6 +37,9 @@ readControlStatus(project, sessionId?) -> Promise<ControlStatus>
 - Apply templates merge MTA Hook/MCP fields and marker blocks onto the original
   files. The receipt records original bytes and applied hashes. Unapply restores
   only unchanged owned files.
+- Claude command Hooks and project MCP launch the package entry point through
+  the current absolute Node executable and `bin/mta.js`. They never rely on an
+  npm `.cmd` shim, which direct-spawn configurations cannot execute on Windows.
 - Status reports installed, trusted, and enforced separately. Executed Hook
   evidence proves trust; only an enforced `PreToolUse` event proves write
   enforcement.
@@ -48,6 +51,12 @@ readControlStatus(project, sessionId?) -> Promise<ControlStatus>
   task path, trigger, and timestamp. Transcript paths, compact summaries, raw
   messages, and secrets never enter the recovery record; SessionStart injects
   the bounded record and SessionEnd removes it.
+- PostToolUse records only bounded tool name, tool-use ID, response presence,
+  and optional duration; raw tool input/output never enters lifecycle evidence.
+  SubagentStart/Stop records the official agent ID/type and permission/stop
+  metadata without transcript paths or final messages. SubagentStart injects
+  the active Trellis binding, while managed role, work item, ownership, and
+  audit identity remain authoritative in the Episode contract.
 - A Stop event for an active task returns `decision: "block"` once. When the
   host reports `stop_hook_active=true`, MTA returns `continue:false` with a
   human-input reason instead of creating a continuation loop. Stop never starts
@@ -70,6 +79,7 @@ readControlStatus(project, sessionId?) -> Promise<ControlStatus>
 | Active-task Stop with `stop_hook_active=false` | Return `decision: "block"` and one bounded verification prompt. |
 | Active-task Stop with `stop_hook_active=true` | Return `continue:false`; surface the human gate and do not continue again. |
 | PreCompact/PostCompact payload contains transcript or model summary | Ignore those fields and persist only the bounded recovery schema. |
+| PostToolUse or subagent payload omits its official identity fields | Reject the malformed normalized event; never persist raw response or transcript data as a fallback. |
 | Shared config changed after apply | Refuse apply/unapply and preserve current bytes. |
 | Legacy detach partial write failure | Restore every earlier shared config and omit the receipt. |
 | MCP has zero or multiple active bindings | Return `workspace_unbound`; never fall back to cwd. |
@@ -90,9 +100,11 @@ readControlStatus(project, sessionId?) -> Promise<ControlStatus>
   cross-workspace pointers, archive, and per-session release.
 - Hook tests cover all lifecycle events, host rendering, redaction, receipt
   enforcement, destructive gates, installed/trusted/enforced status, bounded
-  Stop continuation, and compact context persistence/cleanup.
+  Stop continuation, compact context persistence/cleanup, bounded tool outcome
+  metadata, and subagent identity binding without transcript leakage.
 - Apply tests cover JSON merging, marker insertion, host switching, exact
-  restoration, drift, concurrent changes, rollback, and absolute MCP binding.
+  restoration, drift, concurrent changes, rollback, absolute MCP binding, and
+  direct execution of the installed Claude Hook and project MCP commands.
 - Legacy tests inject partial failure and assert byte-for-byte rollback.
 - MCP tests assert all tool names, explicit/unique binding, shared status and
   resume projections, and unbound failure.
