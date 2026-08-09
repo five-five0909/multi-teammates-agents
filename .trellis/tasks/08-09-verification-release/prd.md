@@ -9,7 +9,7 @@
 - Windows 与 WSL Node 24 的 TypeScript/fake-host 测试已通过，Codex 真实只读 Episode 已通过。
 - Claude Code 2.1.220 当前 OAuth session 过期且无法刷新；因此 Claude 真实模型 E2E 尚未通过，当前禁止删除旧运行时。
 - `.github/workflows/npm-control-plane.yml` 已覆盖 Windows x64、Ubuntu x64、macOS Intel/arm64 和 Node 22/24，但尚未验证 tarball 的全局安装、npx、无 Python/Cargo 和 apply/MCP smoke。
-- README、skill、旧 plugin manifest 和旧脚本仍描述 Python 路径；`.trellis/spec/plugin/expert-team-contract.md` 有用户未提交修改，本任务不得覆盖该工作。
+- README、skill、manifest、示例和活动规范现已切换到 npm/TypeScript 路径；用户已明确授权合并 `.trellis/spec/plugin/expert-team-contract.md` 的在途修改。
 
 ## Requirements
 
@@ -31,7 +31,7 @@
 - [x] AC3. `run answer` 与 doctor MCP initialize 有自动化契约测试。
 - [x] AC4. Windows 与 WSL Node 22/24 全绿，CI 定义覆盖四个 runner 与 Node 22/24，并执行 pack/install smoke。
 - [x] AC5. tarball 白名单和隔离安装证明两个 bin、npx、apply/hook/MCP/run status/unapply 在无 Python/Cargo PATH 下工作。
-- [ ] AC6. 英中 README、skill、manifest、示例、notices 与活动 TypeScript spec 不再指导用户走 Python 产品路径。
+- [x] AC6. 英中 README、skill、manifest、示例、notices 与活动 TypeScript spec 不再指导用户走 Python 产品路径。
 - [x] AC7. registry 包名/版本可用性有实时证据；不执行未经用户明确授权的 `npm publish`。
 - [x] AC8. 真实证据报告明确记录 Codex 通过、Claude 当前认证状态，以及 alpha/beta/rc/stable 各自是否满足。
 - [x] AC9. 仅当所有切换门槛满足时删除旧实现；否则保留并给出唯一明确 blocker，不用 fake 结果替代真实 Claude E2E。

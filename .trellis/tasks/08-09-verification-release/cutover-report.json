@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-09T05:39:00.131Z",
+  "generatedAt": "2026-08-09T05:59:56.2743949Z",
   "packageVersion": "0.5.0-alpha.0",
   "registry": {
     "package": "multi-teammates-agents",
@@ -10,7 +10,7 @@
   "releaseLevels": {
     "alpha": {
       "passed": true,
-      "evidence": "strict schemas, CLI/control transactions, fake-host supervisor, Windows and POSIX process cleanup, dual-host skill/profile installation, and isolated tarball lifecycle"
+      "evidence": "strict schemas including CancellationResult, CLI/control transactions, bounded Hook evidence, fake-host supervisor, Windows and POSIX process cleanup, direct installed Claude Hook/MCP execution, dual-host skill/profile installation, and isolated tarball lifecycle"
     },
     "beta": {
       "passed": false,
@@ -32,13 +32,12 @@
     "claudeRealManagedE2E": false,
     "tarballContainsNoPythonRuntime": true,
     "userDocsAndSkillUseMta": true,
-    "allActiveSpecsUseMta": false,
+    "allActiveSpecsUseMta": true,
     "remoteFourPlatformMatrixPassed": false
   },
   "deleteLegacyRuntimeAllowed": false,
   "blockers": [
     "Re-authenticate Claude Code and pass one real managed Manager-Executor-Auditor E2E.",
-    "With explicit push authorization, publish the local commits and pass the Windows/Ubuntu/macOS Intel/macOS arm64 Node 22/24 workflow.",
-    "Finish or reconcile the user's in-progress .trellis/spec/plugin/expert-team-contract.md migration without overwriting that work."
+    "Push the authorized local commits and pass the Windows/Ubuntu/macOS Intel/macOS arm64 Node 22/24 workflow."
   ]
 }
