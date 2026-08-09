@@ -272,3 +272,45 @@ Codex/Claude 配置。
 ### Next Steps
 
 - None - task complete
+
+
+## Session 6: 完成 npm TypeScript 重构验证与远程矩阵
+
+**Date**: 2026-08-09
+**Task**: 完成 npm TypeScript 重构验证与远程矩阵
+**Branch**: `main`
+
+### Summary
+
+补齐双宿主安装资产、Hook/Subagent 有界证据、CancellationResult 公共契约与 Windows 直接启动；收敛活动 TypeScript 规范；通过 Windows/WSL Node 22/24、本地 tarball、Python 迁移基线及 GitHub 四平台 8 单元矩阵。保留 Claude 未登录和未授权 npm publish 两个外部门禁。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7b93008` | (see git log) |
+| `e493bc5` | (see git log) |
+| `1d225bd` | (see git log) |
+| `be75466` | (see git log) |
+| `3b5794d` | (see git log) |
+| `09080ae` | (see git log) |
+| `d634e50` | (see git log) |
+| `eeae7ef` | (see git log) |
+| `71cb57d` | (see git log) |
+| `170dd9a` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
